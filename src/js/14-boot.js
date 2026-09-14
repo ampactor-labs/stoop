@@ -91,15 +91,21 @@ document.addEventListener('click', function (e) {
   if ((el = hit(t, '[data-piecebundle]'))) return exportPieceBundle(el.getAttribute('data-piecebundle'));
   if (hit(t, '#closereader')) return readIssue(openIssueNo);
 
-  if (hit(t, '#printzinebtn')) { capturePanels(); return window.print(); }
+  if (hit(t, '#printzinebtn')) {
+    capturePanels();
+    if (!confirmSheet('Print')) return;
+    return window.print();
+  }
   if (hit(t, '#pdfzinebtn')) {
     capturePanels();
+    if (!confirmSheet('Save a PDF')) return;
     var ps = pressState();
     return savePdf(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), ps.issue,
       sceneSlug() + '-' + ps.issue + '.pdf');
   }
   if (hit(t, '#flyerbtn')) {
     capturePanels();
+    if (!confirmSheet('Make a flyer')) return;
     var fps = pressState();
     var cover = fps.panels[0] || {};
     return saveFlyer(cover.h, fps.issue, issueUrl(fps.issue), cover.photo,
@@ -113,7 +119,29 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();
   if (hit(t, '#mergebtn')) { document.getElementById('importfile').dataset.mode = 'merge'; return document.getElementById('importfile').click(); }
   if (hit(t, '#replacebtn')) { document.getElementById('importfile').dataset.mode = 'replace'; return document.getElementById('importfile').click(); }
-  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2')) return saveNameFields();
+  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) {
+    var zn = document.getElementById('zinename');
+    if (zn && zn.value.trim()) state.zine = zn.value.trim();
+    return saveNameFields();
+  }
+  if (hit(t, '#addpersonbtn')) {
+    var np = document.getElementById('newperson');
+    if (!np || !np.value.trim()) { toast('Give them a name first'); return; }
+    addPerson(np.value.trim());
+    np.value = '';
+    renderAll();
+    toast('Added. They can hold the desk like anybody else.');
+    return;
+  }
+  if ((el = hit(t, '[data-delperson]'))) {
+    var pid = el.getAttribute('data-delperson');
+    people = people.filter(function (x) { return x.id !== pid; });
+    savePeople();
+    ensurePeople();
+    renderAll();
+    return;
+  }
+  if (hit(t, '#emptybtn')) return startEmpty();
   if (hit(t, '#resetbtn')) return resetData();
 });
 
@@ -131,8 +159,13 @@ document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter') return;
   if (e.target.id === 'loginput') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }
-  else if (e.target.id === 'namea' || e.target.id === 'nameb' || e.target.id === 'addressinput') {
+  else if (e.target.id === 'addressinput' || e.target.id === 'zinename' ||
+    e.target.hasAttribute('data-personid')) {
     e.preventDefault(); saveNameFields();
+  }
+  else if (e.target.id === 'newperson') {
+    e.preventDefault();
+    if (e.target.value.trim()) { addPerson(e.target.value.trim()); e.target.value = ''; renderAll(); }
   }
 });
 
@@ -195,6 +228,8 @@ function fillFormats() {
 function fillSettings() {
   var addr = document.getElementById('addressinput');
   if (addr && document.activeElement !== addr) addr.value = state.address || '';
+  var zn = document.getElementById('zinename');
+  if (zn && document.activeElement !== zn) zn.value = state.zine || '';
 }
 
 // Photos load before the first paint so renders stay synchronous; the app is
@@ -204,5 +239,6 @@ photoLoadAll().then(function () {
   fillFormats();
   fillSettings();
   renderAll();
+  fillSettings();
   showView();
 });

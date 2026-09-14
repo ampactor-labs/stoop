@@ -7,7 +7,8 @@
 function sceneSlug() {
   var a = (state.address || '').replace(/\/+$/, '');
   var last = a.split('/').filter(Boolean).pop();
-  return (last || 'stoop').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  var name = last || state.zine || 'stoop';
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stoop';
 }
 
 function issueUrl(no) {
@@ -81,7 +82,7 @@ function exportIssueFile(no) {
   });
   var html = pageWithSeed({
     stoop: 'issue', version: 1, no: no,
-    names: names, address: state.address || '',
+    people: people, address: state.address || '', zine: state.zine || '',
     issues: upTo,
     // The cycle handed on follows the issue in the file, not the shelf it left
     // behind. Somebody given №01 is holding the desk for №02, whatever number
@@ -101,7 +102,7 @@ function exportPieceBundle(id) {
   if (!piece) return;
   var html = pageWithSeed({
     stoop: 'piece', version: 1,
-    names: names, address: state.address || '',
+    people: people, address: state.address || '', zine: state.zine || '',
     pieces: [piece], photos: photosFor([piece]), open: '#desk'
   });
   download('piece-' + nameOf(piece.byline).toLowerCase().replace(/[^a-z0-9]+/g, '-') +
@@ -139,6 +140,9 @@ function importSeed(seed) {
     addedIssues++;
   });
   if (seed.address && !state.address) state.address = seed.address;
+  if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
+  mergePeople(seed.people);
+  ensurePeople();
 
   saveState();
   renderAll();
@@ -171,10 +175,12 @@ function hydrateFromSeed(seed) {
   var ids = Object.keys(photos).filter(function (id) { return !photoCache[id]; });
   ids.forEach(function (id) { photoPut(id, photos[id]); });
 
-  if (seed.names && seed.names.a && seed.names.b && !localStorage.getItem(NAMES_KEY)) {
-    names = { a: String(seed.names.a), b: String(seed.names.b) };
-    saveNames();
+  // The roster rides along so a byline in the file still has a name on it.
+  mergePeople(seed.people);
+  if (seed.names && seed.names.a && seed.names.b) {
+    mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
   }
+  ensurePeople();
   if (seed.read) openIssueNo = seed.read;
   if (seed.open && !location.hash) location.hash = seed.open;
 }

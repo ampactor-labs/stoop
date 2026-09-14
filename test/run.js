@@ -21,7 +21,8 @@ const suites = [
   ['publication', require('./03-publication.js')],
   ['self-carrying issue', require('./04-selfcarry.js')],
   ['qr', require('./05-qr.js')],
-  ['pdf', require('./06-pdf.js')]
+  ['pdf', require('./06-pdf.js')],
+  ['a scene of four', require('./07-scene.js')]
 ];
 
 (async () => {

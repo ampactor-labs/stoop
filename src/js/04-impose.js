@@ -122,6 +122,15 @@ function fitPanels(panels, pages) {
   return out;
 }
 
+// The sheet a new cycle starts on: the section headings survive as prompts,
+// the body text does not. Seeded bodies on a fresh draft are what made a
+// freshly published issue look printable when it was empty.
+function blankPanels(pages) {
+  var out = [];
+  for (var i = 0; i < pages; i++) out.push({ h: seedPanel(i).h, body: '', photo: null });
+  return out;
+}
+
 // The page label under a test-sheet number. Covers are worth naming; the
 // middle of a signature is not.
 function pageLabel(page, pages) {

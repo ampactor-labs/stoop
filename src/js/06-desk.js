@@ -125,7 +125,7 @@ function compileIssue() {
   var inner = pages - 2;
 
   ps.issue = c.no;
-  ps.panels[0].h = ps.title || 'STOOP ZINE';
+  ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
 
   pieces.slice(0, inner).forEach(function (piece, i) {
     var panel = ps.panels[i + 1];
@@ -171,7 +171,7 @@ function buildIssue() {
   var note = document.getElementById('editornote');
   state.issues.push({
     no: ps.issue,
-    title: ps.panels[0] ? ps.panels[0].h : 'STOOP ZINE',
+    title: (ps.panels[0] && ps.panels[0].h) || state.zine || 'STOOP ZINE',
     format: ps.format,
     hand: ps.hand,
     editor: c.editor,
@@ -192,7 +192,8 @@ function buildIssue() {
   if (note) note.value = '';
 
   ps.issue = c.no;
-  ps.panels = fitPanels([], formatOf(ps.format).pages);
+  ps.panels = blankPanels(formatOf(ps.format).pages);
+  ps.panels[0].h = state.zine || 'STOOP ZINE';
   savePress();
   renderAll();
   location.hash = '#shelf';

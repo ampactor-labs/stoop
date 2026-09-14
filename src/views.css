@@ -44,6 +44,11 @@
 .journal-card-head h2 { margin: 0; font-size: 1.35rem; color: var(--bone); }
 .journal-card-body { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--bone); line-height: 1.55; white-space: pre-wrap; }
 
+/* The roster */
+.person { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+.person .text-input { flex: 1; }
+.person .sub { min-width: 6rem; font-size: .75rem; }
+
 /* The desk: the tray of submitted pieces */
 .sub-row { display: flex; align-items: center; gap: .6rem; border-bottom: 1px dashed var(--ink); padding: .45rem 0; font-family: 'Courier New', monospace; font-size: .85rem; }
 .sub-row:last-of-type { border-bottom: none; }

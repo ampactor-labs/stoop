@@ -1,31 +1,60 @@
 var activeLogFilter = 'all';
 
-// Author-keyed chips and options carry the current names, so a rename in
-// settings reaches every surface without touching stored entries.
+// The roster is drawn, not written into the HTML: a scene of four needs four
+// chips and four options, and nobody should have to edit a view file to get
+// them.
 function renderNames() {
   var el = document.getElementById('authorname');
   if (el) el.textContent = nameOf(currentAuthor);
 
-  document.querySelectorAll('[data-namechip]').forEach(function (chip) {
-    var key = chip.getAttribute('data-namechip');
-    chip.textContent = nameOf(key);
-  });
-  document.querySelectorAll('[data-nameopt]').forEach(function (opt) {
-    var key = opt.getAttribute('data-nameopt');
-    opt.textContent = (opt.hasAttribute('data-pen') ? '✍ ' : '') + nameOf(key);
-  });
-
-  var a = document.getElementById('namea');
-  var b = document.getElementById('nameb');
-  if (a && document.activeElement !== a) a.value = names.a;
-  if (b && document.activeElement !== b) b.value = names.b;
+  var chips = document.getElementById('logfilters');
+  if (chips) {
+    chips.innerHTML = '<button class="chip' + (activeLogFilter === 'all' ? ' on' : '') +
+      '" data-logfilter="all">all</button>' +
+      authorIds().map(function (id) {
+        return '<button class="chip' + (activeLogFilter === id ? ' on' : '') +
+          '" data-logfilter="' + esc(id) + '">' + esc(nameOf(id)) + '</button>';
+      }).join('');
+  }
 
   var jAuth = document.getElementById('journalauthor');
-  if (jAuth) jAuth.value = currentAuthor;
+  if (jAuth && document.activeElement !== jAuth) {
+    var want = jAuth.value || currentAuthor;
+    jAuth.innerHTML = authorIds().map(function (id) {
+      return '<option value="' + esc(id) + '">\u270d ' + esc(nameOf(id)) + '</option>';
+    }).join('');
+    jAuth.value = authorIds().indexOf(want) >= 0 ? want : currentAuthor;
+  }
+  renderRoster();
+}
+
+// Somebody who has already written something keeps their seat: removing them
+// would orphan a byline, and ensurePeople would only put them back as
+// "Someone".
+function personHasWork(id) {
+  var by = function (x) { return x.author === id || x.byline === id; };
+  return state.logs.some(by) || state.journal.some(by) || state.pieces.some(by) ||
+    state.issues.some(function (i) { return i.editor === id || (i.pieces || []).some(by); });
+}
+
+function renderRoster() {
+  var box = document.getElementById('roster');
+  if (!box || box.contains(document.activeElement)) return;
+  box.innerHTML = people.map(function (p) {
+    var used = personHasWork(p.id);
+    return '<div class="person">' +
+      '<input class="text-input" data-personid="' + esc(p.id) + '" maxlength="24" value="' +
+      esc(p.name) + '">' +
+      (used || people.length < 2
+        ? '<span class="sub">' + (used ? 'in the archive' : '') + '</span>'
+        : '<button class="btn quiet" data-delperson="' + esc(p.id) + '">REMOVE</button>') +
+      '</div>';
+  }).join('');
 }
 
 function toggleAuthor() {
-  currentAuthor = AUTHORS[(AUTHORS.indexOf(currentAuthor) + 1) % AUTHORS.length];
+  var ids = authorIds();
+  currentAuthor = ids[(ids.indexOf(currentAuthor) + 1) % ids.length];
   localStorage.setItem(AUTHOR_KEY, currentAuthor);
   renderNames();
   toast('Now writing as ' + nameOf(currentAuthor));
@@ -149,6 +178,7 @@ function addJournal() {
 
 function renderAll() {
   renderNames();
+  if (typeof fillSettings === 'function') fillSettings();
   renderLogs();
   renderProjects();
   renderJournal();

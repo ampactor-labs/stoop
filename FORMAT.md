@@ -27,7 +27,8 @@ A conforming reader finds that element, parses it, and renders the issue. A conf
   "stoop": "issue",
   "version": 1,
   "no": "03",
-  "names": { "a": "Moss", "b": "Yuki" },
+  "people": [ { "id": "a", "name": "Moss" }, { "id": "k3f2p", "name": "Yuki" } ],
+  "zine": "NIGHT BUS",
   "address": "example.org/stoop/nightbus",
   "issues": [ … ],
   "cycle": { "no": "04", "editor": "b", "bell": 1789000000000 },
@@ -44,7 +45,14 @@ A conforming reader finds that element, parses it, and renders the issue. A conf
 - `photos` maps photo ids to data URIs. Every id referenced by any panel or piece in the file MUST appear here; a file that references a photo it does not carry is malformed.
 - `open` and `read` are hints about what to show first. Readers MAY ignore both.
 
-`names` maps the two author keys to display names. Authorship is stored as a key (`"a"`, `"b"`, or `"both"`), never as a spelling, so renaming a person does not orphan their past work.
+- `people` is the scene's roster, in order. Authorship is stored as an `id`, never as a spelling, so renaming somebody does not orphan their past work. A scene is however many people it is; two is not a limit.
+- `zine` is what goes on the cover and the flyer.
+
+**Ids must not collide between scenes.** `a` and `b` are conventional for a founding pair, but anybody added afterwards SHOULD be given a random id, because two scenes both handing out `c` would merge two different people the first time they traded a piece.
+
+A reader MUST merge an incoming roster by id rather than overwriting its own, and MUST NOT drop a byline it does not recognise: an id with no matching person belongs to somebody real on another device, and the reader SHOULD seat them under a placeholder name rather than reassigning their work. A file opened on a machine with nothing of its own SHOULD adopt the roster the file carries, or the names in it are refused as already taken.
+
+Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD accept both.
 
 ### An issue
 

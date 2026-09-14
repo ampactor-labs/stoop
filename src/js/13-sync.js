@@ -13,7 +13,7 @@ function exportBackup() {
   var payload = {
     version: BACKUP_VERSION,
     exported: new Date().toISOString(),
-    names: names,
+    people: people,
     logs: state.logs,
     projects: state.projects,
     journal: state.journal,
@@ -21,6 +21,7 @@ function exportBackup() {
     issues: state.issues,
     cycle: state.cycle,
     address: state.address,
+    zine: state.zine,
     press: state.press,
     photos: photos
   };
@@ -64,6 +65,7 @@ function importBackup(raw, mode) {
     state.issues = incoming.issues;
     state.cycle = incoming.cycle;
     state.address = incoming.address;
+    state.zine = incoming.zine;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -81,6 +83,8 @@ function importBackup(raw, mode) {
       if (!state.issues.some(function (x) { return x.no === iss.no; })) state.issues.push(iss);
     });
     if (!state.address) state.address = incoming.address;
+    if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
+    mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;
     }
@@ -88,10 +92,17 @@ function importBackup(raw, mode) {
     added = Math.max(0, after - before) + added;
   }
 
-  if (raw && raw.names && raw.names.a && raw.names.b && mode === 'replace') {
-    names = { a: String(raw.names.a), b: String(raw.names.b) };
-    saveNames();
+  if (mode === 'replace' && Array.isArray(raw && raw.people) && raw.people.length) {
+    people = raw.people.filter(function (p) { return p && p.id && p.name; });
+    savePeople();
+  } else {
+    mergePeople(raw && raw.people);
   }
+  // A backup written before the roster existed carries two names instead.
+  if (raw && raw.names && raw.names.a && raw.names.b) {
+    mergePeople([{ id: 'a', name: String(raw.names.a) }, { id: 'b', name: String(raw.names.b) }]);
+  }
+  ensurePeople();
 
   saveState();
   renderAll();
@@ -132,14 +143,25 @@ function resetData() {
 }
 
 function saveNameFields() {
-  var a = document.getElementById('namea');
-  var b = document.getElementById('nameb');
-  names.a = (a && a.value.trim()) || 'Me';
-  names.b = (b && b.value.trim()) || 'Partner';
+  document.querySelectorAll('[data-personid]').forEach(function (input) {
+    var p = personById(input.getAttribute('data-personid'));
+    if (p) p.name = input.value.trim() || p.name;
+  });
+  savePeople();
   var addr = document.getElementById('addressinput');
   if (addr) state.address = addr.value.trim();
-  saveNames();
   saveState();
   renderAll();
-  toast('Names saved');
+  toast('Saved');
+}
+
+// Start empty is the opposite of reset: no sample pieces, nothing borrowed.
+function startEmpty() {
+  if (!confirm('Clear everything on this device — logs, journal, projects, pieces and every published issue — and start with a blank press?')) return;
+  state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
+    address: state.address, zine: state.zine });
+  saveState();
+  sweepPhotos();
+  renderAll();
+  toast('Empty. The first issue is yours alone.');
 }

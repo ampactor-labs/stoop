@@ -27,7 +27,7 @@ A working press, and the documents that argue for it.
 
 [`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. Seven views — **log**, **journal**, **projects**, **the desk**, **the press**, **the shelf**, and settings & sync.
 
-The first three are sources. You write in them, and they mint pieces; a piece is a title, a byline, a kind and a body.
+The first three are sources. You write in them, and they mint pieces; a piece is a title, a byline, a kind and a body. A scene is however many people it is — the roster in settings takes as many as write for you, and a byline arriving in a piece file from somebody else's copy keeps their name.
 
 At **the desk**, whoever holds the chair this cycle reads the tray, cuts what will not run, writes the editor's note, and rings the bell. A cut is not a deletion: the piece stays with its maker and can run next cycle. Publishing archives the issue whole and passes the chair to the other pair of hands, odd issues to one and even to the other.
 

@@ -168,7 +168,29 @@ function renderPress() {
   layoutSheets();
   paintPanels();
   checkFit();
+  pressStatus();
   renderTray();
+}
+
+// Ringing the bell archives the issue and starts the next one, so the sheet on
+// screen is never the issue that just went to the shelf. Say so, because the
+// obvious order — write it, publish it, print it — otherwise hands somebody
+// fifty blank copies.
+function sheetIsBlank() {
+  return pressState().panels.every(function (p) {
+    return !String(p.body || '').trim() && !p.photo;
+  });
+}
+
+function pressStatus() {
+  var el = document.getElementById('pressstatus');
+  if (!el) return;
+  var last = lastPublished();
+  var blank = sheetIsBlank();
+  el.textContent = (blank ? 'This sheet is empty. ' : '') +
+    'You are looking at the draft for issue \u2116' + pressState().issue + '.' +
+    (last ? ' Issue \u2116' + last.no + ' is published — print that one from the shelf.' : '');
+  el.classList.toggle('bad', blank);
 }
 
 // ---------- the fit meter ----------

@@ -6,11 +6,21 @@
 
   <div class="paper">
     <h2>WHO IS HERE</h2>
-    <p class="sub">Entries are stored against a person, not a spelling, so renaming either of you keeps every past note attached to the right hands.</p>
+    <p class="sub">Everybody who writes for this zine. Entries are stored against a person, not a spelling, so renaming somebody keeps every past piece attached to them — which is also why anyone with work in the archive cannot be removed.</p>
+    <div id="roster"></div>
     <div class="form-row">
-      <input type="text" id="namea" class="text-input" maxlength="24" placeholder="First name">
-      <input type="text" id="nameb" class="text-input" maxlength="24" placeholder="Second name">
+      <input type="text" id="newperson" class="text-input" maxlength="24" placeholder="Add somebody">
+      <button class="btn quiet" id="addpersonbtn">ADD</button>
       <button class="btn" id="savenamesbtn">SAVE NAMES</button>
+    </div>
+  </div>
+
+  <div class="paper">
+    <h2>THE ZINE'S NAME</h2>
+    <p class="sub">What goes on the cover, the flyer, and the name of every file this press exports. Change it here and the next issue you compile carries it.</p>
+    <div class="form-row">
+      <input type="text" id="zinename" class="text-input" maxlength="40" placeholder="SPLIT LIP">
+      <button class="btn" id="savezinebtn">SAVE NAME</button>
     </div>
   </div>
 
@@ -49,7 +59,10 @@
 
   <div class="paper">
     <h2>START OVER</h2>
-    <p class="sub">Replace everything on this device with the sample notebook.</p>
-    <button class="btn danger" id="resetbtn">RESET TO DEFAULTS</button>
+    <p class="sub"><strong>Start empty</strong> clears the sample pieces and everything else, so your first issue is only your own work. <strong>Reset to the sample</strong> puts the demo notebook back.</p>
+    <div class="press-actions">
+      <button class="btn danger" id="emptybtn">START EMPTY</button>
+      <button class="btn quiet" id="resetbtn">RESET TO THE SAMPLE</button>
+    </div>
   </div>
 </section>

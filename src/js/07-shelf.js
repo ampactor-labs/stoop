@@ -54,6 +54,22 @@ function readingHtml(issue, photos) {
   return out + '</article>';
 }
 
+// What the press is about to commit, judged against what is already on the
+// shelf. The draft on screen is never the issue that just went up, so anything
+// that spends paper, ink or a file asks first.
+function lastPublished() {
+  return state.issues.length ? state.issues[state.issues.length - 1] : null;
+}
+
+function confirmSheet(what) {
+  if (!sheetIsBlank()) return true;
+  var last = lastPublished();
+  return confirm('This sheet is empty — it is the draft for issue \u2116' + pressState().issue + '.' +
+    (last ? '\n\nIssue \u2116' + last.no + ' is published. Print that from the shelf instead.' : '') +
+    '\n\n' + what + ' anyway?');
+}
+
+
 // ---------- the view ----------
 var openIssueNo = null;
 

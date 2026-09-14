@@ -1,29 +1,105 @@
 // ---------- identity ----------
-// Authors are stored as stable keys ('a', 'b', 'both'), never as display
-// names, so renaming a person leaves every past entry attached to them.
+// A scene is however many people it is. Entries are stored against a stable
+// id, never a spelling, so renaming somebody leaves their past work attached
+// to them. Ids for anyone added after the founding pair are random rather than
+// sequential, because two scenes both handing out "c" would collide the first
+// time they traded a piece.
 var STORAGE_KEY = 'stoop_data_v4';
 // The id of the payload an exported issue carries. It lives here, with the
 // other storage keys, because the store reads it while the app is still
 // starting up: a var assigned further down the bundle is hoisted but empty by
 // then, and the archive silently would not arrive.
 var SEED_ID = 'stoop-seed';
+var PEOPLE_KEY = 'stoop_people';
 var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
-var AUTHORS = ['a', 'b', 'both'];
 
-var names = (function () {
+function defaultPeople() { return [{ id: 'a', name: 'Me' }, { id: 'b', name: 'JJ' }]; }
+
+var people = (function () {
   try {
-    var raw = JSON.parse(localStorage.getItem(NAMES_KEY));
-    if (raw && raw.a && raw.b) return { a: String(raw.a), b: String(raw.b) };
+    var raw = JSON.parse(localStorage.getItem(PEOPLE_KEY));
+    if (Array.isArray(raw) && raw.length) {
+      var ok = raw.filter(function (p) { return p && p.id && p.name; });
+      if (ok.length) return ok;
+    }
+    var old = JSON.parse(localStorage.getItem(NAMES_KEY));
+    if (old && old.a && old.b) {
+      return [{ id: 'a', name: String(old.a) }, { id: 'b', name: String(old.b) }];
+    }
   } catch (e) {}
-  return { a: 'Me', b: 'JJ' };
+  // An issue file opened on a machine that has never seen this app brings its
+  // own roster. Defaulting first would take the ids a and b, and the names
+  // arriving in the file would be refused as already present.
+  try {
+    var seed = readSeed();
+    if (seed && Array.isArray(seed.people) && seed.people.length) {
+      var carried = seed.people.filter(function (p) { return p && p.id && p.name; });
+      if (carried.length) return carried;
+    }
+  } catch (e) {}
+  return defaultPeople();
 })();
 
-var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
-if (AUTHORS.indexOf(currentAuthor) < 0) currentAuthor = 'a';
+function savePeople() {
+  try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {}
+}
+function personIds() { return people.map(function (p) { return p.id; }); }
+function authorIds() { return personIds().concat('both'); }
+function personById(id) {
+  return people.filter(function (p) { return p.id === id; })[0] || null;
+}
+function nameOf(id) {
+  if (id === 'both') return 'Both';
+  var p = personById(id);
+  return p ? p.name : 'Someone';
+}
+function addPerson(name) {
+  var p = { id: 'p' + Math.random().toString(36).slice(2, 7), name: (name || 'Someone').trim() || 'Someone' };
+  people.push(p);
+  savePeople();
+  return p;
+}
 
-function saveNames() { try { localStorage.setItem(NAMES_KEY, JSON.stringify(names)); } catch (e) {} }
-function nameOf(key) { return key === 'both' ? 'Both' : (names[key] || key); }
+var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
+
+// Every byline in the store must belong to somebody on the roster, or a name
+// is lost the moment a piece arrives from another copy of the app.
+function ensurePeople() {
+  var seen = {};
+  personIds().forEach(function (id) { seen[id] = 1; });
+  var found = {};
+  function note(id) { if (id && id !== 'both' && !seen[id]) found[id] = 1; }
+  (state.logs || []).forEach(function (l) { note(l.author); });
+  (state.journal || []).forEach(function (j) { note(j.author); });
+  (state.pieces || []).forEach(function (p) { note(p.byline); });
+  (state.issues || []).forEach(function (i) {
+    note(i.editor);
+    (i.pieces || []).forEach(function (p) { note(p.byline); });
+  });
+  var added = Object.keys(found);
+  added.forEach(function (id) { people.push({ id: id, name: 'Someone' }); });
+  if (added.length) savePeople();
+  if (authorIds().indexOf(currentAuthor) < 0) currentAuthor = people[0].id;
+  return added.length;
+}
+
+// A roster arriving from a backup or a piece bundle is merged by id: a rename
+// on their device does not overwrite what this one calls them.
+function mergePeople(incoming) {
+  if (!Array.isArray(incoming)) return 0;
+  var have = {};
+  personIds().forEach(function (id) { have[id] = 1; });
+  var added = 0;
+  incoming.forEach(function (p) {
+    if (!p || !p.id || !p.name || have[p.id]) return;
+    people.push({ id: String(p.id), name: String(p.name) });
+    have[p.id] = 1;
+    added++;
+  });
+  if (added) savePeople();
+  return added;
+}
 
 // ---------- helpers ----------
 function esc(s) {
@@ -76,6 +152,7 @@ var defaultData = {
   issues: [],
   cycle: { no: '01', bell: seedTs + 6048e5, editor: 'a' },
   address: '',
+  zine: 'STOOP ZINE',
   press: null
 };
 
@@ -85,7 +162,13 @@ var AUTHOR_MAP = { Suds: 'a', Partner: 'b', Together: 'both', Both: 'both' };
 
 function migrate(data) {
   var fallback = Date.now();
-  function fixAuthor(v) { return AUTHOR_MAP[v] || (AUTHORS.indexOf(v) >= 0 ? v : 'a'); }
+  // Keep whatever id a record carries. A byline this device has never seen
+  // belongs to a real person on some other device, and ensurePeople() gives
+  // them a seat rather than filing their work under somebody else's name.
+  function fixAuthor(v) {
+    if (AUTHOR_MAP[v]) return AUTHOR_MAP[v];
+    return (typeof v === 'string' && v) ? v : 'a';
+  }
   function fixTs(item) {
     if (typeof item.ts !== 'number') { item.ts = fallback; fallback -= 6e4; }
     return item;
@@ -109,6 +192,7 @@ function normalize(raw) {
     issues: Array.isArray(raw && raw.issues) ? raw.issues : [],
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
+    zine: (raw && raw.zine) || 'STOOP ZINE',
     press: (raw && raw.press) || null
   };
   return migrate(out);
@@ -130,11 +214,13 @@ var state = (function () {
   if (seed) {
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
-      cycle: seed.cycle, address: seed.address || ''
+      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE'
     });
   }
   return JSON.parse(JSON.stringify(defaultData));
 })();
+
+ensurePeople();
 
 function saveState() {
   try {
@@ -142,80 +228,4 @@ function saveState() {
   } catch (e) {
     toast('Could not save — device storage is full');
   }
-}
-
-// ---------- photo store ----------
-// Photos live in IndexedDB (localStorage caps out around 5 MB); the state
-// above holds only their ids. Everything is dithered to 1-bit on intake, so
-// a full-page photo is tens of kilobytes and prints on any copier.
-var PHOTO_DB = 'stoop_photos';
-var PHOTO_STORE = 'photos';
-var photoCache = {};
-
-function openPhotoDb() {
-  return new Promise(function (resolve, reject) {
-    if (!window.indexedDB) { reject(new Error('no indexeddb')); return; }
-    var req = indexedDB.open(PHOTO_DB, 1);
-    req.onupgradeneeded = function () {
-      if (!req.result.objectStoreNames.contains(PHOTO_STORE)) req.result.createObjectStore(PHOTO_STORE);
-    };
-    req.onsuccess = function () { resolve(req.result); };
-    req.onerror = function () { reject(req.error); };
-  });
-}
-
-function photoTx(mode, fn) {
-  return openPhotoDb().then(function (db) {
-    return new Promise(function (resolve, reject) {
-      var tx = db.transaction(PHOTO_STORE, mode);
-      var req = fn(tx.objectStore(PHOTO_STORE));
-      tx.oncomplete = function () { resolve(req && req.result); };
-      tx.onerror = function () { reject(tx.error); };
-    });
-  });
-}
-
-function photoPut(id, dataUrl) {
-  photoCache[id] = dataUrl;
-  return photoTx('readwrite', function (s) { return s.put(dataUrl, id); })
-    .catch(function () { toast('Photo kept in memory only — storage unavailable'); });
-}
-function photoDel(id) {
-  delete photoCache[id];
-  return photoTx('readwrite', function (s) { return s.delete(id); }).catch(function () {});
-}
-function photoLoadAll() {
-  return openPhotoDb().then(function (db) {
-    return new Promise(function (resolve) {
-      var tx = db.transaction(PHOTO_STORE, 'readonly');
-      var store = tx.objectStore(PHOTO_STORE);
-      var keys = store.getAllKeys();
-      var vals = store.getAll();
-      tx.oncomplete = function () {
-        (keys.result || []).forEach(function (k, i) { photoCache[k] = vals.result[i]; });
-        resolve();
-      };
-      tx.onerror = function () { resolve(); };
-    });
-  }).catch(function () {});
-}
-
-// Drop photo blobs no entry or zine panel points at any more.
-function collectPhotoRefs() {
-  var live = {};
-  function keep(p) { if (p && p.photo) live[p.photo] = 1; }
-  state.logs.forEach(keep);
-  state.pieces.forEach(keep);
-  if (state.press && state.press.panels) state.press.panels.forEach(keep);
-  // A back issue is the archive. Sweeping a photo out from under a published
-  // issue would rewrite history, so every shelved panel pins its photo.
-  state.issues.forEach(function (iss) {
-    (iss.panels || []).forEach(keep);
-    (iss.pieces || []).forEach(keep);
-  });
-  return live;
-}
-function sweepPhotos() {
-  var live = collectPhotoRefs();
-  Object.keys(photoCache).forEach(function (id) { if (!live[id]) photoDel(id); });
 }

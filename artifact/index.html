@@ -227,6 +227,11 @@
 .journal-card-head h2 { margin: 0; font-size: 1.35rem; color: var(--bone); }
 .journal-card-body { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--bone); line-height: 1.55; white-space: pre-wrap; }
 
+/* The roster */
+.person { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+.person .text-input { flex: 1; }
+.person .sub { min-width: 6rem; font-size: .75rem; }
+
 /* The desk: the tray of submitted pieces */
 .sub-row { display: flex; align-items: center; gap: .6rem; border-bottom: 1px dashed var(--ink); padding: .45rem 0; font-family: 'Courier New', monospace; font-size: .85rem; }
 .sub-row:last-of-type { border-bottom: none; }
@@ -371,10 +376,7 @@
     </div>
     <div class="filter-row">
       <span class="sub">filter:</span>
-      <button class="chip on" data-logfilter="all">all</button>
-      <button class="chip" data-logfilter="a" data-namechip="a">Me</button>
-      <button class="chip" data-logfilter="b" data-namechip="b">JJ</button>
-      <button class="chip" data-logfilter="both" data-namechip="both">Both</button>
+      <span id="logfilters"></span>
     </div>
   </div>
 
@@ -391,9 +393,7 @@
       <div class="form-row">
         <input type="text" id="journaltitle" class="text-input" placeholder="Entry title (e.g. Sunday Walk &amp; Tacos)...">
         <select id="journalauthor" class="select-input">
-          <option value="a" data-nameopt="a" data-pen>Me</option>
-          <option value="b" data-nameopt="b" data-pen>JJ</option>
-          <option value="both" data-nameopt="both" data-pen>Both</option>
+
         </select>
       </div>
       <textarea id="journalbody" class="textarea-input" rows="4" placeholder="Write thoughts, memories, reflections, what went well..."></textarea>
@@ -493,6 +493,7 @@
     </div>
     <p class="sub">The PDF is exact: right paper, no margins, nothing for a print dialog to argue with, and a file you can hand to a copy shop. Printing from the browser works too, at <strong>100% scale, margins none</strong>, in the orientation the format names. Click any heading or body to edit it; edits save as you type. Fold a numbered test sheet before committing good paper — printers and folding hands vary, and if the numbers come out shuffled, hit SWAP FOLD and test again.</p>
     <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
+    <p class="fitmeter" id="pressstatus"></p>
   </div>
 
   <div class="paper tray-box">
@@ -538,11 +539,21 @@
 
   <div class="paper">
     <h2>WHO IS HERE</h2>
-    <p class="sub">Entries are stored against a person, not a spelling, so renaming either of you keeps every past note attached to the right hands.</p>
+    <p class="sub">Everybody who writes for this zine. Entries are stored against a person, not a spelling, so renaming somebody keeps every past piece attached to them — which is also why anyone with work in the archive cannot be removed.</p>
+    <div id="roster"></div>
     <div class="form-row">
-      <input type="text" id="namea" class="text-input" maxlength="24" placeholder="First name">
-      <input type="text" id="nameb" class="text-input" maxlength="24" placeholder="Second name">
+      <input type="text" id="newperson" class="text-input" maxlength="24" placeholder="Add somebody">
+      <button class="btn quiet" id="addpersonbtn">ADD</button>
       <button class="btn" id="savenamesbtn">SAVE NAMES</button>
+    </div>
+  </div>
+
+  <div class="paper">
+    <h2>THE ZINE'S NAME</h2>
+    <p class="sub">What goes on the cover, the flyer, and the name of every file this press exports. Change it here and the next issue you compile carries it.</p>
+    <div class="form-row">
+      <input type="text" id="zinename" class="text-input" maxlength="40" placeholder="SPLIT LIP">
+      <button class="btn" id="savezinebtn">SAVE NAME</button>
     </div>
   </div>
 
@@ -581,41 +592,120 @@
 
   <div class="paper">
     <h2>START OVER</h2>
-    <p class="sub">Replace everything on this device with the sample notebook.</p>
-    <button class="btn danger" id="resetbtn">RESET TO DEFAULTS</button>
+    <p class="sub"><strong>Start empty</strong> clears the sample pieces and everything else, so your first issue is only your own work. <strong>Reset to the sample</strong> puts the demo notebook back.</p>
+    <div class="press-actions">
+      <button class="btn danger" id="emptybtn">START EMPTY</button>
+      <button class="btn quiet" id="resetbtn">RESET TO THE SAMPLE</button>
+    </div>
   </div>
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 125 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 134 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
-// Authors are stored as stable keys ('a', 'b', 'both'), never as display
-// names, so renaming a person leaves every past entry attached to them.
+// A scene is however many people it is. Entries are stored against a stable
+// id, never a spelling, so renaming somebody leaves their past work attached
+// to them. Ids for anyone added after the founding pair are random rather than
+// sequential, because two scenes both handing out "c" would collide the first
+// time they traded a piece.
 var STORAGE_KEY = 'stoop_data_v4';
 // The id of the payload an exported issue carries. It lives here, with the
 // other storage keys, because the store reads it while the app is still
 // starting up: a var assigned further down the bundle is hoisted but empty by
 // then, and the archive silently would not arrive.
 var SEED_ID = 'stoop-seed';
+var PEOPLE_KEY = 'stoop_people';
 var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
-var AUTHORS = ['a', 'b', 'both'];
 
-var names = (function () {
+function defaultPeople() { return [{ id: 'a', name: 'Me' }, { id: 'b', name: 'JJ' }]; }
+
+var people = (function () {
   try {
-    var raw = JSON.parse(localStorage.getItem(NAMES_KEY));
-    if (raw && raw.a && raw.b) return { a: String(raw.a), b: String(raw.b) };
+    var raw = JSON.parse(localStorage.getItem(PEOPLE_KEY));
+    if (Array.isArray(raw) && raw.length) {
+      var ok = raw.filter(function (p) { return p && p.id && p.name; });
+      if (ok.length) return ok;
+    }
+    var old = JSON.parse(localStorage.getItem(NAMES_KEY));
+    if (old && old.a && old.b) {
+      return [{ id: 'a', name: String(old.a) }, { id: 'b', name: String(old.b) }];
+    }
   } catch (e) {}
-  return { a: 'Me', b: 'JJ' };
+  // An issue file opened on a machine that has never seen this app brings its
+  // own roster. Defaulting first would take the ids a and b, and the names
+  // arriving in the file would be refused as already present.
+  try {
+    var seed = readSeed();
+    if (seed && Array.isArray(seed.people) && seed.people.length) {
+      var carried = seed.people.filter(function (p) { return p && p.id && p.name; });
+      if (carried.length) return carried;
+    }
+  } catch (e) {}
+  return defaultPeople();
 })();
 
-var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
-if (AUTHORS.indexOf(currentAuthor) < 0) currentAuthor = 'a';
+function savePeople() {
+  try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {}
+}
+function personIds() { return people.map(function (p) { return p.id; }); }
+function authorIds() { return personIds().concat('both'); }
+function personById(id) {
+  return people.filter(function (p) { return p.id === id; })[0] || null;
+}
+function nameOf(id) {
+  if (id === 'both') return 'Both';
+  var p = personById(id);
+  return p ? p.name : 'Someone';
+}
+function addPerson(name) {
+  var p = { id: 'p' + Math.random().toString(36).slice(2, 7), name: (name || 'Someone').trim() || 'Someone' };
+  people.push(p);
+  savePeople();
+  return p;
+}
 
-function saveNames() { try { localStorage.setItem(NAMES_KEY, JSON.stringify(names)); } catch (e) {} }
-function nameOf(key) { return key === 'both' ? 'Both' : (names[key] || key); }
+var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
+
+// Every byline in the store must belong to somebody on the roster, or a name
+// is lost the moment a piece arrives from another copy of the app.
+function ensurePeople() {
+  var seen = {};
+  personIds().forEach(function (id) { seen[id] = 1; });
+  var found = {};
+  function note(id) { if (id && id !== 'both' && !seen[id]) found[id] = 1; }
+  (state.logs || []).forEach(function (l) { note(l.author); });
+  (state.journal || []).forEach(function (j) { note(j.author); });
+  (state.pieces || []).forEach(function (p) { note(p.byline); });
+  (state.issues || []).forEach(function (i) {
+    note(i.editor);
+    (i.pieces || []).forEach(function (p) { note(p.byline); });
+  });
+  var added = Object.keys(found);
+  added.forEach(function (id) { people.push({ id: id, name: 'Someone' }); });
+  if (added.length) savePeople();
+  if (authorIds().indexOf(currentAuthor) < 0) currentAuthor = people[0].id;
+  return added.length;
+}
+
+// A roster arriving from a backup or a piece bundle is merged by id: a rename
+// on their device does not overwrite what this one calls them.
+function mergePeople(incoming) {
+  if (!Array.isArray(incoming)) return 0;
+  var have = {};
+  personIds().forEach(function (id) { have[id] = 1; });
+  var added = 0;
+  incoming.forEach(function (p) {
+    if (!p || !p.id || !p.name || have[p.id]) return;
+    people.push({ id: String(p.id), name: String(p.name) });
+    have[p.id] = 1;
+    added++;
+  });
+  if (added) savePeople();
+  return added;
+}
 
 // ---------- helpers ----------
 function esc(s) {
@@ -668,6 +758,7 @@ var defaultData = {
   issues: [],
   cycle: { no: '01', bell: seedTs + 6048e5, editor: 'a' },
   address: '',
+  zine: 'STOOP ZINE',
   press: null
 };
 
@@ -677,7 +768,13 @@ var AUTHOR_MAP = { Suds: 'a', Partner: 'b', Together: 'both', Both: 'both' };
 
 function migrate(data) {
   var fallback = Date.now();
-  function fixAuthor(v) { return AUTHOR_MAP[v] || (AUTHORS.indexOf(v) >= 0 ? v : 'a'); }
+  // Keep whatever id a record carries. A byline this device has never seen
+  // belongs to a real person on some other device, and ensurePeople() gives
+  // them a seat rather than filing their work under somebody else's name.
+  function fixAuthor(v) {
+    if (AUTHOR_MAP[v]) return AUTHOR_MAP[v];
+    return (typeof v === 'string' && v) ? v : 'a';
+  }
   function fixTs(item) {
     if (typeof item.ts !== 'number') { item.ts = fallback; fallback -= 6e4; }
     return item;
@@ -701,6 +798,7 @@ function normalize(raw) {
     issues: Array.isArray(raw && raw.issues) ? raw.issues : [],
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
+    zine: (raw && raw.zine) || 'STOOP ZINE',
     press: (raw && raw.press) || null
   };
   return migrate(out);
@@ -722,11 +820,13 @@ var state = (function () {
   if (seed) {
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
-      cycle: seed.cycle, address: seed.address || ''
+      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE'
     });
   }
   return JSON.parse(JSON.stringify(defaultData));
 })();
+
+ensurePeople();
 
 function saveState() {
   try {
@@ -735,6 +835,9 @@ function saveState() {
     toast('Could not save — device storage is full');
   }
 }
+// ---------- photos ----------
+// Where they are kept, how they get in, and how one lands on a page. A
+// photograph in this app exists in order to end up on paper.
 
 // ---------- photo store ----------
 // Photos live in IndexedDB (localStorage caps out around 5 MB); the state
@@ -811,10 +914,7 @@ function sweepPhotos() {
   var live = collectPhotoRefs();
   Object.keys(photoCache).forEach(function (id) { if (!live[id]) photoDel(id); });
 }
-// ---------- photos ----------
-// Intake and placement: dithering on the way in, and the tray that puts a
-// photograph on a page. One concern, because a photograph in this app exists
-// to end up on paper.
+
 
 // ---------- the intake ----------
 // DESIGN.md: "images ship dithered (1-bit and riso-grain, which is also the
@@ -948,32 +1048,61 @@ function placePhoto(page) {
 }
 var activeLogFilter = 'all';
 
-// Author-keyed chips and options carry the current names, so a rename in
-// settings reaches every surface without touching stored entries.
+// The roster is drawn, not written into the HTML: a scene of four needs four
+// chips and four options, and nobody should have to edit a view file to get
+// them.
 function renderNames() {
   var el = document.getElementById('authorname');
   if (el) el.textContent = nameOf(currentAuthor);
 
-  document.querySelectorAll('[data-namechip]').forEach(function (chip) {
-    var key = chip.getAttribute('data-namechip');
-    chip.textContent = nameOf(key);
-  });
-  document.querySelectorAll('[data-nameopt]').forEach(function (opt) {
-    var key = opt.getAttribute('data-nameopt');
-    opt.textContent = (opt.hasAttribute('data-pen') ? '✍ ' : '') + nameOf(key);
-  });
-
-  var a = document.getElementById('namea');
-  var b = document.getElementById('nameb');
-  if (a && document.activeElement !== a) a.value = names.a;
-  if (b && document.activeElement !== b) b.value = names.b;
+  var chips = document.getElementById('logfilters');
+  if (chips) {
+    chips.innerHTML = '<button class="chip' + (activeLogFilter === 'all' ? ' on' : '') +
+      '" data-logfilter="all">all</button>' +
+      authorIds().map(function (id) {
+        return '<button class="chip' + (activeLogFilter === id ? ' on' : '') +
+          '" data-logfilter="' + esc(id) + '">' + esc(nameOf(id)) + '</button>';
+      }).join('');
+  }
 
   var jAuth = document.getElementById('journalauthor');
-  if (jAuth) jAuth.value = currentAuthor;
+  if (jAuth && document.activeElement !== jAuth) {
+    var want = jAuth.value || currentAuthor;
+    jAuth.innerHTML = authorIds().map(function (id) {
+      return '<option value="' + esc(id) + '">\u270d ' + esc(nameOf(id)) + '</option>';
+    }).join('');
+    jAuth.value = authorIds().indexOf(want) >= 0 ? want : currentAuthor;
+  }
+  renderRoster();
+}
+
+// Somebody who has already written something keeps their seat: removing them
+// would orphan a byline, and ensurePeople would only put them back as
+// "Someone".
+function personHasWork(id) {
+  var by = function (x) { return x.author === id || x.byline === id; };
+  return state.logs.some(by) || state.journal.some(by) || state.pieces.some(by) ||
+    state.issues.some(function (i) { return i.editor === id || (i.pieces || []).some(by); });
+}
+
+function renderRoster() {
+  var box = document.getElementById('roster');
+  if (!box || box.contains(document.activeElement)) return;
+  box.innerHTML = people.map(function (p) {
+    var used = personHasWork(p.id);
+    return '<div class="person">' +
+      '<input class="text-input" data-personid="' + esc(p.id) + '" maxlength="24" value="' +
+      esc(p.name) + '">' +
+      (used || people.length < 2
+        ? '<span class="sub">' + (used ? 'in the archive' : '') + '</span>'
+        : '<button class="btn quiet" data-delperson="' + esc(p.id) + '">REMOVE</button>') +
+      '</div>';
+  }).join('');
 }
 
 function toggleAuthor() {
-  currentAuthor = AUTHORS[(AUTHORS.indexOf(currentAuthor) + 1) % AUTHORS.length];
+  var ids = authorIds();
+  currentAuthor = ids[(ids.indexOf(currentAuthor) + 1) % ids.length];
   localStorage.setItem(AUTHOR_KEY, currentAuthor);
   renderNames();
   toast('Now writing as ' + nameOf(currentAuthor));
@@ -1097,6 +1226,7 @@ function addJournal() {
 
 function renderAll() {
   renderNames();
+  if (typeof fillSettings === 'function') fillSettings();
   renderLogs();
   renderProjects();
   renderJournal();
@@ -1225,6 +1355,15 @@ function fitPanels(panels, pages) {
   for (var i = 0; i < pages; i++) {
     out.push(panels && panels[i] ? panels[i] : seedPanel(i));
   }
+  return out;
+}
+
+// The sheet a new cycle starts on: the section headings survive as prompts,
+// the body text does not. Seeded bodies on a fresh draft are what made a
+// freshly published issue look printable when it was empty.
+function blankPanels(pages) {
+  var out = [];
+  for (var i = 0; i < pages; i++) out.push({ h: seedPanel(i).h, body: '', photo: null });
   return out;
 }
 
@@ -1406,7 +1545,29 @@ function renderPress() {
   layoutSheets();
   paintPanels();
   checkFit();
+  pressStatus();
   renderTray();
+}
+
+// Ringing the bell archives the issue and starts the next one, so the sheet on
+// screen is never the issue that just went to the shelf. Say so, because the
+// obvious order — write it, publish it, print it — otherwise hands somebody
+// fifty blank copies.
+function sheetIsBlank() {
+  return pressState().panels.every(function (p) {
+    return !String(p.body || '').trim() && !p.photo;
+  });
+}
+
+function pressStatus() {
+  var el = document.getElementById('pressstatus');
+  if (!el) return;
+  var last = lastPublished();
+  var blank = sheetIsBlank();
+  el.textContent = (blank ? 'This sheet is empty. ' : '') +
+    'You are looking at the draft for issue \u2116' + pressState().issue + '.' +
+    (last ? ' Issue \u2116' + last.no + ' is published — print that one from the shelf.' : '');
+  el.classList.toggle('bad', blank);
 }
 
 // ---------- the fit meter ----------
@@ -1638,7 +1799,7 @@ function compileIssue() {
   var inner = pages - 2;
 
   ps.issue = c.no;
-  ps.panels[0].h = ps.title || 'STOOP ZINE';
+  ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
 
   pieces.slice(0, inner).forEach(function (piece, i) {
     var panel = ps.panels[i + 1];
@@ -1684,7 +1845,7 @@ function buildIssue() {
   var note = document.getElementById('editornote');
   state.issues.push({
     no: ps.issue,
-    title: ps.panels[0] ? ps.panels[0].h : 'STOOP ZINE',
+    title: (ps.panels[0] && ps.panels[0].h) || state.zine || 'STOOP ZINE',
     format: ps.format,
     hand: ps.hand,
     editor: c.editor,
@@ -1705,7 +1866,8 @@ function buildIssue() {
   if (note) note.value = '';
 
   ps.issue = c.no;
-  ps.panels = fitPanels([], formatOf(ps.format).pages);
+  ps.panels = blankPanels(formatOf(ps.format).pages);
+  ps.panels[0].h = state.zine || 'STOOP ZINE';
   savePress();
   renderAll();
   location.hash = '#shelf';
@@ -1807,6 +1969,22 @@ function readingHtml(issue, photos) {
   if (back && back.body) out += '<footer class="reading-foot"><p>' + esc(back.body) + '</p></footer>';
   return out + '</article>';
 }
+
+// What the press is about to commit, judged against what is already on the
+// shelf. The draft on screen is never the issue that just went up, so anything
+// that spends paper, ink or a file asks first.
+function lastPublished() {
+  return state.issues.length ? state.issues[state.issues.length - 1] : null;
+}
+
+function confirmSheet(what) {
+  if (!sheetIsBlank()) return true;
+  var last = lastPublished();
+  return confirm('This sheet is empty — it is the draft for issue \u2116' + pressState().issue + '.' +
+    (last ? '\n\nIssue \u2116' + last.no + ' is published. Print that from the shelf instead.' : '') +
+    '\n\n' + what + ' anyway?');
+}
+
 
 // ---------- the view ----------
 var openIssueNo = null;
@@ -2687,7 +2865,8 @@ function saveFlyer(title, issue, url, photoId, name) {
 function sceneSlug() {
   var a = (state.address || '').replace(/\/+$/, '');
   var last = a.split('/').filter(Boolean).pop();
-  return (last || 'stoop').toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  var name = last || state.zine || 'stoop';
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'stoop';
 }
 
 function issueUrl(no) {
@@ -2761,7 +2940,7 @@ function exportIssueFile(no) {
   });
   var html = pageWithSeed({
     stoop: 'issue', version: 1, no: no,
-    names: names, address: state.address || '',
+    people: people, address: state.address || '', zine: state.zine || '',
     issues: upTo,
     // The cycle handed on follows the issue in the file, not the shelf it left
     // behind. Somebody given №01 is holding the desk for №02, whatever number
@@ -2781,7 +2960,7 @@ function exportPieceBundle(id) {
   if (!piece) return;
   var html = pageWithSeed({
     stoop: 'piece', version: 1,
-    names: names, address: state.address || '',
+    people: people, address: state.address || '', zine: state.zine || '',
     pieces: [piece], photos: photosFor([piece]), open: '#desk'
   });
   download('piece-' + nameOf(piece.byline).toLowerCase().replace(/[^a-z0-9]+/g, '-') +
@@ -2819,6 +2998,9 @@ function importSeed(seed) {
     addedIssues++;
   });
   if (seed.address && !state.address) state.address = seed.address;
+  if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
+  mergePeople(seed.people);
+  ensurePeople();
 
   saveState();
   renderAll();
@@ -2851,10 +3033,12 @@ function hydrateFromSeed(seed) {
   var ids = Object.keys(photos).filter(function (id) { return !photoCache[id]; });
   ids.forEach(function (id) { photoPut(id, photos[id]); });
 
-  if (seed.names && seed.names.a && seed.names.b && !localStorage.getItem(NAMES_KEY)) {
-    names = { a: String(seed.names.a), b: String(seed.names.b) };
-    saveNames();
+  // The roster rides along so a byline in the file still has a name on it.
+  mergePeople(seed.people);
+  if (seed.names && seed.names.a && seed.names.b) {
+    mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
   }
+  ensurePeople();
   if (seed.read) openIssueNo = seed.read;
   if (seed.open && !location.hash) location.hash = seed.open;
 }
@@ -2873,7 +3057,7 @@ function exportBackup() {
   var payload = {
     version: BACKUP_VERSION,
     exported: new Date().toISOString(),
-    names: names,
+    people: people,
     logs: state.logs,
     projects: state.projects,
     journal: state.journal,
@@ -2881,6 +3065,7 @@ function exportBackup() {
     issues: state.issues,
     cycle: state.cycle,
     address: state.address,
+    zine: state.zine,
     press: state.press,
     photos: photos
   };
@@ -2924,6 +3109,7 @@ function importBackup(raw, mode) {
     state.issues = incoming.issues;
     state.cycle = incoming.cycle;
     state.address = incoming.address;
+    state.zine = incoming.zine;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -2941,6 +3127,8 @@ function importBackup(raw, mode) {
       if (!state.issues.some(function (x) { return x.no === iss.no; })) state.issues.push(iss);
     });
     if (!state.address) state.address = incoming.address;
+    if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
+    mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;
     }
@@ -2948,10 +3136,17 @@ function importBackup(raw, mode) {
     added = Math.max(0, after - before) + added;
   }
 
-  if (raw && raw.names && raw.names.a && raw.names.b && mode === 'replace') {
-    names = { a: String(raw.names.a), b: String(raw.names.b) };
-    saveNames();
+  if (mode === 'replace' && Array.isArray(raw && raw.people) && raw.people.length) {
+    people = raw.people.filter(function (p) { return p && p.id && p.name; });
+    savePeople();
+  } else {
+    mergePeople(raw && raw.people);
   }
+  // A backup written before the roster existed carries two names instead.
+  if (raw && raw.names && raw.names.a && raw.names.b) {
+    mergePeople([{ id: 'a', name: String(raw.names.a) }, { id: 'b', name: String(raw.names.b) }]);
+  }
+  ensurePeople();
 
   saveState();
   renderAll();
@@ -2992,16 +3187,27 @@ function resetData() {
 }
 
 function saveNameFields() {
-  var a = document.getElementById('namea');
-  var b = document.getElementById('nameb');
-  names.a = (a && a.value.trim()) || 'Me';
-  names.b = (b && b.value.trim()) || 'Partner';
+  document.querySelectorAll('[data-personid]').forEach(function (input) {
+    var p = personById(input.getAttribute('data-personid'));
+    if (p) p.name = input.value.trim() || p.name;
+  });
+  savePeople();
   var addr = document.getElementById('addressinput');
   if (addr) state.address = addr.value.trim();
-  saveNames();
   saveState();
   renderAll();
-  toast('Names saved');
+  toast('Saved');
+}
+
+// Start empty is the opposite of reset: no sample pieces, nothing borrowed.
+function startEmpty() {
+  if (!confirm('Clear everything on this device — logs, journal, projects, pieces and every published issue — and start with a blank press?')) return;
+  state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
+    address: state.address, zine: state.zine });
+  saveState();
+  sweepPhotos();
+  renderAll();
+  toast('Empty. The first issue is yours alone.');
 }
 // ---------- router ----------
 var views = document.querySelectorAll('section[data-view]');
@@ -3096,15 +3302,21 @@ document.addEventListener('click', function (e) {
   if ((el = hit(t, '[data-piecebundle]'))) return exportPieceBundle(el.getAttribute('data-piecebundle'));
   if (hit(t, '#closereader')) return readIssue(openIssueNo);
 
-  if (hit(t, '#printzinebtn')) { capturePanels(); return window.print(); }
+  if (hit(t, '#printzinebtn')) {
+    capturePanels();
+    if (!confirmSheet('Print')) return;
+    return window.print();
+  }
   if (hit(t, '#pdfzinebtn')) {
     capturePanels();
+    if (!confirmSheet('Save a PDF')) return;
     var ps = pressState();
     return savePdf(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), ps.issue,
       sceneSlug() + '-' + ps.issue + '.pdf');
   }
   if (hit(t, '#flyerbtn')) {
     capturePanels();
+    if (!confirmSheet('Make a flyer')) return;
     var fps = pressState();
     var cover = fps.panels[0] || {};
     return saveFlyer(cover.h, fps.issue, issueUrl(fps.issue), cover.photo,
@@ -3118,7 +3330,29 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();
   if (hit(t, '#mergebtn')) { document.getElementById('importfile').dataset.mode = 'merge'; return document.getElementById('importfile').click(); }
   if (hit(t, '#replacebtn')) { document.getElementById('importfile').dataset.mode = 'replace'; return document.getElementById('importfile').click(); }
-  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2')) return saveNameFields();
+  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) {
+    var zn = document.getElementById('zinename');
+    if (zn && zn.value.trim()) state.zine = zn.value.trim();
+    return saveNameFields();
+  }
+  if (hit(t, '#addpersonbtn')) {
+    var np = document.getElementById('newperson');
+    if (!np || !np.value.trim()) { toast('Give them a name first'); return; }
+    addPerson(np.value.trim());
+    np.value = '';
+    renderAll();
+    toast('Added. They can hold the desk like anybody else.');
+    return;
+  }
+  if ((el = hit(t, '[data-delperson]'))) {
+    var pid = el.getAttribute('data-delperson');
+    people = people.filter(function (x) { return x.id !== pid; });
+    savePeople();
+    ensurePeople();
+    renderAll();
+    return;
+  }
+  if (hit(t, '#emptybtn')) return startEmpty();
   if (hit(t, '#resetbtn')) return resetData();
 });
 
@@ -3136,8 +3370,13 @@ document.addEventListener('keydown', function (e) {
   if (e.key !== 'Enter') return;
   if (e.target.id === 'loginput') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }
-  else if (e.target.id === 'namea' || e.target.id === 'nameb' || e.target.id === 'addressinput') {
+  else if (e.target.id === 'addressinput' || e.target.id === 'zinename' ||
+    e.target.hasAttribute('data-personid')) {
     e.preventDefault(); saveNameFields();
+  }
+  else if (e.target.id === 'newperson') {
+    e.preventDefault();
+    if (e.target.value.trim()) { addPerson(e.target.value.trim()); e.target.value = ''; renderAll(); }
   }
 });
 
@@ -3200,6 +3439,8 @@ function fillFormats() {
 function fillSettings() {
   var addr = document.getElementById('addressinput');
   if (addr && document.activeElement !== addr) addr.value = state.address || '';
+  var zn = document.getElementById('zinename');
+  if (zn && document.activeElement !== zn) zn.value = state.zine || '';
 }
 
 // Photos load before the first paint so renders stay synchronous; the app is
@@ -3209,6 +3450,7 @@ photoLoadAll().then(function () {
   fillFormats();
   fillSettings();
   renderAll();
+  fillSettings();
   showView();
 });
 

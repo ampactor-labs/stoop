@@ -19,10 +19,10 @@ module.exports = async function features(browser, ok) {
 
   // Renaming reaches every surface, and past entries keep their author.
   await go('#backup');
-  await page.fill('#namea', 'Ampactor');
-  await page.fill('#nameb', 'JJ');
+  await page.fill('[data-personid="a"]', 'Ampactor');
+  await page.fill('[data-personid="b"]', 'JJ');
   await page.click('#savenamesbtn');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   ok('rename reaches the filter chips', (await page.locator('[data-logfilter="b"]').innerText()).trim() === 'JJ');
   ok('rename reaches the author toggle', (await page.locator('#authorname').innerText()).trim() === 'Ampactor');
 

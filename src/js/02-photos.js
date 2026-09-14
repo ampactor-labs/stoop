@@ -1,7 +1,83 @@
 // ---------- photos ----------
-// Intake and placement: dithering on the way in, and the tray that puts a
-// photograph on a page. One concern, because a photograph in this app exists
-// to end up on paper.
+// Where they are kept, how they get in, and how one lands on a page. A
+// photograph in this app exists in order to end up on paper.
+
+// ---------- photo store ----------
+// Photos live in IndexedDB (localStorage caps out around 5 MB); the state
+// above holds only their ids. Everything is dithered to 1-bit on intake, so
+// a full-page photo is tens of kilobytes and prints on any copier.
+var PHOTO_DB = 'stoop_photos';
+var PHOTO_STORE = 'photos';
+var photoCache = {};
+
+function openPhotoDb() {
+  return new Promise(function (resolve, reject) {
+    if (!window.indexedDB) { reject(new Error('no indexeddb')); return; }
+    var req = indexedDB.open(PHOTO_DB, 1);
+    req.onupgradeneeded = function () {
+      if (!req.result.objectStoreNames.contains(PHOTO_STORE)) req.result.createObjectStore(PHOTO_STORE);
+    };
+    req.onsuccess = function () { resolve(req.result); };
+    req.onerror = function () { reject(req.error); };
+  });
+}
+
+function photoTx(mode, fn) {
+  return openPhotoDb().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var tx = db.transaction(PHOTO_STORE, mode);
+      var req = fn(tx.objectStore(PHOTO_STORE));
+      tx.oncomplete = function () { resolve(req && req.result); };
+      tx.onerror = function () { reject(tx.error); };
+    });
+  });
+}
+
+function photoPut(id, dataUrl) {
+  photoCache[id] = dataUrl;
+  return photoTx('readwrite', function (s) { return s.put(dataUrl, id); })
+    .catch(function () { toast('Photo kept in memory only — storage unavailable'); });
+}
+function photoDel(id) {
+  delete photoCache[id];
+  return photoTx('readwrite', function (s) { return s.delete(id); }).catch(function () {});
+}
+function photoLoadAll() {
+  return openPhotoDb().then(function (db) {
+    return new Promise(function (resolve) {
+      var tx = db.transaction(PHOTO_STORE, 'readonly');
+      var store = tx.objectStore(PHOTO_STORE);
+      var keys = store.getAllKeys();
+      var vals = store.getAll();
+      tx.oncomplete = function () {
+        (keys.result || []).forEach(function (k, i) { photoCache[k] = vals.result[i]; });
+        resolve();
+      };
+      tx.onerror = function () { resolve(); };
+    });
+  }).catch(function () {});
+}
+
+// Drop photo blobs no entry or zine panel points at any more.
+function collectPhotoRefs() {
+  var live = {};
+  function keep(p) { if (p && p.photo) live[p.photo] = 1; }
+  state.logs.forEach(keep);
+  state.pieces.forEach(keep);
+  if (state.press && state.press.panels) state.press.panels.forEach(keep);
+  // A back issue is the archive. Sweeping a photo out from under a published
+  // issue would rewrite history, so every shelved panel pins its photo.
+  state.issues.forEach(function (iss) {
+    (iss.panels || []).forEach(keep);
+    (iss.pieces || []).forEach(keep);
+  });
+  return live;
+}
+function sweepPhotos() {
+  var live = collectPhotoRefs();
+  Object.keys(photoCache).forEach(function (id) { if (!live[id]) photoDel(id); });
+}
+
 
 // ---------- the intake ----------
 // DESIGN.md: "images ship dithered (1-bit and riso-grain, which is also the

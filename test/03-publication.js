@@ -68,7 +68,17 @@ module.exports = async function publication(browser, ok) {
   ok('the reading view is the other substrate, unimposed',
      (await page.locator('.reading .panel').count()) === 0);
 
-  // Changing the vessel must not cost a single typed word.
+  // Changing the vessel must not cost a single typed word. Publishing leaves a
+  // blank draft behind by design, so there has to be something on the sheet
+  // before there is anything to re-flow.
+  await go('#desk');
+  await page.fill('#piecetitle', 'Side B: Brownouts');
+  await page.fill('#piecebody', 'Five tracks, dubbed to tape for whoever asks, links for the rest.');
+  await page.click('#piecesubmitbtn');
+  await page.waitForTimeout(200);
+  await page.click('#compileissuebtn');
+  await page.waitForTimeout(400);
+
   await go('#press');
   const before = await page.locator('[data-page="2"] .body').innerText();
   await page.selectOption('#formatsel', 'saddle16');
