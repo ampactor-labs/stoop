@@ -149,3 +149,17 @@
   body.reprinting main, body.reprinting header.chrome { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
 }
+
+/* Landing: an issue file opens as the issue, with the app's chrome switched
+   off. The reader is holding paper; the tabs can wait. */
+body.landing header.chrome { display: none; }
+body.landing main { padding-top: 2.4rem; }
+.landing-tail { max-width: 38rem; margin: 2.2rem auto 0; }
+.landing-note { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--bone); line-height: 1.6; border-left: 3px solid var(--orange); padding-left: .9rem; }
+.landing-verbs { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.2rem; }
+.btn.big { font-size: 1rem; padding: .8rem 1.2rem; }
+.btn.quiet { border-color: var(--grey); color: var(--grey); }
+.btn.quiet:hover { background: var(--grey); color: var(--night); }
+
+/* A panel that is about to receive something says so. */
+.panel.dropping { outline: 3px dashed var(--orange); outline-offset: -3px; }

@@ -15,6 +15,8 @@ function showView() {
     views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === 'log'); });
   }
   navs.forEach(function (a) { a.classList.toggle('here', a.getAttribute('data-nav') === h); });
+  document.body.classList.toggle('landing', h === 'issue');
+  if (h === 'issue') renderLanding();
   if (h === 'press') renderPress();
   window.scrollTo(0, 0);
 }
@@ -37,6 +39,10 @@ document.addEventListener('click', function (e) {
     pressState().panels[Number(el.getAttribute('data-delpanelpic')) - 1].photo = null;
     savePress(); renderPress(); return;
   }
+
+  if (hit(t, '#landmake')) return leaveLanding('#desk');
+  if (hit(t, '#landown')) return startOwn();
+  if (hit(t, '#landshelf')) return leaveLanding('#shelf');
 
   if (hit(t, '#authortoggle')) return toggleAuthor();
   if (hit(t, '#logaddbtn')) return addLog();

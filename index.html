@@ -340,6 +340,20 @@
   body.reprinting main, body.reprinting header.chrome { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
 }
+
+/* Landing: an issue file opens as the issue, with the app's chrome switched
+   off. The reader is holding paper; the tabs can wait. */
+body.landing header.chrome { display: none; }
+body.landing main { padding-top: 2.4rem; }
+.landing-tail { max-width: 38rem; margin: 2.2rem auto 0; }
+.landing-note { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--bone); line-height: 1.6; border-left: 3px solid var(--orange); padding-left: .9rem; }
+.landing-verbs { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.2rem; }
+.btn.big { font-size: 1rem; padding: .8rem 1.2rem; }
+.btn.quiet { border-color: var(--grey); color: var(--grey); }
+.btn.quiet:hover { background: var(--grey); color: var(--night); }
+
+/* A panel that is about to receive something says so. */
+.panel.dropping { outline: 3px dashed var(--orange); outline-offset: -3px; }
 /* ---------- the paste-up ---------- */
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
@@ -426,6 +440,9 @@
 
 <main>
 
+<section data-view="issue">
+  <div id="landing"></div>
+</section>
 <section data-view="log">
   <div class="view-head">
     <h1>DAILY LOG</h1>
@@ -692,7 +709,7 @@
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 174 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 182 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -989,7 +1006,11 @@ function photoLoadAll() {
 // Drop photo blobs no entry or zine panel points at any more.
 function collectPhotoRefs() {
   var live = {};
-  function keep(p) { if (p && p.photo) live[p.photo] = 1; }
+  function keep(p) {
+    if (!p) return;
+    if (p.photo) live[p.photo] = 1;
+    (p.els || []).forEach(function (e) { if (e && e.photo) live[e.photo] = 1; });
+  }
   state.logs.forEach(keep);
   state.pieces.forEach(keep);
   if (state.press && state.press.panels) state.press.panels.forEach(keep);
@@ -1984,6 +2005,10 @@ function addEl(page, kind, extra) {
   }
   if (kind === 'photo') el.photo = extra && extra.photo;
   if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
+  if (extra && extra.at) {
+    el.x = Math.max(-0.2, Math.min(1, extra.at.x - el.w / 2));
+    el.y = Math.max(-0.2, Math.min(1, extra.at.y - el.h / 2));
+  }
   els.push(el);
   pasteSel = el.id;
   savePress();
@@ -2542,6 +2567,81 @@ document.addEventListener('pointerdown', function (ev) {
   var page = Number(p.getAttribute('data-page'));
   if (page && page !== pastePage) { pastePage = page; renderInspector(); }
 });
+// ---------- things that land on the sheet ----------
+// The sheet accepts what is dropped on it. A photograph dragged in from the
+// desktop is dithered and glued down where it fell; text dragged or pasted in
+// becomes a cutting there. No tray, no arming, no button to press first: the
+// paper is the interface, and putting a thing on paper means putting it on
+// the paper.
+
+function dropPoint(panelEl, ev) {
+  var p = panelLocal(panelEl, ev.clientX, ev.clientY);
+  return { x: p.x / p.w, y: p.y / p.h };
+}
+
+function acceptFiles(page, files, at) {
+  intakePhotos(files).then(function (ids) {
+    ids.forEach(function (id, i) {
+      addEl(page, 'photo', { photo: id, at: at ? { x: at.x + i * 0.05, y: at.y + i * 0.05 } : null });
+    });
+    if (!ids.length) return;
+    renderPress();
+    toast(ids.length === 1 ? 'Glued down' : ids.length + ' photographs glued down');
+  });
+}
+
+function acceptText(page, text, at) {
+  var t = String(text || '').trim();
+  if (!t) return;
+  // A line is a headline; a paragraph is typewriter copy.
+  addEl(page, 'text', { text: t.slice(0, 4000), voice: t.length > 70 ? 'type' : 'head', at: at });
+  renderPress();
+  toast('Cutting glued down');
+}
+
+document.addEventListener('dragover', function (ev) {
+  var panel = ev.target.closest && ev.target.closest('.panel');
+  if (!panel) return;
+  ev.preventDefault();
+  panel.classList.add('dropping');
+});
+
+document.addEventListener('dragleave', function (ev) {
+  var panel = ev.target.closest && ev.target.closest('.panel');
+  if (panel) panel.classList.remove('dropping');
+});
+
+document.addEventListener('drop', function (ev) {
+  var panel = ev.target.closest && ev.target.closest('.panel');
+  if (!panel) return;
+  ev.preventDefault();
+  panel.classList.remove('dropping');
+  var page = Number(panel.getAttribute('data-page'));
+  var at = dropPoint(panel, ev);
+  var dt = ev.dataTransfer;
+  if (!dt) return;
+  if (dt.files && dt.files.length) { acceptFiles(page, dt.files, at); return; }
+  var text = dt.getData('text/plain');
+  if (text) acceptText(page, text, at);
+});
+
+// Paste lands on the panel last touched, unless a caret has somewhere better
+// to put it.
+document.addEventListener('paste', function (ev) {
+  var a = document.activeElement;
+  if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+  var zone = document.getElementById('sheetzone');
+  if (!zone || !zone.offsetParent) return;
+  var cd = ev.clipboardData;
+  if (!cd) return;
+  var files = [];
+  for (var i = 0; cd.items && i < cd.items.length; i++) {
+    if (cd.items[i].kind === 'file') files.push(cd.items[i].getAsFile());
+  }
+  if (files.length) { ev.preventDefault(); acceptFiles(pastePage, files, null); return; }
+  var text = cd.getData('text/plain');
+  if (text) { ev.preventDefault(); acceptText(pastePage, text, null); }
+});
 // ---------- the desk ----------
 // Exactly one person holds the final cut on any given issue. At two people the
 // chair alternates by issue parity, which is simpler than rotation and needs
@@ -2938,6 +3038,55 @@ function reprintIssue(no) {
     var ps = pressState();
     if (style) style.textContent = '@page { size: ' + paperOf(ps.format).css + '; margin: 0; }';
   }, 500);
+}
+// ---------- landing ----------
+// Somebody scanned the back of a zine, or was handed the file. What they were
+// holding was paper, so what they get is the issue and nothing else: no
+// header, no tabs, no shelf, no settings. At the end of it the press they are
+// already holding offers itself, because that is the whole point of the file.
+function landingIssue() {
+  var no = openIssueNo || (state.issues.length ? state.issues[state.issues.length - 1].no : null);
+  return no ? issueByNo(no) : null;
+}
+
+function renderLanding() {
+  var box = document.getElementById('landing');
+  if (!box) return;
+  var iss = landingIssue();
+  if (!iss) { box.innerHTML = ''; return; }
+  var next = cycleState().no;
+  box.innerHTML = readingHtml(iss) +
+    '<div class="landing-tail">' +
+    '<p class="landing-note">' + esc(iss.title || 'This issue') +
+    ' was made with the press it is carried in. This file is the issue, every issue before it, ' +
+    'and a working press. Nothing was uploaded, nobody signed up, and the copy you are reading ' +
+    'is the whole thing.</p>' +
+    '<div class="landing-verbs">' +
+    '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
+    '<button class="btn big" id="landown">START YOUR OWN</button>' +
+    '<button class="btn quiet big" id="landshelf">THE SHELF</button>' +
+    '</div></div>';
+}
+
+function leaveLanding(hash) {
+  document.body.classList.remove('landing');
+  location.hash = hash;
+}
+
+// Your own zine, on the press you were handed. The issue that got you here is
+// cleared rather than kept, so your first file carries only your own work and
+// not somebody else's №01 in its archive.
+function startOwn() {
+  if (!confirm('Start your own zine on this device? The issue you were handed is cleared, ' +
+    'so the first file you hand on carries only your own work.')) return;
+  people = defaultPeople().slice(0, 1);
+  savePeople();
+  state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id } });
+  saveState();
+  sweepPhotos();
+  renderAll();
+  leaveLanding('#desk');
+  toast('Yours. Name it under settings whenever you like.');
 }
 // ---------- the code on the back cover ----------
 // The printed issue carries its own address, which needs a QR encoder, and the
@@ -3946,7 +4095,11 @@ function photosFor(objs) {
   var out = {};
   objs.forEach(function (o) {
     (o.panels || []).concat(o.pieces || []).forEach(function (p) {
-      if (p && p.photo && photoCache[p.photo]) out[p.photo] = photoCache[p.photo];
+      if (!p) return;
+      if (p.photo && photoCache[p.photo]) out[p.photo] = photoCache[p.photo];
+      (p.els || []).forEach(function (e) {
+        if (e && e.photo && photoCache[e.photo]) out[e.photo] = photoCache[e.photo];
+      });
     });
     if (o.photo && photoCache[o.photo]) out[o.photo] = photoCache[o.photo];
   });
@@ -4101,7 +4254,10 @@ function hydrateFromSeed(seed) {
   }
   ensurePeople();
   if (seed.read) openIssueNo = seed.read;
-  if (seed.open && !location.hash) location.hash = seed.open;
+  if (!location.hash) {
+    if (seed.stoop === 'issue' && seed.read) location.hash = '#issue';
+    else if (seed.open) location.hash = seed.open;
+  }
 }
 // ---------- carrying the notebook between devices ----------
 // Two people means two browsers, and a backup that replaces the other person's
@@ -4287,6 +4443,8 @@ function showView() {
     views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === 'log'); });
   }
   navs.forEach(function (a) { a.classList.toggle('here', a.getAttribute('data-nav') === h); });
+  document.body.classList.toggle('landing', h === 'issue');
+  if (h === 'issue') renderLanding();
   if (h === 'press') renderPress();
   window.scrollTo(0, 0);
 }
@@ -4309,6 +4467,10 @@ document.addEventListener('click', function (e) {
     pressState().panels[Number(el.getAttribute('data-delpanelpic')) - 1].photo = null;
     savePress(); renderPress(); return;
   }
+
+  if (hit(t, '#landmake')) return leaveLanding('#desk');
+  if (hit(t, '#landown')) return startOwn();
+  if (hit(t, '#landshelf')) return leaveLanding('#shelf');
 
   if (hit(t, '#authortoggle')) return toggleAuthor();
   if (hit(t, '#logaddbtn')) return addLog();

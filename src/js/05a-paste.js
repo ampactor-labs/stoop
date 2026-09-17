@@ -134,6 +134,10 @@ function addEl(page, kind, extra) {
   }
   if (kind === 'photo') el.photo = extra && extra.photo;
   if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
+  if (extra && extra.at) {
+    el.x = Math.max(-0.2, Math.min(1, extra.at.x - el.w / 2));
+    el.y = Math.max(-0.2, Math.min(1, extra.at.y - el.h / 2));
+  }
   els.push(el);
   pasteSel = el.id;
   savePress();

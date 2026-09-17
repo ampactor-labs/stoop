@@ -69,10 +69,22 @@ module.exports = async function selfcarry(browser, ok) {
 
   await other.goto('file://' + file);
   await other.waitForTimeout(900);
-  ok('the file opens on the shelf', (await other.evaluate(() => location.hash)) === '#shelf');
-  ok('the archive travelled with it', (await other.locator('.shelf-row').count()) === 1);
+  ok('THE FILE OPENS AS THE ISSUE, NOT AS AN APP',
+     (await other.evaluate(() => location.hash)) === '#issue',
+     await other.evaluate(() => location.hash));
+  ok('with no chrome around it',
+     (await other.evaluate(() => getComputedStyle(document.querySelector('header.chrome')).display)) === 'none');
   ok('the issue reads',
-     /orange behind you|handed over as a file/i.test(await other.locator('.reading').innerText()));
+     /orange behind you|handed over as a file/i.test(await other.locator('#landing .reading').innerText()));
+  ok('and the press it rode in offers itself',
+     /MAKE №02/.test(await other.locator('#landmake').innerText()),
+     await other.locator('#landmake').innerText());
+  await other.click('#landmake');
+  await other.waitForTimeout(350);
+  ok('MAKE №02 lands you at the desk, chrome back on',
+     (await other.evaluate(() => location.hash + ' ' + document.body.classList.contains('landing'))) === '#desk false');
+  await go2('#shelf');
+  ok('the archive travelled with it', (await other.locator('.shelf-row').count()) === 1);
 
   // And now the claim that matters: it is a press, not a document.
   await go2('#desk');

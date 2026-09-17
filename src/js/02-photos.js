@@ -61,7 +61,11 @@ function photoLoadAll() {
 // Drop photo blobs no entry or zine panel points at any more.
 function collectPhotoRefs() {
   var live = {};
-  function keep(p) { if (p && p.photo) live[p.photo] = 1; }
+  function keep(p) {
+    if (!p) return;
+    if (p.photo) live[p.photo] = 1;
+    (p.els || []).forEach(function (e) { if (e && e.photo) live[e.photo] = 1; });
+  }
   state.logs.forEach(keep);
   state.pieces.forEach(keep);
   if (state.press && state.press.panels) state.press.panels.forEach(keep);

@@ -28,7 +28,11 @@ function photosFor(objs) {
   var out = {};
   objs.forEach(function (o) {
     (o.panels || []).concat(o.pieces || []).forEach(function (p) {
-      if (p && p.photo && photoCache[p.photo]) out[p.photo] = photoCache[p.photo];
+      if (!p) return;
+      if (p.photo && photoCache[p.photo]) out[p.photo] = photoCache[p.photo];
+      (p.els || []).forEach(function (e) {
+        if (e && e.photo && photoCache[e.photo]) out[e.photo] = photoCache[e.photo];
+      });
     });
     if (o.photo && photoCache[o.photo]) out[o.photo] = photoCache[o.photo];
   });
@@ -183,5 +187,8 @@ function hydrateFromSeed(seed) {
   }
   ensurePeople();
   if (seed.read) openIssueNo = seed.read;
-  if (seed.open && !location.hash) location.hash = seed.open;
+  if (!location.hash) {
+    if (seed.stoop === 'issue' && seed.read) location.hash = '#issue';
+    else if (seed.open) location.hash = seed.open;
+  }
 }

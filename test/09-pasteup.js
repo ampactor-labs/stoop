@@ -121,6 +121,46 @@ module.exports = async function pasteup(browser, ok) {
   await page.waitForTimeout(350);
   ok('and redo puts it back', (await elCount()) === had + 1);
 
+  // ---- the sheet accepts what lands on it, where it lands
+  const target = page.locator('[data-page="7"]');
+  await target.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  const tb = await target.boundingBox();
+  const dtText = await page.evaluateHandle(() => {
+    const dt = new DataTransfer();
+    dt.setData('text/plain', 'NO GODS NO MASTERS');
+    return dt;
+  });
+  await page.dispatchEvent('[data-page="7"]', 'drop', {
+    dataTransfer: dtText, clientX: tb.x + tb.width * 0.7, clientY: tb.y + tb.height * 0.7
+  });
+  await page.waitForTimeout(400);
+  const dropped = await geom('[data-page="7"] .el');
+  ok('TEXT DROPPED ON A PANEL IS A CUTTING WHERE IT LANDED',
+     dropped && parseFloat(dropped.left) > 30 && parseFloat(dropped.top) > 40,
+     dropped ? dropped.left + ' / ' + dropped.top : 'nothing landed');
+  ok('and a short line arrives as a headline',
+     (await page.locator('[data-page="7"] .eltext.v-head').count()) === 1);
+
+  const dtFile = await page.evaluateHandle(async () => {
+    const c = document.createElement('canvas');
+    c.width = 400; c.height = 300;
+    const x = c.getContext('2d');
+    const g = x.createLinearGradient(0, 0, 0, 300);
+    g.addColorStop(0, '#fff'); g.addColorStop(1, '#000');
+    x.fillStyle = g; x.fillRect(0, 0, 400, 300);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+    const dt = new DataTransfer();
+    dt.items.add(new File([blob], 'drop.jpg', { type: 'image/jpeg' }));
+    return dt;
+  });
+  await page.dispatchEvent('[data-page="7"]', 'drop', {
+    dataTransfer: dtFile, clientX: tb.x + tb.width * 0.3, clientY: tb.y + tb.height * 0.3
+  });
+  await page.waitForTimeout(1800);
+  ok('A PHOTOGRAPH DROPPED ON A PANEL IS DITHERED AND GLUED DOWN',
+     (await page.locator('[data-page="7"] .el-photo .elphoto').count()) === 1);
+
   // ---- the promise the whole press is built on
   const keep = await geom('[data-page="1"] .el');
   await page.selectOption('#formatsel', 'saddle16');
@@ -173,6 +213,14 @@ module.exports = async function pasteup(browser, ok) {
     return panels.reduce((n, p) => n + ((p.els || []).length), 0);
   });
   ok('with every cutting still on it', carried >= 3, carried + ' cuttings in the seed');
+  const photoTravelled = await other.evaluate(() => {
+    const seed = JSON.parse(document.getElementById('stoop-seed').textContent);
+    const panels = (seed.issues[0] || {}).panels || [];
+    const ids = [];
+    panels.forEach(p => (p.els || []).forEach(e => { if (e.kind === 'photo') ids.push(e.photo); }));
+    return ids.length > 0 && ids.every(id => seed.photos && seed.photos[id]);
+  });
+  ok('AND A GLUED-DOWN PHOTOGRAPH TRAVELS WITH IT', photoTravelled);
   await fresh.close();
 
   ok('no script errors anywhere in the paste-up', errs.length === 0, errs.slice(0, 3).join(' | '));
