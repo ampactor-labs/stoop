@@ -86,14 +86,41 @@ module.exports = async function features(browser, ok) {
   ok('panel text survives a reload', /green sauce/.test(await page.locator('[data-page="6"] .body').innerText()));
   ok('a placed photo survives a reload', (await page.locator('[data-page="1"] .panel-photo').count()) === 1);
 
-  // The imposition is the one the hand kit in press/ uses. check.sh holds the
-  // two equal in source; this holds them equal in the rendered sheet.
-  const slots = await page.evaluate(() => {
-    const sheet = document.querySelector('#sheetzone .sheet');
-    return sheet ? [...sheet.querySelectorAll('.panel')].map(el => +el.dataset.page) : [];
-  });
-  ok('the rendered sheet imposes as preset A',
+  // The imposition is the one the hand kit in press/ uses, and it belongs to
+  // paper. On screen the pages read in order, right way up; what reaches the
+  // printer is the imposed sheet. window.print is stubbed so the print zone
+  // stays populated for inspection, and print media is emulated to prove it
+  // is the only thing that would come out.
+  const onScreen = await page.evaluate(() =>
+    [...document.querySelectorAll('#sheetzone .panel')].map(el => +el.dataset.page));
+  ok('THE PRESS SHOWS PAGES IN READING ORDER, RIGHT WAY UP',
+     JSON.stringify(onScreen) === JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8]) &&
+     (await page.locator('#sheetzone .panel.flip').count()) === 0, JSON.stringify(onScreen));
+  await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
+  await page.click('#printzinebtn');
+  await page.waitForTimeout(300);
+  const slots = await page.evaluate(() =>
+    [...document.querySelectorAll('#reprintzone .sheet .panel')].map(el => +el.dataset.page));
+  ok('THE PRINTED SHEET IMPOSES AS PRESET A',
      JSON.stringify(slots) === JSON.stringify([5, 4, 3, 2, 6, 7, 8, 1]), JSON.stringify(slots));
+  ok('and the browser was actually asked to print',
+     await page.evaluate(() => window.__printed === true));
+  await page.emulateMedia({ media: 'print' });
+  await page.waitForTimeout(250);
+  const printed = await page.evaluate(() => {
+    const vis = el => !!(el && el.checkVisibility && el.checkVisibility());
+    return {
+      sheet: vis(document.querySelector('#reprintzone .sheet')),
+      pages: vis(document.querySelector('#sheetzone .pages')),
+      chrome: vis(document.querySelector('header.chrome')),
+      tray: vis(document.querySelector('.tray-box')),
+      actions: vis(document.querySelector('.press-actions'))
+    };
+  });
+  ok('PRINT SHOWS THE IMPOSED SHEET ALONE, NEVER THE PAGES',
+     printed.sheet && !printed.pages && !printed.chrome && !printed.tray && !printed.actions,
+     JSON.stringify(printed));
+  await page.emulateMedia({ media: 'screen' });
 
   // Two devices, one notebook: export here, merge there, lose nothing.
   await go('#backup');
@@ -123,22 +150,6 @@ module.exports = async function features(browser, ok) {
   ok('merge brings the other device across', /workbench/i.test(merged));
   ok('merge carries the photo across', (await p2.locator('.log-photo').count()) === 1);
 
-  // Print shows the sheet and nothing else.
-  await go('#press');
-  await page.emulateMedia({ media: 'print' });
-  await page.waitForTimeout(250);
-  const printed = await page.evaluate(() => {
-    const vis = el => !!(el && el.checkVisibility && el.checkVisibility());
-    return {
-      sheet: vis(document.querySelector('#sheetzone .sheet')),
-      chrome: vis(document.querySelector('header.chrome')),
-      tray: vis(document.querySelector('.tray-box')),
-      actions: vis(document.querySelector('.press-actions'))
-    };
-  });
-  ok('print shows the sheet alone', printed.sheet && !printed.chrome && !printed.tray && !printed.actions,
-     JSON.stringify(printed));
-  await page.emulateMedia({ media: 'screen' });
 
   ok('no script errors anywhere', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();

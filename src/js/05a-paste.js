@@ -70,7 +70,7 @@ function pasteRestore(json) {
   ps.panels = JSON.parse(json);
   savePress();
   if (pasteSel && !findEl(pasteSel)) pasteSel = null;
-  sheetSig = '';
+  pageSig = '';
   renderPress();
 }
 

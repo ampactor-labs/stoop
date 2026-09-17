@@ -117,11 +117,21 @@
 .addr .qr { width: 64px; height: 64px; image-rendering: pixelated; }
 .addr span { font-family: 'Courier New', monospace; font-size: 8.5px; word-break: break-all; }
 
+/* The pages, as edited: right way up, in reading order, facing pairs. The
+   cover sits on the right of its spread and the back cover on the left, the
+   way they will when the thing is folded. */
+.pages { display: flex; flex-direction: column; gap: 1.1rem; width: max-content; margin: 0 auto; zoom: var(--fit, 1); }
+.spread { display: flex; width: calc(2 * var(--pw)); }
+.spread.cover { justify-content: flex-end; }
+.spread.backcover { justify-content: flex-start; }
+.pages .panel { width: var(--pw); height: var(--ph); flex: none; border: none; box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); }
+.spread .panel + .panel { box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); border-left: 1px dashed #bbb; }
+
 /* Numbered test sheet: fold this first and read the page numbers in order. */
 .testnum { display: none; position: absolute; inset: 0; background: #fff; z-index: 2; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
 .testnum b { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; font-size: 140px; color: var(--ink); }
 .testnum small { font-family: 'Courier New', monospace; font-size: 12px; color: #666; }
-.testing .testnum { display: flex; }
+.reprintzone.testing .testnum { display: flex; }
 
 .fold-guide { margin-top: 1.4rem; }
 .fold-steps { font-family: 'Courier New', monospace; font-size: .85rem; line-height: 1.5; padding-left: 1.2rem; }
@@ -136,18 +146,13 @@
 
 @media print {
   body { background: #fff; color: #000; }
-  header.chrome, .view-head, .paper, .pgtag, .panel-unpic, .toast,
-  .fitwarn, .sheetlabel, .shelfreader { display: none !important; }
-  main { max-width: none; padding: 0; margin: 0; }
-  section[data-view]:not([data-view="press"]) { display: none !important; }
-  section[data-view="press"] { display: block !important; }
-  .sheetzone { margin: 0; padding: 0; overflow: visible; }
-  .sheetwrap { margin: 0; break-after: page; page-break-after: always; }
-  .sheetwrap:last-child { break-after: auto; page-break-after: auto; }
-  .sheet { box-shadow: none; zoom: 1; }
-  .panel { border-color: #eee; }
-  body.reprinting main, body.reprinting header.chrome { display: none !important; }
+  header.chrome, main, .pageweight, .toast { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
+  .reprintzone .sheetwrap { margin: 0; break-after: page; page-break-after: always; }
+  .reprintzone .sheetwrap:last-child { break-after: auto; page-break-after: auto; }
+  .reprintzone .sheetlabel { display: none !important; }
+  .reprintzone .sheet { box-shadow: none; zoom: 1; }
+  .reprintzone .panel { border-color: #eee; }
 }
 
 /* Landing: an issue file opens as the issue, with the app's chrome switched

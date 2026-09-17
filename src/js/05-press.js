@@ -1,10 +1,12 @@
 // ---------- the press ----------
-// The sheet is drawn from the imposition, never hardcoded: change the format
-// and the same panels re-flow onto different paper. The DOM is rebuilt only
-// when the layout changes, and text is painted in place, because re-rendering
-// under the caret fights the cursor on every keystroke.
+// The press shows pages: right way up, in reading order, paired as facing
+// spreads. Nobody making a zine thinks in printer slots, and half of those
+// are upside down. The imposition is a property of paper and is applied on
+// the way to it, in the PDF and in the printed sheet, never on the surface
+// being edited. The DOM is rebuilt only when the format changes, and text is
+// painted in place, because re-rendering under the caret fights the cursor.
 var armedPhoto = null;
-var sheetSig = '';
+var pageSig = '';
 
 function pressState() {
   if (!state.press) {
@@ -32,40 +34,45 @@ function setPanel(page, body) {
 }
 
 // ---------- drawing the sheet ----------
-function panelHtml(slot, pages) {
-  var page = slot.page;
+function panelHtml(page, pages) {
   var cover = page === 1 ? ' cover' : (page === pages ? ' backcover' : '');
-  return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + page + '">' +
+  return '<div class="panel' + cover + '" data-page="' + page + '">' +
     '<div class="pgtag">p. ' + page + '</div>' +
     '<h3 contenteditable="true"></h3>' +
     (page === 1 ? '<div class="no">№<span id="issueno" contenteditable="true">01</span></div><div class="rule"></div>' : '') +
     '<div class="body" contenteditable="true"></div>' +
     '<div class="fitwarn"></div>' +
-    '<div class="testnum"><b>' + page + '</b><small>' + esc(pageLabel(page, pages)) + '</small></div>' +
     '</div>';
 }
 
-function layoutSheets() {
+// Pages in reading order: the cover on its own, then facing pairs, then the
+// back cover. A panel is the size it will print at, in points, so the fit
+// meter measures real paper; the whole run is zoomed to the column.
+function layoutPages() {
   var ps = pressState();
   var plan = impose(ps.format, ps.hand);
   var paper = paperOf(ps.format);
   var pages = plan.format.pages;
-  var sig = ps.format + '/' + ps.hand;
   var zone = document.getElementById('sheetzone');
   if (!zone) return plan;
 
-  if (sig !== sheetSig) {
-    zone.innerHTML = plan.sheets.map(function (sheet, i) {
-      return '<div class="sheetwrap"><div class="sheetlabel">' + esc(sheet.side) + '</div>' +
-        '<div class="sheet" data-sheet="' + i + '" style="width:' + paper.w + ';height:' + paper.h +
-        ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
-        sheet.slots.map(function (s) { return panelHtml(s, pages); }).join('') +
-        '</div></div>';
-    }).join('');
-    sheetSig = sig;
+  if (ps.format !== pageSig) {
+    var first = plan.sheets[0];
+    var pw = (paper.wpt / first.cols).toFixed(2);
+    var ph = (paper.hpt / first.rows).toFixed(2);
+    var spreads = [[1]];
+    for (var p = 2; p < pages; p += 2) spreads.push([p, p + 1]);
+    spreads.push([pages]);
+    zone.innerHTML = '<div class="pages" style="--pw:' + pw + 'pt;--ph:' + ph + 'pt">' +
+      spreads.map(function (sp, i) {
+        var kind = i === 0 ? ' cover' : (i === spreads.length - 1 ? ' backcover' : '');
+        return '<div class="spread' + kind + '">' +
+          sp.map(function (pg) { return panelHtml(pg, pages); }).join('') + '</div>';
+      }).join('') + '</div>';
+    pageSig = ps.format;
   }
 
-  fitSheets(zone);
+  fitPages(zone);
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paper.css + '; margin: 0; }';
   var sel = document.getElementById('formatsel');
@@ -78,16 +85,15 @@ function layoutSheets() {
   return plan;
 }
 
-// A sheet is eleven inches wide and the column it sits in is not. Scale it to
-// fit rather than making somebody scroll sideways to see their own back cover.
-// zoom rather than transform, because zoom takes part in layout: a scaled
-// sheet leaves no hole under itself, and the caret lands where it is aimed.
-// Print resets it — paper is already the right size.
-function fitSheets(zone) {
+// A spread is two pages wide and the column it sits in may not be. Scale to
+// fit rather than making somebody scroll sideways to see their own centre
+// spread. zoom rather than transform, because zoom takes part in layout: a
+// scaled run leaves no hole under itself, and the caret lands where aimed.
+function fitPages(zone) {
   zone.style.setProperty('--fit', 1);
-  var sheet = zone.querySelector('.sheet');
-  if (!sheet) return;
-  var natural = sheet.getBoundingClientRect().width;
+  var run = zone.querySelector('.pages');
+  if (!run) return;
+  var natural = run.getBoundingClientRect().width;
   if (!natural) return;
   var room = zone.clientWidth - 2;
   zone.style.setProperty('--fit', Math.min(1, room / natural));
@@ -98,7 +104,7 @@ window.addEventListener('resize', function () {
   clearTimeout(fitTimer);
   fitTimer = setTimeout(function () {
     var zone = document.getElementById('sheetzone');
-    if (zone && zone.querySelector('.sheet')) { fitSheets(zone); checkFit(); }
+    if (zone && zone.querySelector('.pages')) { fitPages(zone); checkFit(); }
   }, 150);
 });
 
@@ -167,7 +173,7 @@ function paintAddress(zone, lastPage, url) {
 }
 
 function renderPress() {
-  layoutSheets();
+  layoutPages();
   paintPanels();
   checkFit();
   pressStatus();
@@ -242,16 +248,20 @@ function swapLayout() {
   toast('Fold layout ' + ps.hand + ' — print a test sheet before committing');
 }
 
-function toggleTestSheet() {
-  var zone = document.getElementById('sheetzone');
-  var btn = document.getElementById('testsheetbtn');
-  if (!zone) return;
-  var on = !zone.classList.contains('testing');
-  zone.classList.toggle('testing', on);
-  if (btn) {
-    btn.textContent = 'TEST SHEET: ' + (on ? 'ON' : 'OFF');
-    btn.classList.toggle('on', on);
-  }
+// Paper is where the imposition lives. Both of these render the imposed
+// sheet into the print zone and hand it to the browser. The pages on screen
+// are never what prints.
+function printDraft() {
+  capturePanels();
+  if (!confirmSheet('Print')) return;
+  var ps = pressState();
+  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null);
+}
+
+function printTestSheet() {
+  var ps = pressState();
+  printSheet(ps.panels, ps.format, ps.hand, null, true,
+    'Fold the test sheet and read the numbers in order. Shuffled? SWAP FOLD and test again.');
 }
 
 function clearSheet() {

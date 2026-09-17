@@ -2,9 +2,11 @@
 // An issue is archived whole — its panels, its format, its fold hand — so a
 // back issue reprints as it shipped rather than as the current draft is set.
 
-// A sheet with nothing editable about it. The press draws its own; this one
-// serves the shelf and the exported issue, which must render identically on a
-// machine that has never seen this app.
+// The imposed sheet, with nothing editable about it. This is the only place
+// the imposition is drawn as HTML: the press on screen shows pages, and this
+// is what goes to the printer, whether for the draft, a numbered test sheet,
+// or a back issue off the shelf. Test numbers are always in the markup and
+// shown only when the print zone carries the testing class.
 function staticSheetHtml(panels, formatId, hand, photos, url) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
@@ -25,6 +27,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url) {
           '<div class="body">' + esc(p.body || '') + '</div>' +
           pasteupHtml(p, pics, false) +
           (slot.page === pages ? addr : '') +
+          '<div class="testnum"><b>' + slot.page + '</b><small>' + esc(pageLabel(slot.page, pages)) + '</small></div>' +
           '</div>';
       }).join('') + '</div></div>';
   }).join('');
@@ -132,24 +135,46 @@ function readIssue(no) {
   if (box && openIssueNo) box.scrollIntoView({ block: 'start' });
 }
 
-// Reprint renders the archived issue into its own print zone rather than
-// loading it over the working draft. A back issue is history; opening it must
-// never cost you the issue you are in the middle of making.
+// One print path. Whatever is going to paper — the draft, a numbered test
+// sheet, a back issue — is imposed into the print zone and handed to the
+// browser, and the zone is emptied again when the dialog closes. Opening a
+// back issue this way never costs the draft, because the draft is not what
+// is being printed.
+function printSheet(panels, format, hand, url, testing, note) {
+  var zone = document.getElementById('reprintzone');
+  if (!zone) return;
+  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url);
+  zone.classList.toggle('testing', !!testing);
+  var style = document.getElementById('pagerule');
+  if (style) style.textContent = '@page { size: ' + paperOf(format).css + '; margin: 0; }';
+  document.body.classList.add('reprinting');
+  if (note) toast(note);
+  window.print();
+}
+
 function reprintIssue(no) {
   var iss = issueByNo(no);
   if (!iss) return;
+  printSheet(iss.panels, iss.format, iss.hand, issueUrl(iss.no), false,
+    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched');
+}
+
+// The keyboard shortcut prints the sheet too. Somebody who presses print on
+// the pages view gets the imposed sheet, not a grid of upright pages.
+window.addEventListener('beforeprint', function () {
+  if (document.body.classList.contains('reprinting')) return;
+  if (!document.querySelector('section[data-view="press"].on')) return;
+  var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(iss.panels, iss.format, iss.hand, null, issueUrl(iss.no));
-  var style = document.getElementById('pagerule');
-  if (style) style.textContent = '@page { size: ' + paperOf(iss.format).css + '; margin: 0; }';
+  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue));
   document.body.classList.add('reprinting');
-  toast('Reprinting №' + iss.no + ' — your draft is untouched');
-  window.print();
-  setTimeout(function () {
-    document.body.classList.remove('reprinting');
-    zone.innerHTML = '';
-    var ps = pressState();
-    if (style) style.textContent = '@page { size: ' + paperOf(ps.format).css + '; margin: 0; }';
-  }, 500);
-}
+});
+
+window.addEventListener('afterprint', function () {
+  document.body.classList.remove('reprinting');
+  var zone = document.getElementById('reprintzone');
+  if (zone) { zone.innerHTML = ''; zone.classList.remove('testing'); }
+  var style = document.getElementById('pagerule');
+  if (style) style.textContent = '@page { size: ' + paperOf(pressState().format).css + '; margin: 0; }';
+});

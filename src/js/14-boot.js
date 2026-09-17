@@ -97,11 +97,7 @@ document.addEventListener('click', function (e) {
   if ((el = hit(t, '[data-piecebundle]'))) return exportPieceBundle(el.getAttribute('data-piecebundle'));
   if (hit(t, '#closereader')) return readIssue(openIssueNo);
 
-  if (hit(t, '#printzinebtn')) {
-    capturePanels();
-    if (!confirmSheet('Print')) return;
-    return window.print();
-  }
+  if (hit(t, '#printzinebtn')) return printDraft();
   if (hit(t, '#pdfzinebtn')) {
     capturePanels();
     if (!confirmSheet('Save a PDF')) return;
@@ -119,7 +115,7 @@ document.addEventListener('click', function (e) {
   }
   if (hit(t, '#clearzinebtn')) return clearSheet();
   if (hit(t, '#swaplayoutbtn')) return swapLayout();
-  if (hit(t, '#testsheetbtn')) return toggleTestSheet();
+  if (hit(t, '#testsheetbtn')) return printTestSheet();
 
   if (hit(t, '#exportbtn')) return exportBackup();
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();

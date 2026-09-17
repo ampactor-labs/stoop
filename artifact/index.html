@@ -300,11 +300,21 @@
 .addr .qr { width: 64px; height: 64px; image-rendering: pixelated; }
 .addr span { font-family: 'Courier New', monospace; font-size: 8.5px; word-break: break-all; }
 
+/* The pages, as edited: right way up, in reading order, facing pairs. The
+   cover sits on the right of its spread and the back cover on the left, the
+   way they will when the thing is folded. */
+.pages { display: flex; flex-direction: column; gap: 1.1rem; width: max-content; margin: 0 auto; zoom: var(--fit, 1); }
+.spread { display: flex; width: calc(2 * var(--pw)); }
+.spread.cover { justify-content: flex-end; }
+.spread.backcover { justify-content: flex-start; }
+.pages .panel { width: var(--pw); height: var(--ph); flex: none; border: none; box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); }
+.spread .panel + .panel { box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); border-left: 1px dashed #bbb; }
+
 /* Numbered test sheet: fold this first and read the page numbers in order. */
 .testnum { display: none; position: absolute; inset: 0; background: #fff; z-index: 2; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
 .testnum b { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; font-size: 140px; color: var(--ink); }
 .testnum small { font-family: 'Courier New', monospace; font-size: 12px; color: #666; }
-.testing .testnum { display: flex; }
+.reprintzone.testing .testnum { display: flex; }
 
 .fold-guide { margin-top: 1.4rem; }
 .fold-steps { font-family: 'Courier New', monospace; font-size: .85rem; line-height: 1.5; padding-left: 1.2rem; }
@@ -319,18 +329,13 @@
 
 @media print {
   body { background: #fff; color: #000; }
-  header.chrome, .view-head, .paper, .pgtag, .panel-unpic, .toast,
-  .fitwarn, .sheetlabel, .shelfreader { display: none !important; }
-  main { max-width: none; padding: 0; margin: 0; }
-  section[data-view]:not([data-view="press"]) { display: none !important; }
-  section[data-view="press"] { display: block !important; }
-  .sheetzone { margin: 0; padding: 0; overflow: visible; }
-  .sheetwrap { margin: 0; break-after: page; page-break-after: always; }
-  .sheetwrap:last-child { break-after: auto; page-break-after: auto; }
-  .sheet { box-shadow: none; zoom: 1; }
-  .panel { border-color: #eee; }
-  body.reprinting main, body.reprinting header.chrome { display: none !important; }
+  header.chrome, main, .pageweight, .toast { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
+  .reprintzone .sheetwrap { margin: 0; break-after: page; page-break-after: always; }
+  .reprintzone .sheetwrap:last-child { break-after: auto; page-break-after: auto; }
+  .reprintzone .sheetlabel { display: none !important; }
+  .reprintzone .sheet { box-shadow: none; zoom: 1; }
+  .reprintzone .panel { border-color: #eee; }
 }
 
 /* Landing: an issue file opens as the issue, with the app's chrome switched
@@ -561,7 +566,7 @@ body.landing main { padding-top: 2.4rem; }
 <section data-view="press">
   <div class="view-head">
     <h1>THE PRESS</h1>
-    <p class="view-sub">One source, imposed for paper. Change the format and the same pages re-flow onto different sheets.</p>
+    <p class="view-sub">Your pages, right way up. Paper gets the imposition: the PDF and the printed sheet fold back into this order.</p>
   </div>
 
   <div class="paper">
@@ -570,11 +575,11 @@ body.landing main { padding-top: 2.4rem; }
       <button class="btn done" id="printzinebtn">PRINT</button>
       <button class="btn" id="pdfzinebtn">SAVE PDF</button>
       <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
-      <button class="btn quiet" id="testsheetbtn">TEST SHEET: OFF</button>
+      <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
       <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
       <button class="btn quiet" id="clearzinebtn">CLEAR SHEET</button>
     </div>
-    <p class="sub">The PDF is exact: right paper, no margins, nothing for a print dialog to argue with, and a file you can hand to a copy shop. Printing from the browser works too, at <strong>100% scale, margins none</strong>, in the orientation the format names. Click any heading or body to edit it; edits save as you type. Fold a numbered test sheet before committing good paper — printers and folding hands vary, and if the numbers come out shuffled, hit SWAP FOLD and test again.</p>
+    <p class="sub">The PDF is exact: right paper, no margins, nothing for a print dialog to argue with, and a file you can hand to a copy shop. Printing from the browser works too, at <strong>100% scale, margins none</strong>, in the orientation the format names. Click any heading or body to edit it; edits save as you type. Print a numbered test sheet before committing good paper — printers and folding hands vary, and if the numbers come out shuffled, hit SWAP FOLD and test again.</p>
     <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
     <p class="fitmeter" id="pressstatus"></p>
   </div>
@@ -701,7 +706,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 182 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 185 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -1562,12 +1567,14 @@ function pageLabel(page, pages) {
   return 'p.' + page;
 }
 // ---------- the press ----------
-// The sheet is drawn from the imposition, never hardcoded: change the format
-// and the same panels re-flow onto different paper. The DOM is rebuilt only
-// when the layout changes, and text is painted in place, because re-rendering
-// under the caret fights the cursor on every keystroke.
+// The press shows pages: right way up, in reading order, paired as facing
+// spreads. Nobody making a zine thinks in printer slots, and half of those
+// are upside down. The imposition is a property of paper and is applied on
+// the way to it, in the PDF and in the printed sheet, never on the surface
+// being edited. The DOM is rebuilt only when the format changes, and text is
+// painted in place, because re-rendering under the caret fights the cursor.
 var armedPhoto = null;
-var sheetSig = '';
+var pageSig = '';
 
 function pressState() {
   if (!state.press) {
@@ -1595,40 +1602,45 @@ function setPanel(page, body) {
 }
 
 // ---------- drawing the sheet ----------
-function panelHtml(slot, pages) {
-  var page = slot.page;
+function panelHtml(page, pages) {
   var cover = page === 1 ? ' cover' : (page === pages ? ' backcover' : '');
-  return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + page + '">' +
+  return '<div class="panel' + cover + '" data-page="' + page + '">' +
     '<div class="pgtag">p. ' + page + '</div>' +
     '<h3 contenteditable="true"></h3>' +
     (page === 1 ? '<div class="no">№<span id="issueno" contenteditable="true">01</span></div><div class="rule"></div>' : '') +
     '<div class="body" contenteditable="true"></div>' +
     '<div class="fitwarn"></div>' +
-    '<div class="testnum"><b>' + page + '</b><small>' + esc(pageLabel(page, pages)) + '</small></div>' +
     '</div>';
 }
 
-function layoutSheets() {
+// Pages in reading order: the cover on its own, then facing pairs, then the
+// back cover. A panel is the size it will print at, in points, so the fit
+// meter measures real paper; the whole run is zoomed to the column.
+function layoutPages() {
   var ps = pressState();
   var plan = impose(ps.format, ps.hand);
   var paper = paperOf(ps.format);
   var pages = plan.format.pages;
-  var sig = ps.format + '/' + ps.hand;
   var zone = document.getElementById('sheetzone');
   if (!zone) return plan;
 
-  if (sig !== sheetSig) {
-    zone.innerHTML = plan.sheets.map(function (sheet, i) {
-      return '<div class="sheetwrap"><div class="sheetlabel">' + esc(sheet.side) + '</div>' +
-        '<div class="sheet" data-sheet="' + i + '" style="width:' + paper.w + ';height:' + paper.h +
-        ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
-        sheet.slots.map(function (s) { return panelHtml(s, pages); }).join('') +
-        '</div></div>';
-    }).join('');
-    sheetSig = sig;
+  if (ps.format !== pageSig) {
+    var first = plan.sheets[0];
+    var pw = (paper.wpt / first.cols).toFixed(2);
+    var ph = (paper.hpt / first.rows).toFixed(2);
+    var spreads = [[1]];
+    for (var p = 2; p < pages; p += 2) spreads.push([p, p + 1]);
+    spreads.push([pages]);
+    zone.innerHTML = '<div class="pages" style="--pw:' + pw + 'pt;--ph:' + ph + 'pt">' +
+      spreads.map(function (sp, i) {
+        var kind = i === 0 ? ' cover' : (i === spreads.length - 1 ? ' backcover' : '');
+        return '<div class="spread' + kind + '">' +
+          sp.map(function (pg) { return panelHtml(pg, pages); }).join('') + '</div>';
+      }).join('') + '</div>';
+    pageSig = ps.format;
   }
 
-  fitSheets(zone);
+  fitPages(zone);
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paper.css + '; margin: 0; }';
   var sel = document.getElementById('formatsel');
@@ -1641,16 +1653,15 @@ function layoutSheets() {
   return plan;
 }
 
-// A sheet is eleven inches wide and the column it sits in is not. Scale it to
-// fit rather than making somebody scroll sideways to see their own back cover.
-// zoom rather than transform, because zoom takes part in layout: a scaled
-// sheet leaves no hole under itself, and the caret lands where it is aimed.
-// Print resets it — paper is already the right size.
-function fitSheets(zone) {
+// A spread is two pages wide and the column it sits in may not be. Scale to
+// fit rather than making somebody scroll sideways to see their own centre
+// spread. zoom rather than transform, because zoom takes part in layout: a
+// scaled run leaves no hole under itself, and the caret lands where aimed.
+function fitPages(zone) {
   zone.style.setProperty('--fit', 1);
-  var sheet = zone.querySelector('.sheet');
-  if (!sheet) return;
-  var natural = sheet.getBoundingClientRect().width;
+  var run = zone.querySelector('.pages');
+  if (!run) return;
+  var natural = run.getBoundingClientRect().width;
   if (!natural) return;
   var room = zone.clientWidth - 2;
   zone.style.setProperty('--fit', Math.min(1, room / natural));
@@ -1661,7 +1672,7 @@ window.addEventListener('resize', function () {
   clearTimeout(fitTimer);
   fitTimer = setTimeout(function () {
     var zone = document.getElementById('sheetzone');
-    if (zone && zone.querySelector('.sheet')) { fitSheets(zone); checkFit(); }
+    if (zone && zone.querySelector('.pages')) { fitPages(zone); checkFit(); }
   }, 150);
 });
 
@@ -1730,7 +1741,7 @@ function paintAddress(zone, lastPage, url) {
 }
 
 function renderPress() {
-  layoutSheets();
+  layoutPages();
   paintPanels();
   checkFit();
   pressStatus();
@@ -1805,16 +1816,20 @@ function swapLayout() {
   toast('Fold layout ' + ps.hand + ' — print a test sheet before committing');
 }
 
-function toggleTestSheet() {
-  var zone = document.getElementById('sheetzone');
-  var btn = document.getElementById('testsheetbtn');
-  if (!zone) return;
-  var on = !zone.classList.contains('testing');
-  zone.classList.toggle('testing', on);
-  if (btn) {
-    btn.textContent = 'TEST SHEET: ' + (on ? 'ON' : 'OFF');
-    btn.classList.toggle('on', on);
-  }
+// Paper is where the imposition lives. Both of these render the imposed
+// sheet into the print zone and hand it to the browser. The pages on screen
+// are never what prints.
+function printDraft() {
+  capturePanels();
+  if (!confirmSheet('Print')) return;
+  var ps = pressState();
+  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null);
+}
+
+function printTestSheet() {
+  var ps = pressState();
+  printSheet(ps.panels, ps.format, ps.hand, null, true,
+    'Fold the test sheet and read the numbers in order. Shuffled? SWAP FOLD and test again.');
 }
 
 function clearSheet() {
@@ -1896,7 +1911,7 @@ function pasteRestore(json) {
   ps.panels = JSON.parse(json);
   savePress();
   if (pasteSel && !findEl(pasteSel)) pasteSel = null;
-  sheetSig = '';
+  pageSig = '';
   renderPress();
 }
 
@@ -2181,20 +2196,15 @@ function paintPasteup(panelEl, panel) {
   if (growTextEls(panelEl, panel)) savePress();
 }
 // ---------- direct manipulation ----------
-// Dragging things around a sheet that is itself scaled to fit the window, and
-// half of whose panels are printed upside down, is the whole difficulty here.
-// Every gesture works in panel-local pixels taken from the live bounding box:
-// that absorbs the zoom for free, and a flipped panel is undone by measuring
-// from the far corner instead.
+// Pages are zoomed to fit the column, which is the only difficulty here.
+// Every gesture works in panel-local pixels taken from the live bounding box,
+// and that absorbs the zoom for free.
 var grab = null;
 var GRID = 1 / 24;
 
 function panelLocal(panelEl, cx, cy) {
   var r = panelEl.getBoundingClientRect();
-  var x = cx - r.left;
-  var y = cy - r.top;
-  if (panelEl.classList.contains('flip')) { x = r.width - x; y = r.height - y; }
-  return { x: x, y: y, w: r.width, h: r.height };
+  return { x: cx - r.left, y: cy - r.top, w: r.width, h: r.height };
 }
 
 function snap(v, on) {
@@ -2892,9 +2902,11 @@ function renderDesk() {
 // An issue is archived whole — its panels, its format, its fold hand — so a
 // back issue reprints as it shipped rather than as the current draft is set.
 
-// A sheet with nothing editable about it. The press draws its own; this one
-// serves the shelf and the exported issue, which must render identically on a
-// machine that has never seen this app.
+// The imposed sheet, with nothing editable about it. This is the only place
+// the imposition is drawn as HTML: the press on screen shows pages, and this
+// is what goes to the printer, whether for the draft, a numbered test sheet,
+// or a back issue off the shelf. Test numbers are always in the markup and
+// shown only when the print zone carries the testing class.
 function staticSheetHtml(panels, formatId, hand, photos, url) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
@@ -2915,6 +2927,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url) {
           '<div class="body">' + esc(p.body || '') + '</div>' +
           pasteupHtml(p, pics, false) +
           (slot.page === pages ? addr : '') +
+          '<div class="testnum"><b>' + slot.page + '</b><small>' + esc(pageLabel(slot.page, pages)) + '</small></div>' +
           '</div>';
       }).join('') + '</div></div>';
   }).join('');
@@ -3022,27 +3035,49 @@ function readIssue(no) {
   if (box && openIssueNo) box.scrollIntoView({ block: 'start' });
 }
 
-// Reprint renders the archived issue into its own print zone rather than
-// loading it over the working draft. A back issue is history; opening it must
-// never cost you the issue you are in the middle of making.
+// One print path. Whatever is going to paper — the draft, a numbered test
+// sheet, a back issue — is imposed into the print zone and handed to the
+// browser, and the zone is emptied again when the dialog closes. Opening a
+// back issue this way never costs the draft, because the draft is not what
+// is being printed.
+function printSheet(panels, format, hand, url, testing, note) {
+  var zone = document.getElementById('reprintzone');
+  if (!zone) return;
+  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url);
+  zone.classList.toggle('testing', !!testing);
+  var style = document.getElementById('pagerule');
+  if (style) style.textContent = '@page { size: ' + paperOf(format).css + '; margin: 0; }';
+  document.body.classList.add('reprinting');
+  if (note) toast(note);
+  window.print();
+}
+
 function reprintIssue(no) {
   var iss = issueByNo(no);
   if (!iss) return;
+  printSheet(iss.panels, iss.format, iss.hand, issueUrl(iss.no), false,
+    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched');
+}
+
+// The keyboard shortcut prints the sheet too. Somebody who presses print on
+// the pages view gets the imposed sheet, not a grid of upright pages.
+window.addEventListener('beforeprint', function () {
+  if (document.body.classList.contains('reprinting')) return;
+  if (!document.querySelector('section[data-view="press"].on')) return;
+  var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(iss.panels, iss.format, iss.hand, null, issueUrl(iss.no));
-  var style = document.getElementById('pagerule');
-  if (style) style.textContent = '@page { size: ' + paperOf(iss.format).css + '; margin: 0; }';
+  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue));
   document.body.classList.add('reprinting');
-  toast('Reprinting №' + iss.no + ' — your draft is untouched');
-  window.print();
-  setTimeout(function () {
-    document.body.classList.remove('reprinting');
-    zone.innerHTML = '';
-    var ps = pressState();
-    if (style) style.textContent = '@page { size: ' + paperOf(ps.format).css + '; margin: 0; }';
-  }, 500);
-}
+});
+
+window.addEventListener('afterprint', function () {
+  document.body.classList.remove('reprinting');
+  var zone = document.getElementById('reprintzone');
+  if (zone) { zone.innerHTML = ''; zone.classList.remove('testing'); }
+  var style = document.getElementById('pagerule');
+  if (style) style.textContent = '@page { size: ' + paperOf(pressState().format).css + '; margin: 0; }';
+});
 // ---------- landing ----------
 // Somebody scanned the back of a zine, or was handed the file. What they were
 // holding was paper, so what they get is the issue and nothing else: no
@@ -4536,11 +4571,7 @@ document.addEventListener('click', function (e) {
   if ((el = hit(t, '[data-piecebundle]'))) return exportPieceBundle(el.getAttribute('data-piecebundle'));
   if (hit(t, '#closereader')) return readIssue(openIssueNo);
 
-  if (hit(t, '#printzinebtn')) {
-    capturePanels();
-    if (!confirmSheet('Print')) return;
-    return window.print();
-  }
+  if (hit(t, '#printzinebtn')) return printDraft();
   if (hit(t, '#pdfzinebtn')) {
     capturePanels();
     if (!confirmSheet('Save a PDF')) return;
@@ -4558,7 +4589,7 @@ document.addEventListener('click', function (e) {
   }
   if (hit(t, '#clearzinebtn')) return clearSheet();
   if (hit(t, '#swaplayoutbtn')) return swapLayout();
-  if (hit(t, '#testsheetbtn')) return toggleTestSheet();
+  if (hit(t, '#testsheetbtn')) return printTestSheet();
 
   if (hit(t, '#exportbtn')) return exportBackup();
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();

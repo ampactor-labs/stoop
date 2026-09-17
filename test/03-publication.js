@@ -89,9 +89,10 @@ module.exports = async function publication(browser, ok) {
   await page.selectOption('#formatsel', 'saddle16');
   await page.waitForTimeout(600);
   const after = await page.locator('[data-page="2"] .body').innerText();
-  ok('saddle-stitch 16pp imposes onto eight sheet sides',
-     (await page.locator('#sheetzone .sheet').count()) === 8,
-     'sheets ' + await page.locator('#sheetzone .sheet').count());
+  ok('saddle-stitch 16pp shows sixteen pages, right way up',
+     (await page.locator('#sheetzone .panel').count()) === 16 &&
+     (await page.locator('#sheetzone .panel.flip').count()) === 0,
+     'pages ' + await page.locator('#sheetzone .panel').count());
   ok('THE SAME PIECES RE-FLOW INTO A NEW FORMAT, NOTHING RETYPED',
      before.trim().length > 0 && before.trim() === after.trim());
   await page.selectOption('#formatsel', 'fold8');

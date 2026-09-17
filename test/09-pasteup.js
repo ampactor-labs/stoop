@@ -51,26 +51,26 @@ module.exports = async function pasteup(browser, ok) {
   ok('and the position is a fraction of the panel, not a pixel',
      /%$/.test(after.left) && /%$/.test(after.top), after.left + ' / ' + after.top);
 
-  // ---- a panel printed upside down has to drag the right way too
+  // ---- no page is ever shown upside down while it is being worked on
+  ok('NO PAGE ON THE PRESS IS UPSIDE DOWN',
+     (await page.locator('#sheetzone .panel.flip').count()) === 0 &&
+     (await page.evaluate(() => [...document.querySelectorAll('#sheetzone .panel')]
+        .every(p => getComputedStyle(p).transform === 'none'))));
   await page.click('[data-page="5"]');
   await page.click('[data-addel="box"]');
   await page.waitForTimeout(350);
-  const flipped = await page.locator('[data-page="5"]').getAttribute('class');
   const fBefore = await geom('[data-page="5"] .el');
   await page.locator('[data-page="5"] .el').first().scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
   const fbox = await page.locator('[data-page="5"] .el').first().boundingBox();
   await page.mouse.move(fbox.x + fbox.width / 2, fbox.y + fbox.height / 2);
   await page.mouse.down();
-  // Drag right on screen. On a flipped panel that is left in the model.
   await page.mouse.move(fbox.x + fbox.width / 2 + 80, fbox.y + fbox.height / 2, { steps: 10 });
   await page.mouse.up();
   await page.waitForTimeout(300);
   const fAfter = await geom('[data-page="5"] .el');
-  const wentLeft = parseFloat(fAfter.left) < parseFloat(fBefore.left);
-  ok('A PANEL PRINTED UPSIDE DOWN DRAGS THE WAY IT LOOKS',
-     /flip/.test(flipped) ? wentLeft : !wentLeft,
-     'flip=' + /flip/.test(flipped) + ' ' + fBefore.left + ' -> ' + fAfter.left);
+  ok('and dragging right on any page goes right',
+     parseFloat(fAfter.left) > parseFloat(fBefore.left), fBefore.left + ' -> ' + fAfter.left);
 
   // ---- a text cutting is moved by default and typed into on purpose
   await page.dblclick('[data-page="1"] .el');

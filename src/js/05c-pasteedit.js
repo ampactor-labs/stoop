@@ -1,18 +1,13 @@
 // ---------- direct manipulation ----------
-// Dragging things around a sheet that is itself scaled to fit the window, and
-// half of whose panels are printed upside down, is the whole difficulty here.
-// Every gesture works in panel-local pixels taken from the live bounding box:
-// that absorbs the zoom for free, and a flipped panel is undone by measuring
-// from the far corner instead.
+// Pages are zoomed to fit the column, which is the only difficulty here.
+// Every gesture works in panel-local pixels taken from the live bounding box,
+// and that absorbs the zoom for free.
 var grab = null;
 var GRID = 1 / 24;
 
 function panelLocal(panelEl, cx, cy) {
   var r = panelEl.getBoundingClientRect();
-  var x = cx - r.left;
-  var y = cy - r.top;
-  if (panelEl.classList.contains('flip')) { x = r.width - x; y = r.height - y; }
-  return { x: x, y: y, w: r.width, h: r.height };
+  return { x: cx - r.left, y: cy - r.top, w: r.width, h: r.height };
 }
 
 function snap(v, on) {
