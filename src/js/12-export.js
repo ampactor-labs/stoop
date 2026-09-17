@@ -47,10 +47,17 @@ var DYNAMIC = ['loglist', 'journallist', 'projectlist', 'desktray', 'shelflist',
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
+  // Emptying a container is not enough: a toast that was showing at export
+  // time carries display:block inline, and the file shipped an empty orange
+  // box that never went away. The same goes for anything the running page
+  // hung on body, such as the test-sheet overlay. What ships is the page as
+  // built, not the page as it happened to be at the moment of export.
   DYNAMIC.forEach(function (id) {
     var el = doc.querySelector('#' + id);
-    if (el) el.innerHTML = '';
+    if (el) { el.innerHTML = ''; el.removeAttribute('style'); }
   });
+  var cloneBody = doc.querySelector('body');
+  if (cloneBody) cloneBody.removeAttribute('class');
   var old = doc.querySelector('#' + SEED_ID);
   if (old) old.parentNode.removeChild(old);
 

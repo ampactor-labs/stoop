@@ -65,6 +65,11 @@ module.exports = async function publication(browser, ok) {
   const reading = await page.locator('.reading').innerText();
   ok('the back issue still holds its own pieces', /sodium lamps|substation/i.test(reading));
   ok('the back issue keeps its editor note', /knock on somebody/i.test(reading));
+  // The bell rang from the desk, with the press hidden. A hidden sheet read
+  // back through innerText loses every line break, and once did.
+  ok('THE BACK COVER KEEPS ITS LINE BREAKS THROUGH THE BELL',
+     /\n/.test(await page.locator('.reading-foot p').innerText()),
+     JSON.stringify((await page.locator('.reading-foot p').innerText()).slice(0, 40)));
   ok('the reading view is the other substrate, unimposed',
      (await page.locator('.reading .panel').count()) === 0);
 

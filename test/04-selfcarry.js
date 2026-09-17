@@ -72,6 +72,8 @@ module.exports = async function selfcarry(browser, ok) {
   ok('THE FILE OPENS AS THE ISSUE, NOT AS AN APP',
      (await other.evaluate(() => location.hash)) === '#issue',
      await other.evaluate(() => location.hash));
+  ok('and nothing half-shown from the machine that made it',
+     (await other.evaluate(() => getComputedStyle(document.getElementById('toast')).display)) === 'none');
   ok('with no chrome around it',
      (await other.evaluate(() => getComputedStyle(document.querySelector('header.chrome')).display)) === 'none');
   ok('the issue reads',

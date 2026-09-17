@@ -1767,55 +1767,18 @@ function pressStatus() {
   el.classList.toggle('bad', blank);
 }
 
-// ---------- the fit meter ----------
-// The panel clips what does not fit, because a printer will too — but it must
-// not do so silently. Binary search the word list for the last line that fits:
-// about nine reflows per over-full panel, on demand rather than per keystroke.
-function measureOverflow(body) {
-  if (body.scrollHeight <= body.clientHeight + 1) return 0;
-  var original = body.innerText;
-  var words = original.split(/\s+/).filter(Boolean);
-  if (!words.length) return 0;
-  var lo = 0, hi = words.length;
-  while (lo < hi) {
-    var mid = Math.ceil((lo + hi) / 2);
-    body.innerText = words.slice(0, mid).join(' ');
-    if (body.scrollHeight <= body.clientHeight + 1) lo = mid; else hi = mid - 1;
-  }
-  body.innerText = original;
-  return words.length - lo;
-}
-
-function checkFit() {
-  var zone = document.getElementById('sheetzone');
-  if (!zone) return 0;
-  var active = document.activeElement;
-  var total = 0;
-  zone.querySelectorAll('.panel').forEach(function (el) {
-    var body = el.querySelector('.body');
-    var warn = el.querySelector('.fitwarn');
-    if (!body || !warn) return;
-    if (el.contains(active)) return;
-    var over = measureOverflow(body);
-    total += over;
-    el.classList.toggle('over', over > 0);
-    warn.textContent = over > 0 ? over + ' word' + (over === 1 ? '' : 's') + ' over' : '';
-  });
-  var meter = document.getElementById('fitmeter');
-  if (meter) {
-    meter.textContent = total > 0
-      ? total + ' word' + (total === 1 ? '' : 's') + ' will not print. Cut, or move them to another page.'
-      : 'Everything fits on the paper.';
-    meter.classList.toggle('bad', total > 0);
-  }
-  return total;
-}
 
 // ---------- editing ----------
+// Reads the sheet back into the model. Only while the press is on screen:
+// innerText on an element nobody can see falls back to textContent, where a
+// line break is a <br> that contributes nothing, and a back cover captured
+// from the desk came out with every newline deleted and was archived that
+// way. Nothing can have been typed into a hidden sheet, so there is nothing
+// to capture from one.
 function capturePanels() {
   var ps = pressState();
   var zone = document.getElementById('sheetzone');
-  if (!zone) return;
+  if (!zone || !zone.offsetParent) return;
   ps.panels.forEach(function (panel, i) {
     var el = zone.querySelector('[data-page="' + (i + 1) + '"]');
     if (!el) return;
@@ -2642,6 +2605,55 @@ document.addEventListener('paste', function (ev) {
   var text = cd.getData('text/plain');
   if (text) { ev.preventDefault(); acceptText(pastePage, text, null); }
 });
+// ---------- the fit meter ----------
+// A press that silently eats a paragraph is not a press. Every panel is
+// measured against its own box and the words that will not print are counted
+// and named, on the panel and in one line above the sheet. Split from the
+// press only for the line ceiling; it reads and writes the same sheet.
+
+// ---------- the fit meter ----------
+// The panel clips what does not fit, because a printer will too — but it must
+// not do so silently. Binary search the word list for the last line that fits:
+// about nine reflows per over-full panel, on demand rather than per keystroke.
+function measureOverflow(body) {
+  if (body.scrollHeight <= body.clientHeight + 1) return 0;
+  var original = body.innerText;
+  var words = original.split(/\s+/).filter(Boolean);
+  if (!words.length) return 0;
+  var lo = 0, hi = words.length;
+  while (lo < hi) {
+    var mid = Math.ceil((lo + hi) / 2);
+    body.innerText = words.slice(0, mid).join(' ');
+    if (body.scrollHeight <= body.clientHeight + 1) lo = mid; else hi = mid - 1;
+  }
+  body.innerText = original;
+  return words.length - lo;
+}
+
+function checkFit() {
+  var zone = document.getElementById('sheetzone');
+  if (!zone) return 0;
+  var active = document.activeElement;
+  var total = 0;
+  zone.querySelectorAll('.panel').forEach(function (el) {
+    var body = el.querySelector('.body');
+    var warn = el.querySelector('.fitwarn');
+    if (!body || !warn) return;
+    if (el.contains(active)) return;
+    var over = measureOverflow(body);
+    total += over;
+    el.classList.toggle('over', over > 0);
+    warn.textContent = over > 0 ? over + ' word' + (over === 1 ? '' : 's') + ' over' : '';
+  });
+  var meter = document.getElementById('fitmeter');
+  if (meter) {
+    meter.textContent = total > 0
+      ? total + ' word' + (total === 1 ? '' : 's') + ' will not print. Cut, or move them to another page.'
+      : 'Everything fits on the paper.';
+    meter.classList.toggle('bad', total > 0);
+  }
+  return total;
+}
 // ---------- the desk ----------
 // Exactly one person holds the final cut on any given issue. At two people the
 // chair alternates by issue parity, which is simpler than rotation and needs
@@ -4114,10 +4126,17 @@ var DYNAMIC = ['loglist', 'journallist', 'projectlist', 'desktray', 'shelflist',
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
+  // Emptying a container is not enough: a toast that was showing at export
+  // time carries display:block inline, and the file shipped an empty orange
+  // box that never went away. The same goes for anything the running page
+  // hung on body, such as the test-sheet overlay. What ships is the page as
+  // built, not the page as it happened to be at the moment of export.
   DYNAMIC.forEach(function (id) {
     var el = doc.querySelector('#' + id);
-    if (el) el.innerHTML = '';
+    if (el) { el.innerHTML = ''; el.removeAttribute('style'); }
   });
+  var cloneBody = doc.querySelector('body');
+  if (cloneBody) cloneBody.removeAttribute('class');
   var old = doc.querySelector('#' + SEED_ID);
   if (old) old.parentNode.removeChild(old);
 

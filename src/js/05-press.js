@@ -196,55 +196,18 @@ function pressStatus() {
   el.classList.toggle('bad', blank);
 }
 
-// ---------- the fit meter ----------
-// The panel clips what does not fit, because a printer will too — but it must
-// not do so silently. Binary search the word list for the last line that fits:
-// about nine reflows per over-full panel, on demand rather than per keystroke.
-function measureOverflow(body) {
-  if (body.scrollHeight <= body.clientHeight + 1) return 0;
-  var original = body.innerText;
-  var words = original.split(/\s+/).filter(Boolean);
-  if (!words.length) return 0;
-  var lo = 0, hi = words.length;
-  while (lo < hi) {
-    var mid = Math.ceil((lo + hi) / 2);
-    body.innerText = words.slice(0, mid).join(' ');
-    if (body.scrollHeight <= body.clientHeight + 1) lo = mid; else hi = mid - 1;
-  }
-  body.innerText = original;
-  return words.length - lo;
-}
-
-function checkFit() {
-  var zone = document.getElementById('sheetzone');
-  if (!zone) return 0;
-  var active = document.activeElement;
-  var total = 0;
-  zone.querySelectorAll('.panel').forEach(function (el) {
-    var body = el.querySelector('.body');
-    var warn = el.querySelector('.fitwarn');
-    if (!body || !warn) return;
-    if (el.contains(active)) return;
-    var over = measureOverflow(body);
-    total += over;
-    el.classList.toggle('over', over > 0);
-    warn.textContent = over > 0 ? over + ' word' + (over === 1 ? '' : 's') + ' over' : '';
-  });
-  var meter = document.getElementById('fitmeter');
-  if (meter) {
-    meter.textContent = total > 0
-      ? total + ' word' + (total === 1 ? '' : 's') + ' will not print. Cut, or move them to another page.'
-      : 'Everything fits on the paper.';
-    meter.classList.toggle('bad', total > 0);
-  }
-  return total;
-}
 
 // ---------- editing ----------
+// Reads the sheet back into the model. Only while the press is on screen:
+// innerText on an element nobody can see falls back to textContent, where a
+// line break is a <br> that contributes nothing, and a back cover captured
+// from the desk came out with every newline deleted and was archived that
+// way. Nothing can have been typed into a hidden sheet, so there is nothing
+// to capture from one.
 function capturePanels() {
   var ps = pressState();
   var zone = document.getElementById('sheetzone');
-  if (!zone) return;
+  if (!zone || !zone.offsetParent) return;
   ps.panels.forEach(function (panel, i) {
     var el = zone.querySelector('[data-page="' + (i + 1) + '"]');
     if (!el) return;
