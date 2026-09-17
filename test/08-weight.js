@@ -118,11 +118,15 @@ module.exports = async function weight(browser, ok) {
 
   ok('every page of the full issue carries a photograph', full.placed === 8, full.placed + ' placed');
 
-  // The fixed term: an issue with no photographs is the press and little else.
-  // check.sh guards the same number against the built fragment, where it can
-  // be measured without a browser.
+  // The fixed term. check.sh ratchets the built fragment at 192 KB without a
+  // browser; this measures the same thing from the other side, the press as
+  // it actually rides in a file, which is the file less the seed it carries.
+  // Comparing the whole bare file against the same number once put the
+  // document wrapper and the seed on the wrong side of the ledger.
+  const seedOf = (html) => (html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/) || ['', ''])[1];
+  const pressBytes = bareBytes - Buffer.byteLength(seedOf(bare.html));
   ok('the press is a fixed cost, and it has not crept',
-     bareBytes < 192 * KB, Math.round(bareBytes / KB) + ' KB, ratchet 192 KB');
+     pressBytes < 192 * KB, Math.round(pressBytes / KB) + ' KB, ratchet 192 KB');
 
   // The marginal term, and the one with a principle under it.
   const perPhoto = (fullBytes - bareBytes) / full.placed;
@@ -135,7 +139,7 @@ module.exports = async function weight(browser, ok) {
 
   // The structural version of the same claim: two tones, stored in one bit.
   // A PNG header says this outright, so the check does not depend on a size.
-  const seed = JSON.parse(full.html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/)[1]);
+  const seed = JSON.parse(seedOf(full.html));
   const shots = Object.keys(seed.photos || {}).map(k => seed.photos[k]);
   const headers = shots.map((url) => {
     const png = Buffer.from(url.split(',')[1], 'base64');
