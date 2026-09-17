@@ -52,6 +52,16 @@ module.exports = async function scene(browser, ok) {
   await page.click('#savenamesbtn2');
   await page.waitForTimeout(250);
 
+  // Nothing published yet: the verb says so and opens the desk, and writes
+  // nothing, because a draft is not an issue until the bell has rung.
+  const noFile = await Promise.all([
+    page.waitForEvent('download', { timeout: 1200 }).then(() => true).catch(() => false),
+    page.click('#handonbtn')
+  ]).then(r => r[0]);
+  ok('HAND IT ON with nothing published opens the desk and writes no file',
+     noFile === false && (await page.evaluate(() => location.hash)) === '#desk',
+     'download=' + noFile + ' hash=' + await page.evaluate(() => location.hash));
+
   await go('#log');
   const chips = (await page.locator('[data-logfilter]').allInnerTexts())
     .map(s => s.trim().toLowerCase());

@@ -44,6 +44,11 @@ module.exports = async function selfcarry(browser, ok) {
   await page.click('#buildissuebtn');
   await page.waitForTimeout(600);
 
+  // The verb on the bar hands on whatever was published last.
+  const [hd] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  ok('HAND IT ON HANDS ON THE LATEST ISSUE', /nightbus-01\.html/.test(hd.suggestedFilename()),
+     hd.suggestedFilename());
+
   const [dl] = await Promise.all([
     page.waitForEvent('download'),
     page.click('[data-exportissue="01"]')
