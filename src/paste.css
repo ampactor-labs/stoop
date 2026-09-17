@@ -1,0 +1,66 @@
+/* ---------- the paste-up ---------- */
+/* The layer floats over the flowed text and lets pointer events through
+   everywhere it is empty, so clicking a panel's body still puts a caret in it. */
+.pasteup { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.el { position: absolute; pointer-events: auto; box-sizing: border-box; cursor: grab; }
+.el:active { cursor: grabbing; }
+.el.sel { outline: 1px dashed var(--red); outline-offset: 2px; }
+
+.el-box { border: 2px solid var(--ink); }
+.el-box.inkwhite { background: var(--ink); border-color: var(--ink); }
+.elrule { width: 100%; height: 100%; background: var(--ink); min-height: 2px; }
+.elphoto { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
+.elphoto.fill { object-fit: cover; }
+.elmissing { width: 100%; height: 100%; border: 1px dashed #999; color: #999; font: 9px 'Courier New', monospace; display: flex; align-items: center; justify-content: center; }
+
+.eltext { width: 100%; height: 100%; overflow: hidden; outline: none; color: var(--ink); white-space: pre-wrap; }
+.eltext.knock { background: var(--ink); color: #fff; padding: 2px 4px; }
+
+/* The voices. A zine mixes what was to hand: the typewriter it was drafted on,
+   a headline cut off a newspaper, letters off a magazine, and a pen. */
+.v-type { font-family: 'Courier New', monospace; line-height: 1.45; }
+.v-head { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; line-height: .95; letter-spacing: .02em; text-transform: uppercase; }
+.v-hand { font-family: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive; line-height: 1.3; }
+.v-ransom { line-height: 1.5; }
+
+/* Ransom note: every character cut from somewhere else. The four families are
+   whatever any machine already has, because a webfont would mean a request. */
+.rn { display: inline-block; padding: 0 1px; }
+.rn.f0 { font-family: Impact, Haettenschweiler, sans-serif; }
+.rn.f1 { font-family: Georgia, 'Times New Roman', serif; font-weight: bold; }
+.rn.f2 { font-family: 'Courier New', monospace; font-weight: bold; }
+.rn.f3 { font-family: 'Arial Black', Arial, sans-serif; font-style: italic; }
+.rn.inv { background: var(--ink); color: #fff; padding: 0 3px; }
+
+/* Handles. Sized in absolute pixels so they stay grabbable when the sheet is
+   zoomed down to fit the window. */
+.h { position: absolute; width: 11px; height: 11px; background: #fff; border: 2px solid var(--red); pointer-events: auto; }
+.h-size { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.h-rot { left: 50%; top: -20px; margin-left: -6px; border-radius: 50%; cursor: grab; }
+.h-rot::after { content: ''; position: absolute; left: 50%; top: 9px; width: 1px; height: 10px; background: var(--red); }
+
+/* The paste-up strip under the toolbar */
+.pasteup-bar .press-actions { margin-top: .5rem; }
+.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin-top: .7rem; border-top: 1px dashed var(--grey); padding-top: .6rem; }
+.inspector.on { color: var(--bone); }
+.insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
+.insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
+#ransomtext { margin-top: .5rem; width: 100%; }
+
+/* Nothing that only exists to be grabbed may reach the paper. */
+@media print {
+  .h, .pasteup-bar { display: none !important; }
+  .el.sel { outline: none !important; }
+}
+
+/* A cutting is dragged by its face. Text only takes the pointer once somebody
+   has double-clicked into it, or every attempt to move a text block would put
+   a caret in it instead. */
+.el .eltext { pointer-events: none; }
+.el.editing .eltext { pointer-events: auto; cursor: text; }
+.el.editing { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* A text cutting grows to hold its words rather than hiding them, so it is
+   never taller than its box by the time anything measures it. */
+.eltext { height: auto; min-height: 100%; }
+.v-ransom { line-height: 1.25; }

@@ -23,15 +23,18 @@ function staticSheetHtml(panels, formatId, hand, photos, url) {
           '<h3>' + esc(p.h || '') + '</h3>' +
           (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
           '<div class="body">' + esc(p.body || '') + '</div>' +
+          pasteupHtml(p, pics, false) +
           (slot.page === pages ? addr : '') +
           '</div>';
       }).join('') + '</div></div>';
   }).join('');
 }
 
-// The other substrate. Same source, no imposition: this is the issue you open
-// on a phone at the bus stop, and nothing in it needs a network to mean
-// something.
+// The other substrate. Same source, no imposition and no paste-up: a collage
+// is a property of a page at a fixed size, and this view has neither. What was
+// written still reads; where it was glued does not survive, by design. This is
+// the issue you open on a phone at the bus stop, and nothing in it needs a
+// network to mean something.
 function readingHtml(issue, photos) {
   var pics = photos || photoCache;
   var panels = issue.panels || [];

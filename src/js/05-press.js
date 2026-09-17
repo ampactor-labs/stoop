@@ -138,6 +138,8 @@ function paintPanels() {
       if (img) img.remove();
       if (drop) drop.remove();
     }
+
+    paintPasteup(el, panel);
   });
 
   var num = document.getElementById('issueno');
@@ -170,6 +172,7 @@ function renderPress() {
   checkFit();
   pressStatus();
   renderTray();
+  renderInspector();
 }
 
 // Ringing the bell archives the issue and starts the next one, so the sheet on

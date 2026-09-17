@@ -20,7 +20,7 @@ OUT_ROOT="${OUT_ROOT:-.}"
 emit_app_fragment() {
   cat src/meta.html
   printf '<style>\n'
-  cat src/base.css src/forms.css src/views.css
+  cat src/base.css src/forms.css src/views.css src/paste.css
   printf '</style>\n\n'
   cat src/chrome.html
   printf '\n<main>\n\n'

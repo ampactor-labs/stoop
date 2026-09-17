@@ -23,7 +23,8 @@ const suites = [
   ['qr', require('./05-qr.js')],
   ['pdf', require('./06-pdf.js')],
   ['a scene of four', require('./07-scene.js')],
-  ['weight', require('./08-weight.js')]
+  ['weight', require('./08-weight.js')],
+  ['paste-up', require('./09-pasteup.js')]
 ];
 
 (async () => {

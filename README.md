@@ -33,6 +33,8 @@ At **the desk**, whoever holds the chair this cycle reads the tray, cuts what wi
 
 **The press** imposes that issue for paper — one sheet of eight panels with a single cut, at Letter or A4, or a saddle-stitch signature at eight, twelve or sixteen pages. The imposition is computed rather than hardcoded, so changing format re-flows the same pieces without a word being retyped. A panel clips what will not fit, because a printer will too, and the fit meter says how many words that is rather than letting them vanish.
 
+On top of that sits **the paste-up**, because a zine is not a document — it is a board somebody glued things onto and then photocopied. Drop a cutting on any panel and drag it anywhere, at any angle, over anything: text in four voices (typewriter, headline, ransom note cut letter by letter from four different faces, and a hand), photographs, rules and blocks, black on white or knocked out white on black. Everything is held as a fraction of its panel rather than as a measurement, so a collage survives a change of format the same way a paragraph does. Drag to move, double-click to type, arrow keys to nudge, and undo the whole way back. All of it prints: the PDF writer draws every cutting at its true angle with real font metrics, so what is on screen is what comes out of the copier.
+
 **The shelf** keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly however the current draft happens to be set. The compile window is bounded by the last issue's timestamp, so issue two cannot reprint issue one.
 
 Paper comes out four ways: a browser print, a hand-written PDF at exact paper size with nothing for a print dialog to negotiate, a flyer with tear-off tabs, or a single HTML file that is the issue, the archive behind it, and a working press for the next one. That last file is the point: open it on a machine that has never seen this app and you can read the issue, make the next one, and hand it on.
@@ -49,7 +51,7 @@ the desk                   SUBMIT a piece, or DRAW FROM LOG, JOURNAL & PROJECTS
      |                     COMPILE ONTO THE SHEET
      |                     RING THE BELL - PUBLISH
      |
-the press                  TEST SHEET, SWAP FOLD, then SAVE PDF and fold it
+the press                  paste it up, TEST SHEET, SWAP FOLD, SAVE PDF, fold
      |
 the shelf                  EXPORT, and hand that file to somebody
 ```
@@ -68,7 +70,7 @@ Then again next cycle. The second issue is the whole project.
 
 ### The build
 
-[`src/`](src/) with [`build.sh`](build.sh) and [`check.sh`](check.sh). Parts under 300 lines, split at view and concern boundaries, assembled into the shipped one-file artifacts the way SQLite's hundred source files ship as one amalgamation. `check.sh` makes the laws mechanical: outputs reproducible from source, zero external requests, an honest page-weight badge, both presses folding the same way, the app small enough to ride inside its own output, and no absolute URL in built output. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+[`src/`](src/) with [`build.sh`](build.sh) and [`check.sh`](check.sh). Parts under 300 lines, split at view and concern boundaries, assembled into the shipped one-file artifacts the way SQLite's hundred source files ship as one amalgamation. `check.sh` makes the laws mechanical: outputs reproducible from source, zero external requests, an honest page-weight badge, both presses folding the same way, a ratchet on the press's own size because every issue file carries it, and no absolute URL in built output. What an issue actually weighs is held separately in `test/08-weight.js`, which publishes one and measures it instead of asserting a number. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Where it lives
 

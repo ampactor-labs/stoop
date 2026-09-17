@@ -65,12 +65,38 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
   "editor": "a",
   "note": "Four pieces this cycle, one cut (mine).",
   "ts": 1788000000000,
-  "panels": [ { "h": "…", "body": "…", "photo": "ph_abc123" }, … ],
+  "panels": [ { "h": "…", "body": "…", "photo": "ph_abc123", "els": [ … ] }, … ],
   "pieces": [ … ]
 }
 ```
 
 `panels` has exactly as many entries as the format has pages, in reading order: index 0 is page 1, the front cover; the last index is the back cover. `h` is the heading, `body` is plain text with newlines significant, `photo` is a photo id or `null`.
+
+### The paste-up
+
+`els` is an optional array of things glued onto the page by hand, drawn over the flowed text in ascending `z`. It is what makes a page a paste-up rather than a form. A reader that does not implement it MUST still render `h`, `body` and `photo`, and SHOULD keep `els` intact when passing the issue on.
+
+```json
+{
+  "id": "el_9fq2x",
+  "kind": "text",
+  "x": 0.12, "y": 0.44, "w": 0.6, "h": 0.2,
+  "rot": -3.5,
+  "z": 2,
+  "voice": "ransom",
+  "text": "SPLIT LIP",
+  "size": 20,
+  "ink": "black"
+}
+```
+
+- `kind` is `text`, `photo`, `rule` or `box`. A reader MUST ignore an element whose kind it does not know rather than refusing the issue.
+- **`x`, `y`, `w` and `h` are fractions of the panel, not lengths.** A panel is a different size in every format, and the same issue re-imposed from an eight-page fold to a sixteen-page signature must carry its collage with it. Writers MUST NOT store points or pixels here. Values outside 0–1 are legal: a cutting may hang over the edge, and the panel clips it.
+- `rot` is degrees clockwise about the element's own centre, matching CSS. A page printed upside down by the imposition rotates the whole panel; `rot` is relative to the panel, never to the sheet.
+- `z` orders elements within one panel and nothing else.
+- `voice` applies to `text` and is `type`, `head`, `ransom` or `hand`. `ransom` renders each character separately in a mixed face, size and tilt; those MUST be derived from the character and its index rather than drawn at random, so the same issue cuts the same letters on every machine and on paper. `size` is the type size in points at the panel's true printed size.
+- `ink` is `black` or `white`. On `text` it knocks the type out of a filled block; on `box` it fills the box instead of outlining it.
+- `photo` on a `photo` element names an id in `photos`. `crop` true fills the box and clips the overflow; absent or false fits the whole frame inside it.
 
 An issue is **immutable once published**. `panels` is what shipped, and a reader reprinting issue three MUST use issue three's own `format` and `hand`, not whatever the reader is currently set to. Implementations that merge archives MUST keep the copy already held and discard the incoming one when both carry the same `no`.
 

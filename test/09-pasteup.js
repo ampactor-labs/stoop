@@ -1,0 +1,181 @@
+// The paste-up. A zine is a board things got glued to, and the claims that
+// matter are that you can put a thing anywhere, that it survives a change of
+// format, and that it reaches the paper. A WYSIWYG whose output does not
+// print is a mockup with extra steps.
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+
+const APP = 'file://' + path.resolve(__dirname, '..', 'index.html');
+
+module.exports = async function pasteup(browser, ok) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'stoop-paste-'));
+  const ctx = await browser.newContext({ viewport: { width: 1500, height: 1050 }, acceptDownloads: true });
+  const page = await ctx.newPage();
+  const errs = [];
+  page.on('pageerror', e => errs.push(e.message));
+  page.on('dialog', d => d.accept());
+  const go = async (h) => { await page.evaluate(x => { location.hash = x; }, h); await page.waitForTimeout(280); };
+  const geom = (sel) => page.evaluate((s) => {
+    const e = document.querySelector(s);
+    return e ? { left: e.style.left, top: e.style.top, transform: e.style.transform } : null;
+  }, sel);
+
+  await page.goto(APP);
+  await page.waitForTimeout(700);
+  await go('#press');
+
+  // ---- a cutting lands on the panel you were last looking at
+  await page.click('[data-page="1"]');
+  await page.click('[data-addel="text"]');
+  await page.waitForTimeout(350);
+  ok('a cutting lands on the panel', (await page.locator('[data-page="1"] .el').count()) === 1);
+  ok('and it comes up selected, with handles',
+     (await page.locator('[data-page="1"] .el.sel .h-rot').count()) === 1);
+
+  // ---- dragging moves it, and the model is in fractions of the panel
+  // The sheet sits well below the fold; a gesture has to be aimed at pixels
+  // that are actually on screen or it lands on nothing.
+  const before = await geom('[data-page="1"] .el');
+  await page.locator('[data-page="1"] .el').first().scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  let box = await page.locator('[data-page="1"] .el').first().boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 70, box.y + box.height / 2 + 45, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  const after = await geom('[data-page="1"] .el');
+  ok('DRAGGING MOVES IT', after.left !== before.left && after.top !== before.top,
+     before.left + ' -> ' + after.left);
+  ok('and the position is a fraction of the panel, not a pixel',
+     /%$/.test(after.left) && /%$/.test(after.top), after.left + ' / ' + after.top);
+
+  // ---- a panel printed upside down has to drag the right way too
+  await page.click('[data-page="5"]');
+  await page.click('[data-addel="box"]');
+  await page.waitForTimeout(350);
+  const flipped = await page.locator('[data-page="5"]').getAttribute('class');
+  const fBefore = await geom('[data-page="5"] .el');
+  await page.locator('[data-page="5"] .el').first().scrollIntoViewIfNeeded();
+  await page.waitForTimeout(200);
+  const fbox = await page.locator('[data-page="5"] .el').first().boundingBox();
+  await page.mouse.move(fbox.x + fbox.width / 2, fbox.y + fbox.height / 2);
+  await page.mouse.down();
+  // Drag right on screen. On a flipped panel that is left in the model.
+  await page.mouse.move(fbox.x + fbox.width / 2 + 80, fbox.y + fbox.height / 2, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  const fAfter = await geom('[data-page="5"] .el');
+  const wentLeft = parseFloat(fAfter.left) < parseFloat(fBefore.left);
+  ok('A PANEL PRINTED UPSIDE DOWN DRAGS THE WAY IT LOOKS',
+     /flip/.test(flipped) ? wentLeft : !wentLeft,
+     'flip=' + /flip/.test(flipped) + ' ' + fBefore.left + ' -> ' + fAfter.left);
+
+  // ---- a text cutting is moved by default and typed into on purpose
+  await page.dblclick('[data-page="1"] .el');
+  await page.waitForTimeout(300);
+  ok('DOUBLE-CLICK PUTS YOU INSIDE A TEXT CUTTING',
+     (await page.locator('[data-page="1"] .el.editing').count()) === 1);
+  await page.keyboard.type(' ZINE');
+  await page.waitForTimeout(300);
+  ok('and typing reaches the model',
+     /ZINE/.test(await page.locator('[data-page="1"] .el .eltext').innerText()),
+     await page.locator('[data-page="1"] .el .eltext').innerText());
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  ok('and Escape comes back out to moving it',
+     (await page.locator('.el.editing').count()) === 0);
+
+  // ---- voices, and the ransom note
+  await page.click('[data-page="1"] .el');
+  await page.waitForTimeout(200);
+  await page.click('[data-elvoice]');
+  await page.waitForTimeout(250);
+  await page.click('[data-elvoice]');
+  await page.waitForTimeout(250);
+  ok('the voice cycles to the ransom note',
+     (await page.locator('[data-elvoice]').innerText()).trim() === 'RANSOM',
+     await page.locator('[data-elvoice]').innerText());
+  await page.fill('#ransomtext', 'SPLIT LIP');
+  await page.waitForTimeout(400);
+  const cut = await page.evaluate(() => [...document.querySelectorAll('[data-page="1"] .rn')]
+    .map(s => s.className + '|' + s.style.transform + '|' + s.style.fontSize));
+  ok('every letter is cut from somewhere else', cut.length === 8, cut.length + ' letters');
+  ok('and no letter came out with a negative size or an unknown face',
+     cut.every(c => !/-\d*\.?\d+em/.test(c) && /\bf[0-3]\b/.test(c)), cut[0]);
+  ok('the letters are not all identical',
+     new Set(cut.map(c => c.split('|')[0])).size > 1,
+     [...new Set(cut.map(c => c.split('|')[0]))].join(' '));
+
+  // ---- undo and redo
+  const elCount = () => page.evaluate(() => document.querySelectorAll('.el').length);
+  const had = await elCount();
+  await page.click('[data-addel="rule"]');
+  await page.waitForTimeout(300);
+  ok('a rule is a cutting too', (await elCount()) === had + 1);
+  await page.click('#undobtn');
+  await page.waitForTimeout(350);
+  ok('UNDO TAKES IT BACK', (await elCount()) === had);
+  await page.click('#redobtn');
+  await page.waitForTimeout(350);
+  ok('and redo puts it back', (await elCount()) === had + 1);
+
+  // ---- the promise the whole press is built on
+  const keep = await geom('[data-page="1"] .el');
+  await page.selectOption('#formatsel', 'saddle16');
+  await page.waitForTimeout(700);
+  const kept = await geom('[data-page="1"] .el');
+  ok('A PASTE-UP SURVIVES A CHANGE OF FORMAT',
+     kept && kept.left === keep.left && kept.top === keep.top,
+     keep.left + ' -> ' + (kept ? kept.left : 'gone'));
+  await page.selectOption('#formatsel', 'fold8');
+  await page.waitForTimeout(600);
+
+  // ---- and it reaches the paper
+  const [dl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 25000 }),
+    page.click('#pdfzinebtn')
+  ]);
+  const pdf = path.join(dir, 'sheet.pdf');
+  await dl.saveAs(pdf);
+  const raw = fs.readFileSync(pdf, 'latin1');
+  ok('THE PASTE-UP REACHES THE PDF', raw.length > 2000 && /%PDF/.test(raw));
+  ok('and the cut letters bring their own faces with them',
+     /Times-Bold/.test(raw) && /Courier-Bold/.test(raw) && /Helvetica-BoldOblique/.test(raw));
+
+  // ---- and it travels
+  await go('#desk');
+  await page.click('#buildissuebtn');
+  await page.waitForTimeout(800);
+  const [dl2] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('[data-exportissue="01"]')
+  ]);
+  const file = path.join(dir, dl2.suggestedFilename());
+  await dl2.saveAs(file);
+  const html = fs.readFileSync(file, 'utf8');
+  ok('the exported issue carries the paste-up', /"els":\[/.test(html));
+
+  const fresh = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
+  const other = await fresh.newPage();
+  other.on('pageerror', e => errs.push('reader: ' + e.message));
+  await other.goto('file://' + file);
+  await other.waitForTimeout(900);
+  await other.click('[data-reprintissue="01"]').catch(() => {});
+  await other.waitForTimeout(300);
+  ok('AND IT IS THERE ON THE MACHINE THAT OPENS THE FILE',
+     (await other.locator('#shelfreader, .shelf-row').count()) > 0);
+  const carried = await other.evaluate(() => {
+    const s = document.getElementById('stoop-seed');
+    const seed = JSON.parse(s.textContent);
+    const panels = (seed.issues[0] || {}).panels || [];
+    return panels.reduce((n, p) => n + ((p.els || []).length), 0);
+  });
+  ok('with every cutting still on it', carried >= 3, carried + ' cuttings in the seed');
+  await fresh.close();
+
+  ok('no script errors anywhere in the paste-up', errs.length === 0, errs.slice(0, 3).join(' | '));
+  await ctx.close();
+  fs.rmSync(dir, { recursive: true, force: true });
+};

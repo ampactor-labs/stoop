@@ -340,6 +340,72 @@
   body.reprinting main, body.reprinting header.chrome { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
 }
+/* ---------- the paste-up ---------- */
+/* The layer floats over the flowed text and lets pointer events through
+   everywhere it is empty, so clicking a panel's body still puts a caret in it. */
+.pasteup { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.el { position: absolute; pointer-events: auto; box-sizing: border-box; cursor: grab; }
+.el:active { cursor: grabbing; }
+.el.sel { outline: 1px dashed var(--red); outline-offset: 2px; }
+
+.el-box { border: 2px solid var(--ink); }
+.el-box.inkwhite { background: var(--ink); border-color: var(--ink); }
+.elrule { width: 100%; height: 100%; background: var(--ink); min-height: 2px; }
+.elphoto { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
+.elphoto.fill { object-fit: cover; }
+.elmissing { width: 100%; height: 100%; border: 1px dashed #999; color: #999; font: 9px 'Courier New', monospace; display: flex; align-items: center; justify-content: center; }
+
+.eltext { width: 100%; height: 100%; overflow: hidden; outline: none; color: var(--ink); white-space: pre-wrap; }
+.eltext.knock { background: var(--ink); color: #fff; padding: 2px 4px; }
+
+/* The voices. A zine mixes what was to hand: the typewriter it was drafted on,
+   a headline cut off a newspaper, letters off a magazine, and a pen. */
+.v-type { font-family: 'Courier New', monospace; line-height: 1.45; }
+.v-head { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; line-height: .95; letter-spacing: .02em; text-transform: uppercase; }
+.v-hand { font-family: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive; line-height: 1.3; }
+.v-ransom { line-height: 1.5; }
+
+/* Ransom note: every character cut from somewhere else. The four families are
+   whatever any machine already has, because a webfont would mean a request. */
+.rn { display: inline-block; padding: 0 1px; }
+.rn.f0 { font-family: Impact, Haettenschweiler, sans-serif; }
+.rn.f1 { font-family: Georgia, 'Times New Roman', serif; font-weight: bold; }
+.rn.f2 { font-family: 'Courier New', monospace; font-weight: bold; }
+.rn.f3 { font-family: 'Arial Black', Arial, sans-serif; font-style: italic; }
+.rn.inv { background: var(--ink); color: #fff; padding: 0 3px; }
+
+/* Handles. Sized in absolute pixels so they stay grabbable when the sheet is
+   zoomed down to fit the window. */
+.h { position: absolute; width: 11px; height: 11px; background: #fff; border: 2px solid var(--red); pointer-events: auto; }
+.h-size { right: -6px; bottom: -6px; cursor: nwse-resize; }
+.h-rot { left: 50%; top: -20px; margin-left: -6px; border-radius: 50%; cursor: grab; }
+.h-rot::after { content: ''; position: absolute; left: 50%; top: 9px; width: 1px; height: 10px; background: var(--red); }
+
+/* The paste-up strip under the toolbar */
+.pasteup-bar .press-actions { margin-top: .5rem; }
+.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin-top: .7rem; border-top: 1px dashed var(--grey); padding-top: .6rem; }
+.inspector.on { color: var(--bone); }
+.insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
+.insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
+#ransomtext { margin-top: .5rem; width: 100%; }
+
+/* Nothing that only exists to be grabbed may reach the paper. */
+@media print {
+  .h, .pasteup-bar { display: none !important; }
+  .el.sel { outline: none !important; }
+}
+
+/* A cutting is dragged by its face. Text only takes the pointer once somebody
+   has double-clicked into it, or every attempt to move a text block would put
+   a caret in it instead. */
+.el .eltext { pointer-events: none; }
+.el.editing .eltext { pointer-events: auto; cursor: text; }
+.el.editing { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* A text cutting grows to hold its words rather than hiding them, so it is
+   never taller than its box by the time anything measures it. */
+.eltext { height: auto; min-height: 100%; }
+.v-ransom { line-height: 1.25; }
 </style>
 
 <header class="chrome">
@@ -512,6 +578,23 @@
     <div id="phototray" class="phototray"></div>
   </div>
 
+  <div class="paper pasteup-bar">
+    <div class="tray-head">
+      <h2>PASTE-UP</h2>
+      <span class="sub" id="addhint">Click a panel first.</span>
+    </div>
+    <div class="press-actions">
+      <button class="btn" data-addel="text">+ TEXT</button>
+      <button class="btn" data-addel="photo">+ PHOTO</button>
+      <button class="btn quiet" data-addel="box">+ BOX</button>
+      <button class="btn quiet" data-addel="rule">+ RULE</button>
+      <button class="btn quiet" id="undobtn">UNDO</button>
+      <button class="btn quiet" id="redobtn">REDO</button>
+    </div>
+    <p class="sub">Flowed text comes from the desk and re-flows when you change format. A cutting is placed by hand and stays where you put it, at whatever angle, over whatever it likes — held as a fraction of the panel, so changing format moves it with the page instead of losing it.</p>
+    <div id="inspector" class="inspector"></div>
+  </div>
+
   <div class="sheetzone" id="sheetzone"></div>
 
   <div class="paper fold-guide">
@@ -609,7 +692,7 @@
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 138 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 174 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -1605,6 +1688,8 @@ function paintPanels() {
       if (img) img.remove();
       if (drop) drop.remove();
     }
+
+    paintPasteup(el, panel);
   });
 
   var num = document.getElementById('issueno');
@@ -1637,6 +1722,7 @@ function renderPress() {
   checkFit();
   pressStatus();
   renderTray();
+  renderInspector();
 }
 
 // Ringing the bell archives the issue and starts the next one, so the sheet on
@@ -1762,6 +1848,700 @@ function clearSheet() {
   renderPress();
   toast('Cleared the sheet');
 }
+// ---------- the paste-up ----------
+// A zine is not a document. It is a board somebody glued things onto and then
+// photocopied, and its grammar is overlap, tilt, mixed type and grain. The
+// flowed text on a panel — h and body — is the editorial substrate: it comes
+// from the desk and re-flows when the format changes. Everything in els is the
+// paste-up on top of it, placed by hand, at any angle, over anything.
+//
+// Positions are fractions of the panel, never points. A panel is a different
+// size in every format, and a paste-up that only worked at Letter fold-8 would
+// break the one promise the press already makes: change the vessel, retype
+// nothing. Fractions move with the panel, so a collage survives the change the
+// same way a paragraph does.
+
+var VOICES = ['type', 'head', 'ransom', 'hand'];
+var VOICE_SIZE = { type: 11.5, head: 20, ransom: 15, hand: 14 };
+var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', ransom: 'RANSOM', hand: 'HAND' };
+var pasteSel = null;
+// A text cutting is a thing you move until you say otherwise. Editable text
+// under the pointer would eat the drag, so typing is a mode you enter on a
+// double click and leave on Escape, the way every other canvas works.
+var pasteEditing = null;
+
+function elsOf(panel) {
+  if (!panel) return [];
+  if (!Array.isArray(panel.els)) panel.els = [];
+  return panel.els;
+}
+
+function panelOfPage(page) {
+  return pressState().panels[page - 1] || null;
+}
+
+function findEl(id) {
+  var ps = pressState();
+  for (var i = 0; i < ps.panels.length; i++) {
+    var els = elsOf(ps.panels[i]);
+    for (var j = 0; j < els.length; j++) {
+      if (els[j].id === id) return { el: els[j], panel: ps.panels[i], page: i + 1, at: j };
+    }
+  }
+  return null;
+}
+
+function selectedEl() {
+  var hit = pasteSel ? findEl(pasteSel) : null;
+  return hit ? hit.el : null;
+}
+
+// ---------- undo ----------
+// Direct manipulation without undo is a dare, not a tool. The whole panel
+// array is snapshotted, which is cheap next to the photographs it points at
+// and means a step never half-applies. Typing is snapshotted once per editing
+// session rather than per keystroke, on the way into the field.
+var pasteUndo = [];
+var pasteRedo = [];
+var UNDO_DEPTH = 50;
+
+function snapshot() {
+  return JSON.stringify(pressState().panels);
+}
+
+function pasteMark() {
+  pasteUndo.push(snapshot());
+  if (pasteUndo.length > UNDO_DEPTH) pasteUndo.shift();
+  pasteRedo.length = 0;
+}
+
+function pasteRestore(json) {
+  var ps = pressState();
+  ps.panels = JSON.parse(json);
+  savePress();
+  if (pasteSel && !findEl(pasteSel)) pasteSel = null;
+  sheetSig = '';
+  renderPress();
+}
+
+function pasteUndoStep() {
+  if (!pasteUndo.length) { toast('Nothing to undo'); return; }
+  pasteRedo.push(snapshot());
+  pasteRestore(pasteUndo.pop());
+  toast('Undo');
+}
+
+function pasteRedoStep() {
+  if (!pasteRedo.length) { toast('Nothing to redo'); return; }
+  pasteUndo.push(snapshot());
+  pasteRestore(pasteRedo.pop());
+  toast('Redo');
+}
+
+// ---------- adding ----------
+var PASTE_DEFAULTS = {
+  text: { w: 0.52, h: 0.16 },
+  photo: { w: 0.55, h: 0.34 },
+  rule: { w: 0.66, h: 0.012 },
+  box: { w: 0.45, h: 0.26 }
+};
+
+function topZ(panel) {
+  return elsOf(panel).reduce(function (m, e) { return Math.max(m, e.z || 0); }, 0);
+}
+
+// Nothing you tape to a board lands square. A couple of degrees either way is
+// the difference between a zine and a memo, so new work arrives slightly
+// crooked and the rotate handle resets to straight on a double click.
+function crooked(seed) {
+  return Math.round(((seed % 100) / 100 - 0.5) * 50) / 10;
+}
+
+function addEl(page, kind, extra) {
+  var panel = panelOfPage(page);
+  if (!panel) return null;
+  pasteMark();
+  var els = elsOf(panel);
+  var size = PASTE_DEFAULTS[kind] || PASTE_DEFAULTS.text;
+  // Each new cutting lands clear of the last one. A small offset buries them
+  // in a pile and the fourth thing you add looks like it did not arrive.
+  var nudge = (els.length % 6) * 0.075;
+  var el = {
+    id: uid('el'),
+    kind: kind,
+    x: Math.min(0.9 - size.w, 0.12 + nudge),
+    y: Math.min(0.9 - size.h, 0.16 + nudge),
+    w: size.w,
+    h: size.h,
+    rot: kind === 'rule' ? 0 : crooked(els.length * 37 + page * 13),
+    z: topZ(panel) + 1
+  };
+  if (kind === 'text') {
+    el.voice = (extra && extra.voice) || 'type';
+    el.text = (extra && extra.text) || '';
+    el.size = VOICE_SIZE[el.voice];
+    el.ink = 'black';
+  }
+  if (kind === 'photo') el.photo = extra && extra.photo;
+  if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
+  els.push(el);
+  pasteSel = el.id;
+  savePress();
+  return el;
+}
+
+function removeEl(id) {
+  var hit = findEl(id);
+  if (!hit) return;
+  pasteMark();
+  hit.panel.els.splice(hit.at, 1);
+  if (pasteSel === id) pasteSel = null;
+  savePress();
+  renderPress();
+}
+
+// ---------- changing one ----------
+function updateEl(id, fields, mark) {
+  var hit = findEl(id);
+  if (!hit) return;
+  if (mark) pasteMark();
+  Object.keys(fields).forEach(function (k) { hit.el[k] = fields[k]; });
+  savePress();
+}
+
+function raiseEl(id, toFront) {
+  var hit = findEl(id);
+  if (!hit) return;
+  pasteMark();
+  var els = elsOf(hit.panel);
+  if (toFront) {
+    hit.el.z = topZ(hit.panel) + 1;
+  } else {
+    var low = els.reduce(function (m, e) { return Math.min(m, e.z || 0); }, 0);
+    hit.el.z = low - 1;
+  }
+  savePress();
+  renderPress();
+}
+
+function cycleVoice(id) {
+  var hit = findEl(id);
+  if (!hit || hit.el.kind !== 'text') return;
+  var next = VOICES[(VOICES.indexOf(hit.el.voice) + 1) % VOICES.length];
+  updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
+  renderPress();
+  toast(VOICE_LABEL[next]);
+}
+
+function resizeText(id, by) {
+  var hit = findEl(id);
+  if (!hit || hit.el.kind !== 'text') return;
+  updateEl(id, { size: Math.max(6, Math.min(96, (hit.el.size || 12) + by)) }, true);
+  renderPress();
+}
+
+// A photograph on the paste-up can be any shape the panel allows, so the
+// element remembers whether it is showing the whole frame or filling its box.
+function toggleCrop(id) {
+  var hit = findEl(id);
+  if (!hit || hit.el.kind !== 'photo') return;
+  updateEl(id, { crop: !hit.el.crop }, true);
+  renderPress();
+  toast(hit.el.crop ? 'Filling the box — edges cropped' : 'Whole frame, letterboxed');
+}
+
+// Black on white or white on black. A knocked-out headline over a photograph
+// is half the visual grammar of the form and costs nothing to print.
+function toggleInk(id) {
+  var hit = findEl(id);
+  if (!hit || (hit.el.kind !== 'text' && hit.el.kind !== 'box')) return;
+  updateEl(id, { ink: hit.el.ink === 'white' ? 'black' : 'white' }, true);
+  renderPress();
+}
+// ---------- drawing the paste-up ----------
+// One renderer serves the editable press, the shelf, and the exported issue,
+// because an issue that looked different on the machine it was made on would
+// make the self-carrying file a lie.
+
+function hash32(s) {
+  var h = 2166136261;
+  for (var i = 0; i < String(s).length; i++) {
+    h ^= String(s).charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h >>> 0;
+}
+
+// Ransom note. Every character is cut from a different magazine, which means
+// a different face, size, tilt and sometimes a knocked-out block. The jitter
+// is derived from the element's id and the character's position rather than
+// from a random number, so the letters sit in exactly the same places on the
+// screen, in the PDF, and on the machine that opens the issue next week.
+// One description of the cut letters, read by the screen and by the PDF
+// writer. If these two derived the jitter separately they would drift, and a
+// press whose paper does not match its screen is not a press.
+function ransomSpec(text) {
+  return String(text || '').split('').map(function (ch, i) {
+    // Unsigned shifts throughout: hash32 fills all 32 bits, and >> would read
+    // the top bit as a sign for half of all characters, which lands a negative
+    // face index and a negative type size.
+    var r = hash32(i + ':' + ch + ':' + (i * 7));
+    return {
+      ch: ch,
+      tilt: (r % 15) - 7,
+      scale: 0.78 + ((r >>> 5) % 55) / 100,
+      inv: ((r >>> 11) % 5) === 0,
+      face: (r >>> 13) % 4
+    };
+  });
+}
+
+function ransomHtml(text) {
+  return ransomSpec(text).map(function (c) {
+    if (c.ch === ' ') return ' ';
+    if (c.ch === '\n') return '<br>';
+    return '<span class="rn f' + c.face + (c.inv ? ' inv' : '') +
+      '" style="transform:rotate(' + c.tilt + 'deg);font-size:' + c.scale.toFixed(2) + 'em">' +
+      esc(c.ch) + '</span>';
+  }).join('');
+}
+
+function elGeom(el) {
+  return 'left:' + (el.x * 100).toFixed(3) + '%;top:' + (el.y * 100).toFixed(3) + '%;' +
+    'width:' + (el.w * 100).toFixed(3) + '%;height:' + (el.h * 100).toFixed(3) + '%;' +
+    'transform:rotate(' + (el.rot || 0) + 'deg);z-index:' + (el.z || 0) + ';';
+}
+
+function elBody(el, pics, editable, editing) {
+  if (el.kind === 'rule') return '<div class="elrule"></div>';
+  if (el.kind === 'box') return '';
+  if (el.kind === 'photo') {
+    var src = el.photo && pics[el.photo];
+    if (!src) return '<div class="elmissing">photo</div>';
+    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="">';
+  }
+  var cls = 'eltext v-' + (el.voice || 'type') + (el.ink === 'white' ? ' knock' : '');
+  var style = 'font-size:' + (el.size || 12) + 'px';
+  if (el.voice === 'ransom') {
+    return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
+  }
+  // Every voice but ransom is edited where it sits. Ransom is per-character
+  // markup, and typing into that fights the caret on every keystroke, so it
+  // is edited in the inspector instead.
+  return '<div class="' + cls + '" style="' + style + '"' +
+    (editable && editing ? ' contenteditable="true"' : '') +
+    (editable ? ' data-eltext="' + esc(el.id) + '"' : '') +
+    '>' + esc(el.text || '') + '</div>';
+}
+
+function elHtml(el, pics, editable, selected) {
+  var editing = editable && el.id === pasteEditing;
+  return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') +
+    (selected ? ' sel' : '') + (editing ? ' editing' : '') +
+    '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + '">' +
+    elBody(el, pics, editable, editing) +
+    (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
+                '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
+    '</div>';
+}
+
+function pasteupHtml(panel, pics, editable) {
+  var els = elsOf(panel).slice().sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
+  if (!els.length && !editable) return '';
+  return '<div class="pasteup">' + els.map(function (e) {
+    return elHtml(e, pics || photoCache, editable, editable && e.id === pasteSel);
+  }).join('') + '</div>';
+}
+
+// A cutting is a piece of paper with words on it: it is as tall as the words.
+// Anything else silently swallows a line, which is the failure the fit meter
+// exists to prevent for flowed text, and the paste-up owes the same honesty.
+// The height is measured from the layout the browser actually performed and
+// written back, so the model, the screen and the PDF agree on one number.
+function growTextEls(panelEl, panel) {
+  var ph = panelEl.clientHeight;
+  if (!ph) return false;
+  var grew = false;
+  elsOf(panel).forEach(function (el) {
+    if (el.kind !== 'text') return;
+    var host = panelEl.querySelector('[data-el="' + el.id + '"]');
+    var node = host && host.querySelector('.eltext');
+    if (!node) return;
+    var need = node.scrollHeight / ph;
+    if (need > el.h + 0.004) {
+      el.h = Math.min(1.5, need);
+      host.style.height = (el.h * 100).toFixed(3) + '%';
+      grew = true;
+    }
+  });
+  return grew;
+}
+
+// The editable sheet repaints the paste-up in place. Rebuilding it wholesale
+// on every keystroke would drop the caret out of whatever is being typed into,
+// so a layer whose shape has not changed is left alone.
+function paintPasteup(panelEl, panel) {
+  var want = pasteupHtml(panel, photoCache, true);
+  var layer = panelEl.querySelector('.pasteup');
+  var typing = document.activeElement;
+  if (layer && typing && layer.contains(typing)) {
+    // Geometry can still move under the caret; text cannot be touched.
+    elsOf(panel).forEach(function (el) {
+      var node = layer.querySelector('[data-el="' + el.id + '"]');
+      if (node && node.getAttribute('style') !== elGeom(el)) node.setAttribute('style', elGeom(el));
+      if (node) node.classList.toggle('sel', el.id === pasteSel);
+    });
+    return;
+  }
+  if (!layer) {
+    panelEl.insertAdjacentHTML('beforeend', want);
+  } else if (layer.outerHTML !== want) {
+    layer.outerHTML = want;
+  }
+  if (growTextEls(panelEl, panel)) savePress();
+}
+// ---------- direct manipulation ----------
+// Dragging things around a sheet that is itself scaled to fit the window, and
+// half of whose panels are printed upside down, is the whole difficulty here.
+// Every gesture works in panel-local pixels taken from the live bounding box:
+// that absorbs the zoom for free, and a flipped panel is undone by measuring
+// from the far corner instead.
+var grab = null;
+var GRID = 1 / 24;
+
+function panelLocal(panelEl, cx, cy) {
+  var r = panelEl.getBoundingClientRect();
+  var x = cx - r.left;
+  var y = cy - r.top;
+  if (panelEl.classList.contains('flip')) { x = r.width - x; y = r.height - y; }
+  return { x: x, y: y, w: r.width, h: r.height };
+}
+
+function snap(v, on) {
+  return on ? Math.round(v / GRID) * GRID : v;
+}
+
+function clamp01(v, span) {
+  return Math.max(-0.25, Math.min(1.25 - span, v));
+}
+
+function startGrab(ev, mode, elNode) {
+  var panelEl = elNode.closest('.panel');
+  var hit = findEl(elNode.getAttribute('data-el'));
+  if (!panelEl || !hit) return;
+  var p = panelLocal(panelEl, ev.clientX, ev.clientY);
+  pasteMark();
+  grab = {
+    mode: mode,
+    id: hit.el.id,
+    panelEl: panelEl,
+    start: p,
+    from: { x: hit.el.x, y: hit.el.y, w: hit.el.w, h: hit.el.h, rot: hit.el.rot || 0 },
+    moved: false
+  };
+  if (mode === 'rot') {
+    var cx = (hit.el.x + hit.el.w / 2) * p.w;
+    var cy = (hit.el.y + hit.el.h / 2) * p.h;
+    grab.angle0 = Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI;
+  }
+  ev.preventDefault();
+}
+
+function moveGrab(ev) {
+  if (!grab) return;
+  var p = panelLocal(grab.panelEl, ev.clientX, ev.clientY);
+  var f = grab.from;
+  var fine = ev.altKey;
+  grab.moved = true;
+
+  if (grab.mode === 'move') {
+    var dx = (p.x - grab.start.x) / p.w;
+    var dy = (p.y - grab.start.y) / p.h;
+    updateEl(grab.id, {
+      x: clamp01(snap(f.x + dx, !fine), f.w),
+      y: clamp01(snap(f.y + dy, !fine), f.h)
+    });
+  } else if (grab.mode === 'size') {
+    // The delta is turned back through the element's own rotation, so dragging
+    // the corner of a crooked cutting grows it along its own edges.
+    var a = -(f.rot || 0) * Math.PI / 180;
+    var mx = p.x - grab.start.x;
+    var my = p.y - grab.start.y;
+    var rx = mx * Math.cos(a) - my * Math.sin(a);
+    var ry = mx * Math.sin(a) + my * Math.cos(a);
+    updateEl(grab.id, {
+      w: Math.max(0.04, snap(f.w + rx / p.w, !fine)),
+      h: Math.max(0.015, snap(f.h + ry / p.h, !fine))
+    });
+  } else if (grab.mode === 'rot') {
+    var ccx = (f.x + f.w / 2) * p.w;
+    var ccy = (f.y + f.h / 2) * p.h;
+    var now = Math.atan2(p.y - ccy, p.x - ccx) * 180 / Math.PI;
+    var rot = f.rot + (now - grab.angle0);
+    if (ev.shiftKey) rot = Math.round(rot / 15) * 15;
+    else if (Math.abs(rot) < 1.5) rot = 0;          // straight is findable by hand
+    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 });
+  }
+  paintOnePanel(grab.panelEl);
+}
+
+function endGrab() {
+  if (!grab) return;
+  // A gesture that never moved is a click; it should not cost an undo step.
+  if (!grab.moved) pasteUndo.pop();
+  grab = null;
+  renderPress();
+}
+
+function paintOnePanel(panelEl) {
+  var page = Number(panelEl.getAttribute('data-page'));
+  var panel = panelOfPage(page);
+  if (panel) paintPasteup(panelEl, panel);
+  renderInspector();
+}
+
+// Repainting a panel swaps its paste-up layer wholesale, so any node captured
+// before a repaint is detached and every call on it silently does nothing.
+// Anything that selects and then acts has to ask the document again.
+function liveEl(id) {
+  return document.querySelector('.el[data-el="' + id + '"]');
+}
+
+function selectEl(id) {
+  pasteSel = id;
+  var zone = document.getElementById('sheetzone');
+  if (zone) {
+    zone.querySelectorAll('.panel').forEach(function (p) {
+      var page = Number(p.getAttribute('data-page'));
+      var panel = panelOfPage(page);
+      if (panel) paintPasteup(p, panel);
+    });
+  }
+  renderInspector();
+}
+
+document.addEventListener('pointerdown', function (ev) {
+  var handle = ev.target.closest && ev.target.closest('.h[data-grab]');
+  if (handle) {
+    startGrab(ev, handle.getAttribute('data-grab'), handle.closest('.el'));
+    return;
+  }
+  var node = ev.target.closest && ev.target.closest('.el');
+  if (node) {
+    var id = node.getAttribute('data-el');
+    if (id !== pasteSel) {
+      pasteEditing = null;
+      selectEl(id);
+      node = liveEl(id) || node;
+    }
+    // A cutting being typed into owns its own pointer, or selecting a word
+    // inside it would drag the whole thing across the panel instead.
+    if (ev.target.isContentEditable) return;
+    startGrab(ev, 'move', node);
+    return;
+  }
+  if (ev.target.closest && ev.target.closest('.panel') && (pasteSel || pasteEditing)) {
+    pasteEditing = null;
+    selectEl(null);
+  }
+});
+
+document.addEventListener('pointermove', moveGrab);
+document.addEventListener('pointerup', endGrab);
+document.addEventListener('pointercancel', endGrab);
+
+// Double-clicking the turn handle puts a cutting back on the square.
+// Double-clicking a text cutting is how you get into it.
+document.addEventListener('dblclick', function (ev) {
+  var h = ev.target.closest && ev.target.closest('.h-rot');
+  if (h) {
+    updateEl(h.closest('.el').getAttribute('data-el'), { rot: 0 }, true);
+    renderPress();
+    return;
+  }
+  var node = ev.target.closest && ev.target.closest('.el');
+  if (!node) return;
+  var hit = findEl(node.getAttribute('data-el'));
+  if (!hit || hit.el.kind !== 'text' || hit.el.voice === 'ransom') return;
+  pasteEditing = hit.el.id;
+  selectEl(hit.el.id);
+  var live = liveEl(hit.el.id);
+  var field = live && live.querySelector('.eltext');
+  if (field) {
+    field.focus();
+    var r = document.createRange();
+    r.selectNodeContents(field);
+    r.collapse(false);
+    var sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+});
+
+// Typing into a pasted text element. The model is written on input; the undo
+// step is taken once, when the field is first entered.
+document.addEventListener('focusin', function (ev) {
+  if (ev.target.hasAttribute && ev.target.hasAttribute('data-eltext')) pasteMark();
+});
+document.addEventListener('input', function (ev) {
+  var t = ev.target;
+  if (!t.hasAttribute || !t.hasAttribute('data-eltext')) return;
+  updateEl(t.getAttribute('data-eltext'), { text: t.innerText });
+});
+
+document.addEventListener('keydown', function (ev) {
+  var key = ev.key;
+  var meta = ev.metaKey || ev.ctrlKey;
+  if (meta && (key === 'z' || key === 'Z')) {
+    if (document.activeElement && document.activeElement.isContentEditable) return;
+    ev.preventDefault();
+    if (ev.shiftKey) pasteRedoStep(); else pasteUndoStep();
+    return;
+  }
+  if (key === 'Escape' && pasteEditing) {
+    pasteEditing = null;
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    selectEl(pasteSel);
+    return;
+  }
+  if (!pasteSel) return;
+  if (document.activeElement && document.activeElement.isContentEditable) return;
+  var el = selectedEl();
+  if (!el) return;
+  var step = ev.shiftKey ? 0.02 : 0.004;
+  var moves = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] };
+  if (moves[key]) {
+    ev.preventDefault();
+    pasteMark();
+    updateEl(pasteSel, { x: clamp01(el.x + moves[key][0], el.w), y: clamp01(el.y + moves[key][1], el.h) });
+    renderPress();
+    return;
+  }
+  if (key === 'Delete' || key === 'Backspace') { ev.preventDefault(); removeEl(pasteSel); return; }
+  if (key === 'Escape') { pasteEditing = null; selectEl(null); return; }
+  if (key === ']') { ev.preventDefault(); raiseEl(pasteSel, true); return; }
+  if (key === '[') { ev.preventDefault(); raiseEl(pasteSel, false); }
+});
+// ---------- the inspector ----------
+// Geometry is done by hand on the sheet. Everything that is not geometry —
+// which voice, how big, black or knocked out, what order things stack in —
+// lives here, in one strip, rather than in a popover floating over a panel
+// that might itself be upside down.
+var pastePage = 1;
+
+function pasteTargetLabel() {
+  var ps = pressState();
+  return 'page ' + pastePage + ' of ' + ps.panels.length;
+}
+
+function inspectorButtons(el) {
+  var b = [];
+  if (el.kind === 'text') {
+    b.push(['elvoice', VOICE_LABEL[el.voice || 'type']]);
+    b.push(['elsmaller', 'A−']);
+    b.push(['elbigger', 'A+']);
+    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'BLACK ON WHITE']);
+  }
+  if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
+  if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
+  b.push(['elfront', 'FRONT']);
+  b.push(['elback', 'BACK']);
+  b.push(['elstraight', 'STRAIGHTEN']);
+  b.push(['eldrop', 'REMOVE']);
+  return b.map(function (pair) {
+    return '<button class="btn quiet" data-' + pair[0] + '="' + esc(el.id) + '">' + esc(pair[1]) + '</button>';
+  }).join('');
+}
+
+function renderInspector() {
+  var box = document.getElementById('inspector');
+  if (!box) return;
+  var hint = document.getElementById('addhint');
+  if (hint) hint.textContent = 'Adding to ' + pasteTargetLabel() + '.';
+
+  var el = selectedEl();
+  if (!el) {
+    box.className = 'inspector';
+    box.innerHTML = '<span class="sub">Nothing selected. Click something on the sheet, ' +
+      'or add a cutting above. Drag to move, double-click a text cutting to type ' +
+      'into it, Escape to come back out. Arrow keys nudge, [ and ] change what is ' +
+      'on top, Alt drags off the grid, Shift turns in steps of fifteen.</span>';
+    return;
+  }
+  box.className = 'inspector on';
+  var rot = Math.round(el.rot || 0);
+  box.innerHTML = '<div class="insp-head"><b>' + esc(el.kind.toUpperCase()) + '</b>' +
+    '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
+    Math.round(el.h * 100) + ' of the panel</span></div>' +
+    '<div class="press-actions">' + inspectorButtons(el) + '</div>' +
+    (el.kind === 'text' && el.voice === 'ransom'
+      ? '<textarea class="text-input" id="ransomtext" rows="2" ' +
+        'placeholder="Cut the letters from a magazine">' + esc(el.text || '') + '</textarea>'
+      : '');
+}
+
+// A photograph arrives from the tray: whatever is armed, or the most recent
+// one, because making somebody arm a photo before they can place one is a
+// step that teaches nothing.
+function pastePhotoId() {
+  if (armedPhoto && photoCache[armedPhoto]) return armedPhoto;
+  var recent = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
+    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
+  if (recent) return recent.photo;
+  var any = Object.keys(photoCache);
+  return any.length ? any[0] : null;
+}
+
+function addToPasteup(kind) {
+  var extra = {};
+  if (kind === 'photo') {
+    extra.photo = pastePhotoId();
+    if (!extra.photo) { toast('No photos yet — add one from the log first'); return; }
+  }
+  if (kind === 'text') extra.text = 'NEW CUTTING';
+  addEl(pastePage, kind, extra);
+  renderPress();
+  toast(kind === 'text' ? 'Type into it, or change its voice below' : 'Drag it where you want it');
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target;
+  var hit = function (sel) { return t.closest && t.closest(sel); };
+  var el;
+
+  if ((el = hit('[data-addel]'))) { addToPasteup(el.getAttribute('data-addel')); return; }
+  if (hit('#undobtn')) { pasteUndoStep(); return; }
+  if (hit('#redobtn')) { pasteRedoStep(); return; }
+  if ((el = hit('[data-elvoice]'))) { cycleVoice(el.getAttribute('data-elvoice')); return; }
+  if ((el = hit('[data-elsmaller]'))) { resizeText(el.getAttribute('data-elsmaller'), -2); return; }
+  if ((el = hit('[data-elbigger]'))) { resizeText(el.getAttribute('data-elbigger'), 2); return; }
+  if ((el = hit('[data-elink]'))) { toggleInk(el.getAttribute('data-elink')); return; }
+  if ((el = hit('[data-elcrop]'))) { toggleCrop(el.getAttribute('data-elcrop')); return; }
+  if ((el = hit('[data-elfront]'))) { raiseEl(el.getAttribute('data-elfront'), true); return; }
+  if ((el = hit('[data-elback]'))) { raiseEl(el.getAttribute('data-elback'), false); return; }
+  if ((el = hit('[data-elstraight]'))) {
+    updateEl(el.getAttribute('data-elstraight'), { rot: 0 }, true);
+    renderPress();
+    return;
+  }
+  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
+});
+
+document.addEventListener('input', function (ev) {
+  if (ev.target.id !== 'ransomtext' || !pasteSel) return;
+  updateEl(pasteSel, { text: ev.target.value });
+  var zone = document.getElementById('sheetzone');
+  var node = zone && zone.querySelector('[data-el="' + pasteSel + '"] .eltext');
+  if (node) node.innerHTML = ransomHtml(ev.target.value);
+});
+
+// Which panel a new cutting lands on is simply the last one touched.
+document.addEventListener('pointerdown', function (ev) {
+  var p = ev.target.closest && ev.target.closest('.panel');
+  if (!p) return;
+  var page = Number(p.getAttribute('data-page'));
+  if (page && page !== pastePage) { pastePage = page; renderInspector(); }
+});
 // ---------- the desk ----------
 // Exactly one person holds the final cut on any given issue. At two people the
 // chair alternates by issue parity, which is simpler than rotation and needs
@@ -2029,15 +2809,18 @@ function staticSheetHtml(panels, formatId, hand, photos, url) {
           '<h3>' + esc(p.h || '') + '</h3>' +
           (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
           '<div class="body">' + esc(p.body || '') + '</div>' +
+          pasteupHtml(p, pics, false) +
           (slot.page === pages ? addr : '') +
           '</div>';
       }).join('') + '</div></div>';
   }).join('');
 }
 
-// The other substrate. Same source, no imposition: this is the issue you open
-// on a phone at the bus stop, and nothing in it needs a network to mean
-// something.
+// The other substrate. Same source, no imposition and no paste-up: a collage
+// is a property of a page at a fixed size, and this view has neither. What was
+// written still reads; where it was glued does not survive, by design. This is
+// the issue you open on a phone at the bus stop, and nothing in it needs a
+// network to mean something.
 function readingHtml(issue, photos) {
   var pics = photos || photoCache;
   var panels = issue.panels || [];
@@ -2748,7 +3531,7 @@ function pdfPanel(panel, page, pages, box, images, url) {
       ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
     });
   }
-  return ops;
+  return ops + pdfPasteup(panel, box, images);
 }
 
 // A flipped panel is the same drawing rotated half a turn about its own
@@ -2759,7 +3542,7 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue) {
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
-    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, issue: issue };
+    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
@@ -2779,8 +3562,13 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
   var geom = pdfLayout(formatId);
   var wanted = [];
 
+  var want = function (id) {
+    if (id && photoCache[id] && wanted.indexOf(id) < 0) wanted.push(id);
+  };
   panels.forEach(function (p) {
-    if (p && p.photo && photoCache[p.photo] && wanted.indexOf(p.photo) < 0) wanted.push(p.photo);
+    if (!p) return;
+    want(p.photo);
+    elsOf(p).forEach(function (el) { if (el.kind === 'photo') want(el.photo); });
   });
 
   var images = {};
@@ -2800,9 +3588,14 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
     var xobjects = Object.keys(images).map(function (k) {
       return '/Im' + images[k].num + ' ' + images[k].num + ' 0 R';
     }).join('');
-    var courier = doc.obj(['<</Type/Font/Subtype/Type1/BaseFont/Courier/Encoding/WinAnsiEncoding>>']);
-    var helv = doc.obj(['<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>']);
-    var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R>>' +
+    var std = function (name) {
+      return doc.obj(['<</Type/Font/Subtype/Type1/BaseFont/' + name + '/Encoding/WinAnsiEncoding>>']);
+    };
+    var courier = std('Courier');
+    var helv = std('Helvetica-Bold');
+    var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
+      '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
+      '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
 
     var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
@@ -2835,8 +3628,185 @@ function savePdf(panels, formatId, hand, url, issue, name) {
     toast('Could not write the PDF: ' + e.message);
   });
 }
+// ---------- the paste-up, on paper ----------
+// Everything the screen lets somebody glue down has to survive the trip to
+// the printer, or the sheet on screen is a mockup and the press is a lie.
+// Coordinates arrive as fractions of the panel and land as points.
+//
+// Widths for the standard faces, in thousandths of an em, from code 32 up.
+// Helvetica-BoldOblique is Helvetica-Bold sheared, so it shares that table
+// exactly; Courier-Bold is 600 for every glyph like its roman.
+var TIMES_BOLD_W = [250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520];
+var TIMES_ITALIC_W = [250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541];
 
+// The four hands a ransom note is cut from, and the voices a text element can
+// speak in. `w` of null means a monospaced 600.
+var FACES = {
+  type: { f: 'F1', w: null },
+  head: { f: 'F2', w: HELV_BOLD_W },
+  hand: { f: 'F6', w: TIMES_ITALIC_W },
+  ransom: { f: 'F2', w: HELV_BOLD_W }
+};
+var RANSOM_FACES = [
+  { f: 'F2', w: HELV_BOLD_W },
+  { f: 'F3', w: TIMES_BOLD_W },
+  { f: 'F4', w: null },
+  { f: 'F5', w: HELV_BOLD_W }
+];
+
+function faceOf(el) {
+  return FACES[el.voice || 'type'] || FACES.type;
+}
+
+function glyphWidth(face, ch, size) {
+  if (!face.w) return size * COURIER_W;
+  var c = ch.charCodeAt(0);
+  if (c < 32 || c > 126) c = 63;
+  return face.w[c - 32] / 1000 * size;
+}
+
+function runWidth(face, text, size) {
+  var total = 0;
+  for (var i = 0; i < text.length; i++) total += glyphWidth(face, text.charAt(i), size);
+  return total;
+}
+
+// Word wrap against a real width table, so a proportional headline breaks
+// where it actually runs out of panel rather than where a monospace guess says.
+function wrapFace(text, face, size, width) {
+  var out = [];
+  String(text || '').split('\n').forEach(function (para) {
+    var line = '';
+    para.split(/\s+/).forEach(function (word) {
+      if (!word) return;
+      var next = line ? line + ' ' + word : word;
+      if (runWidth(face, next, size) <= width || !line) { line = next; return; }
+      out.push(line);
+      line = word;
+    });
+    out.push(line);
+  });
+  return out;
+}
+
+// An element's box, in PDF points. The paste-up layer covers the whole panel,
+// padding included, because a cutting glued over the margin is the point.
+function elBoxPdf(box, el) {
+  var w = el.w * box.w;
+  var h = el.h * box.h;
+  var x = box.left + el.x * box.w;
+  var top = box.top - el.y * box.h;
+  return { x: x, y: top - h, w: w, h: h, top: top, cx: x + w / 2, cy: top - h / 2 };
+}
+
+// CSS turns clockwise with y running down the page; PDF turns anticlockwise
+// with y running up. The same visual tilt is therefore the negative angle,
+// applied about the element's own centre so it matches transform-origin.
+function spin(deg, cx, cy) {
+  if (!deg) return '';
+  var t = deg * Math.PI / 180;
+  var c = Math.cos(t).toFixed(5);
+  var s = Math.sin(t).toFixed(5);
+  return '1 0 0 1 ' + cx.toFixed(2) + ' ' + cy.toFixed(2) + ' cm\n' +
+    c + ' ' + (-s).toFixed(5) + ' ' + s + ' ' + c + ' 0 0 cm\n' +
+    '1 0 0 1 ' + (-cx).toFixed(2) + ' ' + (-cy).toFixed(2) + ' cm\n';
+}
+
+function rect(g) {
+  return g.x.toFixed(2) + ' ' + g.y.toFixed(2) + ' ' + g.w.toFixed(2) + ' ' + g.h.toFixed(2) + ' re';
+}
+
+function pdfElPhoto(el, g, images) {
+  var pic = el.photo && images[el.photo];
+  if (!pic) return '';
+  var iw = g.w, ih = g.h;
+  var ar = pic.w / pic.h;
+  if (el.crop) {
+    // Fill the box and clip the overflow, which is what object-fit: cover does.
+    if (g.w / g.h < ar) { ih = g.h; iw = ih * ar; } else { iw = g.w; ih = iw / ar; }
+    return 'q ' + rect(g) + ' W n ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' +
+      (g.cx - iw / 2).toFixed(2) + ' ' + (g.cy - ih / 2).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
+  }
+  if (g.w / g.h > ar) { ih = g.h; iw = ih * ar; } else { iw = g.w; ih = iw / ar; }
+  return 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + (g.cx - iw / 2).toFixed(2) + ' ' +
+    (g.cy - ih / 2).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
+}
+
+function pdfElRansom(el, g) {
+  var size = el.size || 20;
+  var ops = '';
+  var x = g.x;
+  var y = g.top - size;
+  var lead = size * 1.5;
+  ransomSpec(el.text).forEach(function (c) {
+    if (c.ch === '\n') { x = g.x; y -= lead; return; }
+    var s = size * c.scale;
+    var face = RANSOM_FACES[c.face] || RANSOM_FACES[0];
+    var cw = glyphWidth(face, c.ch, s) + 2;
+    if (x + cw > g.x + g.w && c.ch !== ' ') { x = g.x; y -= lead; }
+    if (y < g.y - size) return;
+    if (c.ch !== ' ') {
+      var ccx = x + cw / 2;
+      var ccy = y + s * 0.32;
+      ops += 'q\n' + spin(c.tilt, ccx, ccy);
+      if (c.inv) {
+        ops += '0 g ' + (x - 1).toFixed(2) + ' ' + (y - s * 0.22).toFixed(2) + ' ' +
+          (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n1 g\n';
+      }
+      ops += 'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
+        y.toFixed(2) + ' Tm (' + pdfEsc(c.ch) + ') Tj ET\n0 g\nQ\n';
+    }
+    x += cw;
+  });
+  return ops;
+}
+
+function pdfElText(el, g) {
+  if ((el.voice || 'type') === 'ransom') return pdfElRansom(el, g);
+  var face = faceOf(el);
+  var size = el.size || 12;
+  var lead = size * ((el.voice === 'head') ? 1.0 : 1.45);
+  var ops = '';
+  if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
+  var y = g.top - size;
+  wrapFace(el.text, face, size, g.w - 4).forEach(function (line) {
+    if (y < g.y - size * 0.3) return;
+    if (line.length) {
+      ops += 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+        y.toFixed(2) + ' Tm (' + pdfEsc(line) + ') Tj ET\n';
+    }
+    y -= lead;
+  });
+  return ops + '0 g\n';
+}
+
+function pdfEl(el, box, images) {
+  var g = elBoxPdf(box, el);
+  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy);
+  if (el.kind === 'rule') {
+    ops += '0 g ' + g.x.toFixed(2) + ' ' + g.y.toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
+      Math.max(1.5, g.h).toFixed(2) + ' re f\n';
+  } else if (el.kind === 'box') {
+    ops += el.ink === 'white' ? '0 g ' + rect(g) + ' f\n' : 'q 2 w 0 G ' + rect(g) + ' S Q\n';
+  } else if (el.kind === 'photo') {
+    ops += pdfElPhoto(el, g, images);
+  } else {
+    ops += pdfElText(el, g);
+  }
+  return ops + 'Q\n';
+}
+
+function pdfPasteup(panel, box, images) {
+  return elsOf(panel).slice()
+    .sort(function (a, b) { return (a.z || 0) - (b.z || 0); })
+    .map(function (el) { return pdfEl(el, box, images); })
+    .join('');
+}
 // ---------- the flyer ----------
+// A sheet for a noticeboard: the zine's name big enough to read walking past,
+// and a fringe of tear-off tabs each carrying the address sideways. Split from
+// the sheet writer only because the file hit its line ceiling; it shares
+// pdfDoc, the fonts and the image packing with it.
 // Tear-off tabs go here rather than on a back cover, because tearing a tab off
 // a folded zine destroys the zine.
 var FLYER = { w: 612, h: 792, pad: 54, strip: 96, tabs: 8 };
