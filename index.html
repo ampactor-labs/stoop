@@ -19,20 +19,40 @@
   body{background:var(--night);color:var(--bone);font-family:ui-sans-serif,system-ui,'Helvetica Neue',Arial,sans-serif;line-height:1.45}
   ::selection{background:var(--orange);color:var(--night)}
 
-  /* ---------- chrome ---------- */
-  header.chrome{position:sticky;top:0;z-index:10;background:var(--night);border-bottom:2px solid var(--bone);
-    display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem;padding:.5rem .9rem}
+  /* ---------- the bar ---------- */
+  header.chrome{position:sticky;top:0;z-index:30;background:var(--night);border-bottom:2px solid var(--bone);
+    display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.45rem .9rem}
   .wordmark{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1.5rem;letter-spacing:.12em;color:var(--bone);text-decoration:none}
   .wordmark b{color:var(--orange)}
-  nav.chrome-nav{display:flex;flex-wrap:wrap;gap:.15rem;margin-left:auto}
-  nav.chrome-nav a{font-family:'Courier New',monospace;font-size:.8rem;color:var(--blue);text-decoration:none;padding:.25rem .5rem;border:1px solid transparent}
-  nav.chrome-nav a:hover{border-color:var(--blue)}
+  .barzine{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--bone);text-decoration:none;border-bottom:2px solid var(--orange);padding-bottom:1px}
+  nav.chrome-nav{display:flex;flex-wrap:wrap;gap:.15rem;margin-left:auto;align-items:center}
+  nav.chrome-nav a,nav.chrome-nav button{font-family:'Courier New',monospace;font-size:.8rem;color:var(--blue);background:none;text-decoration:none;padding:.25rem .5rem;border:1px solid transparent;cursor:pointer}
+  nav.chrome-nav a:hover,nav.chrome-nav button:hover{border-color:var(--blue)}
   nav.chrome-nav a.here{color:var(--night);background:var(--bone);border-color:var(--bone)}
+  nav.chrome-nav .verb{color:var(--orange);border-color:var(--orange);margin-left:.2rem}
+  nav.chrome-nav .verb:hover{background:var(--orange);color:var(--night)}
+  nav.chrome-nav a.verb.here{background:var(--orange);color:var(--night)}
 
-  main{max-width:860px;margin:0 auto;padding:1.2rem .9rem 4rem}
+  main{max-width:960px;margin:0 auto;padding:1rem .9rem 4rem}
+
+  /* The press is the surface and is always on screen. Every other view is a
+     drawer over it, one at a time, below the bar so the bar stays usable;
+     the scrim, Escape, or CLOSE puts it away. The landing replaces both. */
   section[data-view]{display:none}
-  section[data-view].on{display:block;animation:flick .12s steps(2) 1}
+  section[data-view="press"]{display:block}
+  body.landing section[data-view="press"]{display:none}
+  section[data-view="issue"].on{display:block;animation:flick .12s steps(2) 1}
+  section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{display:block;position:fixed;top:var(--barh,0);right:0;bottom:0;
+    width:min(540px,100vw);z-index:20;overflow-y:auto;background:var(--night);border-left:2px solid var(--bone);
+    padding:1rem .9rem 3rem;animation:slide .14s ease-out}
+  @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
   @keyframes flick{0%{opacity:.4}100%{opacity:1}}
+  .scrim{display:none;position:fixed;left:0;right:0;bottom:0;top:var(--barh,0);z-index:15;background:rgba(0,0,0,.55)}
+  body[data-drawer] .scrim{display:block}
+  section[data-view] .view-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1rem}
+  section[data-view] .view-head h1{margin:0}
+  section[data-view] .view-head .view-sub{flex-basis:100%;margin-top:0}
+  .drawer-close{margin-left:auto}
 
   h1,h2,h3{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;letter-spacing:.06em;line-height:1.05;margin:.4rem 0}
   a{color:var(--blue)}
@@ -167,28 +187,11 @@
   background: #fff;
   image-rendering: pixelated;
 }
-.tray-box { padding-bottom: .8rem; }
-.tray-head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
-.tray-head h2 { margin: 0; }
-#trayhint.on { color: #a8380f; font-weight: bold; }
-.phototray {
-  display: flex;
-  gap: .5rem;
-  overflow-x: auto;
-  padding: .6rem 0 .2rem;
-  min-height: 2rem;
-  align-items: flex-start;
-}
-.tray-photo {
-  height: 72px;
-  border: 2px solid var(--ink);
-  background: #fff;
-  cursor: pointer;
-  flex: 0 0 auto;
-  image-rendering: pixelated;
-}
+/* The photo strip above the pages: every photograph the scene has. */
+.phototray { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem 0 .4rem; align-items: flex-start; }
+.phototray:empty { display: none; }
+.tray-photo { height: 56px; border: 2px solid var(--bone); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; }
 .tray-photo:hover { outline: 2px solid var(--orange); }
-.tray-photo.armed { outline: 3px solid var(--orange); transform: translateY(-3px); }
 /* Log stream */
 .log-stream { display: flex; flex-direction: column; gap: .7rem; margin-top: 1rem; }
 .log-card {
@@ -277,8 +280,19 @@
 
 /* The press */
 .press-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-.fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--ink); padding: .35rem .6rem; margin: .7rem 0 0; }
-.fitmeter.bad { background: var(--ink); color: var(--paper); }
+.press-top { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+.fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--grey); color: var(--bone); background: var(--soot); padding: .35rem .6rem; margin: 0; }
+.fitmeter:empty { display: none; }
+.fitmeter.bad { background: var(--red); color: #fff; border-color: var(--red); }
+.pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
+.pasteup-strip .sub { margin-left: .3rem; }
+
+/* Notebook tabs */
+.drawer-tabs { display: flex; gap: .3rem; margin: .6rem 0 1rem; border-bottom: 1px solid var(--grey); }
+.drawer-tabs .tab { font-family: 'Courier New', monospace; font-size: .8rem; background: none; border: 1px solid transparent; border-bottom: none; color: var(--blue); padding: .35rem .7rem; cursor: pointer; }
+.drawer-tabs .tab.on { color: var(--night); background: var(--bone); border-color: var(--bone); }
+.ntab { display: none; }
+.ntab.on { display: block; }
 .sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
 .sheetwrap { margin-bottom: 1.2rem; width: max-content; }
 .sheetlabel { font-family: 'Courier New', monospace; font-size: .7rem; color: var(--grey); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }
@@ -401,16 +415,16 @@ body.landing main { padding-top: 2.4rem; }
 .h-rot::after { content: ''; position: absolute; left: 50%; top: 9px; width: 1px; height: 10px; background: var(--red); }
 
 /* The paste-up strip under the toolbar */
-.pasteup-bar .press-actions { margin-top: .5rem; }
-.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin-top: .7rem; border-top: 1px dashed var(--grey); padding-top: .6rem; }
-.inspector.on { color: var(--bone); }
+.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: .3rem 0 .8rem; }
+.inspector:empty { display: none; }
+.inspector.on { color: var(--bone); border: 1px dashed var(--grey); padding: .5rem .7rem; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
 
 /* Nothing that only exists to be grabbed may reach the paper. */
 @media print {
-  .h, .pasteup-bar { display: none !important; }
+  .h, .pasteup-strip, .inspector, .phototray { display: none !important; }
   .el.sel { outline: none !important; }
 }
 
@@ -428,97 +442,90 @@ body.landing main { padding-top: 2.4rem; }
 </style>
 
 <header class="chrome">
-  <a class="wordmark" href="#log">STOO<b>P</b></a>
+  <a class="wordmark" href="#press">STOO<b>P</b></a>
+  <a class="barzine" id="barzine" href="#backup" title="The scene: who writes, what it is called, where it lives">STOOP ZINE</a>
   <button class="author-toggle" id="authortoggle" title="Switch who is writing"><span id="authorname">Me</span></button>
   <nav class="chrome-nav">
-    <a href="#log" data-nav="log">log</a>
-    <a href="#journal" data-nav="journal">journal</a>
-    <a href="#projects" data-nav="projects">projects</a>
-    <a href="#desk" data-nav="desk">the desk</a>
-    <a href="#press" data-nav="press">the press</a>
-    <a href="#shelf" data-nav="shelf">the shelf</a>
-    <a href="#backup" data-nav="backup">settings &amp; sync</a>
+    <a href="#desk" data-nav="desk">desk</a>
+    <a href="#shelf" data-nav="shelf">shelf</a>
+    <a href="#notebook" data-nav="notebook">notebook</a>
+    <a href="#backup" data-nav="backup">scene</a>
+    <a href="#paper" data-nav="paper" class="verb">paper</a>
+    <button class="verb" id="handonbtn" title="Export the latest issue as a file that is also a press">hand it on</button>
   </nav>
 </header>
 <style id="pagerule">@page { size: letter landscape; margin: 0; }</style>
 <div id="reprintzone" class="reprintzone"></div>
+<div class="scrim" id="scrim"></div>
 
 <main>
 
 <section data-view="issue">
   <div id="landing"></div>
 </section>
-<section data-view="log">
+<section data-view="notebook">
   <div class="view-head">
-    <h1>DAILY LOG</h1>
-    <p class="view-sub">Quick timestamped notes, quotes, photos, links, and ideas.</p>
+    <h1>NOTEBOOK</h1>
+    <p class="view-sub">Where the raw material lives. The desk draws pieces from here once a cycle.</p>
   </div>
+  <nav class="drawer-tabs">
+    <button class="tab on" data-ntab="log">LOG</button>
+    <button class="tab" data-ntab="journal">JOURNAL</button>
+    <button class="tab" data-ntab="projects">PROJECTS</button>
+  </nav>
 
-  <div class="paper">
-    <div class="form-row">
-      <input type="text" id="loginput" class="text-input" placeholder="Drop a thought, link, or note..." maxlength="280">
-      <select id="logtag" class="select-input">
-        <option value="moment">moment</option>
-        <option value="quote">quote</option>
-        <option value="idea">idea</option>
-        <option value="link">link</option>
-      </select>
-      <button class="btn" id="logaddbtn">POST</button>
-    </div>
-    <div class="form-row">
-      <input type="file" id="photofile" accept="image/*" multiple hidden>
-      <button class="btn wide" id="photobtn">ADD PHOTOS</button>
-      <span class="sub">Photos are dithered to 1-bit on the way in: small, private, and ready for a photocopier. Type a caption first and it lands on the first one.</span>
-    </div>
-    <div class="filter-row">
-      <span class="sub">filter:</span>
-      <span id="logfilters"></span>
-    </div>
-  </div>
-
-  <div id="loglist" class="log-stream"></div>
-</section>
-<section data-view="journal">
-  <div class="view-head">
-    <h1>JOURNAL &amp; MEMORIES</h1>
-    <p class="view-sub">Longer reflections, date night recaps, milestones, and shared gratitude.</p>
-  </div>
-
-  <div class="paper">
-    <div class="form-grid">
+  <div class="ntab on" data-npane="log">
+    <div class="paper">
       <div class="form-row">
-        <input type="text" id="journaltitle" class="text-input" placeholder="Entry title (e.g. Sunday Walk &amp; Tacos)...">
-        <select id="journalauthor" class="select-input">
-
+        <input type="text" id="loginput" class="text-input" placeholder="A line: a thought, a quote, a link, an idea" maxlength="280">
+        <select id="logtag" class="select-input">
+          <option value="moment">moment</option>
+          <option value="quote">quote</option>
+          <option value="idea">idea</option>
+          <option value="link">link</option>
         </select>
+        <button class="btn" id="logaddbtn">POST</button>
       </div>
-      <textarea id="journalbody" class="textarea-input" rows="4" placeholder="Write thoughts, memories, reflections, what went well..."></textarea>
-      <div class="form-actions">
-        <button class="btn" id="journaladdbtn">SAVE ENTRY</button>
+      <div class="form-row">
+        <input type="file" id="photofile" accept="image/*" multiple hidden>
+        <button class="btn wide" id="photobtn">ADD PHOTOS</button>
+        <span class="sub">Dithered to 1-bit on the way in: small, private, and ready for a photocopier. Type a caption first and it lands on the first one.</span>
       </div>
-    </div>
-  </div>
-
-  <div id="journallist" class="journal-list"></div>
-</section>
-<section data-view="projects">
-  <div class="view-head">
-    <h1>PROJECT SPACES</h1>
-    <p class="view-sub">Mini workspaces for music, trips, woodworking, builds, and joint plans.</p>
-  </div>
-
-  <div class="paper">
-    <div class="form-grid">
-      <input type="text" id="projecttitle" class="text-input" placeholder="Project name (e.g. Backyard Garden, Noodles Synth)...">
-      <textarea id="projectdesc" class="textarea-input" rows="2" placeholder="Summary, notes, materials or next steps..."></textarea>
-      <div class="form-actions">
-        <button class="btn" id="projectaddbtn">CREATE PROJECT</button>
+      <div class="filter-row">
+        <span class="sub">filter:</span>
+        <span id="logfilters"></span>
       </div>
     </div>
+    <div id="loglist" class="log-stream"></div>
   </div>
 
-  <div id="projectlist" class="project-grid">
-    <!-- Rendered dynamically -->
+  <div class="ntab" data-npane="journal">
+    <div class="paper">
+      <div class="form-grid">
+        <div class="form-row">
+          <input type="text" id="journaltitle" class="text-input" placeholder="A title">
+          <select id="journalauthor" class="select-input"></select>
+        </div>
+        <textarea id="journalbody" class="textarea-input" rows="4" placeholder="Longer than a line: a report, a reflection, a rant, a recipe"></textarea>
+        <div class="form-actions">
+          <button class="btn" id="journaladdbtn">SAVE ENTRY</button>
+        </div>
+      </div>
+    </div>
+    <div id="journallist" class="journal-list"></div>
+  </div>
+
+  <div class="ntab" data-npane="projects">
+    <div class="paper">
+      <div class="form-grid">
+        <input type="text" id="projecttitle" class="text-input" placeholder="Something ongoing: a build, a series, a plan">
+        <textarea id="projectdesc" class="textarea-input" rows="2" placeholder="Where it stands, what is next"></textarea>
+        <div class="form-actions">
+          <button class="btn" id="projectaddbtn">CREATE PROJECT</button>
+        </div>
+      </div>
+    </div>
+    <div id="projectlist" class="project-grid"></div>
   </div>
 </section>
 <section data-view="desk">
@@ -572,64 +579,24 @@ body.landing main { padding-top: 2.4rem; }
   </div>
 </section>
 <section data-view="press">
-  <div class="view-head">
-    <h1>THE PRESS</h1>
-    <p class="view-sub">Your pages, right way up. Paper gets the imposition: the PDF and the printed sheet fold back into this order.</p>
-  </div>
-
-  <div class="paper">
-    <div class="press-actions">
-      <select id="formatsel" class="text-input"></select>
-      <button class="btn done" id="printzinebtn">PRINT</button>
-      <button class="btn" id="pdfzinebtn">SAVE PDF</button>
-      <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
-      <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
-      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
-      <button class="btn quiet" id="clearzinebtn">CLEAR SHEET</button>
-    </div>
-    <p class="sub">The PDF is exact: right paper, no margins, nothing for a print dialog to argue with, and a file you can hand to a copy shop. Printing from the browser works too, at <strong>100% scale, margins none</strong>, in the orientation the format names. Click any heading or body to edit it; edits save as you type. Print a numbered test sheet before committing good paper — printers and folding hands vary, and if the numbers come out shuffled, hit SWAP FOLD and test again.</p>
+  <div class="press-top">
+    <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
     <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
     <p class="fitmeter" id="pressstatus"></p>
   </div>
-
-  <div class="paper tray-box">
-    <div class="tray-head">
-      <h2>PHOTOS</h2>
-      <span class="sub" id="trayhint">Click a photo to arm it, then click a panel to place it.</span>
-    </div>
-    <div id="phototray" class="phototray"></div>
+  <div class="pasteup-strip">
+    <button class="btn" data-addel="text">+ TEXT</button>
+    <button class="btn" data-addel="photo">+ PHOTO</button>
+    <button class="btn quiet" data-addel="box">+ BOX</button>
+    <button class="btn quiet" data-addel="rule">+ RULE</button>
+    <button class="btn quiet" id="undobtn">UNDO</button>
+    <button class="btn quiet" id="redobtn">REDO</button>
+    <span class="sub" id="addhint"></span>
+    <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
   </div>
-
-  <div class="paper pasteup-bar">
-    <div class="tray-head">
-      <h2>PASTE-UP</h2>
-      <span class="sub" id="addhint">Click a panel first.</span>
-    </div>
-    <div class="press-actions">
-      <button class="btn" data-addel="text">+ TEXT</button>
-      <button class="btn" data-addel="photo">+ PHOTO</button>
-      <button class="btn quiet" data-addel="box">+ BOX</button>
-      <button class="btn quiet" data-addel="rule">+ RULE</button>
-      <button class="btn quiet" id="undobtn">UNDO</button>
-      <button class="btn quiet" id="redobtn">REDO</button>
-    </div>
-    <p class="sub">Flowed text comes from the desk and re-flows when you change format. A cutting is placed by hand and stays where you put it, at whatever angle, over whatever it likes — held as a fraction of the panel, so changing format moves it with the page instead of losing it.</p>
-    <div id="inspector" class="inspector"></div>
-  </div>
-
+  <div id="phototray" class="phototray"></div>
+  <div id="inspector" class="inspector"></div>
   <div class="sheetzone" id="sheetzone"></div>
-
-  <div class="paper fold-guide">
-    <h2>HOW TO FOLD (one sheet, one cut)</h2>
-    <ol class="fold-steps">
-      <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
-      <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
-      <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
-      <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
-      <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
-    </ol>
-    <p class="sub">Saddle-stitch formats print several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
-  </div>
 </section>
 <section data-view="shelf">
   <div class="view-head">
@@ -646,8 +613,8 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 <section data-view="backup">
   <div class="view-head">
-    <h1>SETTINGS &amp; SYNC</h1>
-    <p class="view-sub">Who is writing, and how the notebook travels between your devices.</p>
+    <h1>SCENE</h1>
+    <p class="view-sub">Who writes, what it is called, where it lives, and how it travels between devices.</p>
   </div>
 
   <div class="paper">
@@ -712,9 +679,54 @@ body.landing main { padding-top: 2.4rem; }
     </div>
   </div>
 </section>
+<section data-view="paper">
+  <div class="view-head">
+    <h1>PAPER</h1>
+    <p class="view-sub">The pages fold into a sheet here. The PDF is exact: right paper, no margins, a file you can hand to a copy shop.</p>
+  </div>
+
+  <div class="paper">
+    <div class="form-row">
+      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
+      <span class="sub">The format is set above the pages. The fold hand is set here, because it only matters on paper.</span>
+    </div>
+    <p class="sub">Print a numbered test sheet before committing good paper — printers and folding hands vary. If the numbers come out shuffled, swap the fold and test again.</p>
+    <div class="press-actions">
+      <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
+    </div>
+  </div>
+
+  <div class="paper">
+    <div class="press-actions">
+      <button class="btn done" id="pdfzinebtn">SAVE PDF</button>
+      <button class="btn" id="printzinebtn">PRINT FROM THE BROWSER</button>
+      <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
+    </div>
+    <p class="sub">Printing from the browser works at <strong>100% scale, margins none</strong>, in the orientation the format names. The flyer is a poster with tear-off tabs for a noticeboard.</p>
+  </div>
+
+  <div class="paper fold-guide">
+    <h2>HOW TO FOLD (one sheet, one cut)</h2>
+    <ol class="fold-steps">
+      <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
+      <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
+      <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
+      <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
+      <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
+    </ol>
+    <p class="sub">Saddle-stitch formats print several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
+  </div>
+
+  <div class="paper">
+    <div class="press-actions">
+      <button class="btn danger" id="clearzinebtn">CLEAR THE PAGES</button>
+      <span class="sub">Empties every page of the draft, cuttings included. Undo brings it back.</span>
+    </div>
+  </div>
+</section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 185 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 189 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -1204,46 +1216,29 @@ function intakePhotos(fileList) {
   }, Promise.resolve([]));
 }
 
-// ---------- the photo tray ----------
+// ---------- the photo strip ----------
+// Every photograph the scene has, as thumbs above the pages. One click glues
+// one to the page last touched, as a cutting; drag it where it goes. There is
+// nothing to arm and no second click, because a photograph on the strip is
+// already the thing you want on the page.
 function renderTray() {
   var tray = document.getElementById('phototray');
   if (!tray) return;
   var ids = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
     .filter(function (l) { return l.photo && photoCache[l.photo]; })
     .map(function (l) { return l.photo; });
-
-  if (!ids.length) {
-    tray.innerHTML = '<span class="sub">No photos yet. Add some from the log, then drop them into panels here.</span>';
-    return;
-  }
+  Object.keys(photoCache).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
   tray.innerHTML = ids.map(function (id) {
-    return '<img class="tray-photo' + (armedPhoto === id ? ' armed' : '') +
-      '" data-traypic="' + esc(id) + '" src="' + esc(photoCache[id]) + '" alt="">';
+    return '<img class="tray-photo" data-traypic="' + esc(id) + '" src="' + esc(photoCache[id]) +
+      '" alt="" title="Glue this to the page">';
   }).join('');
 }
 
-function armPhoto(id) {
-  armedPhoto = armedPhoto === id ? null : id;
-  renderTray();
-  var hint = document.getElementById('trayhint');
-  if (hint) {
-    hint.textContent = armedPhoto
-      ? 'Photo armed — now click the panel you want it on.'
-      : 'Click a photo to arm it, then click a panel to place it.';
-    hint.classList.toggle('on', !!armedPhoto);
-  }
-}
-
-function placePhoto(page) {
-  if (!armedPhoto) return false;
-  var ps = pressState();
-  if (!ps.panels[page - 1]) return false;
-  ps.panels[page - 1].photo = armedPhoto;
-  armPhoto(null);
-  savePress();
+function placeFromTray(id) {
+  if (!photoCache[id]) return;
+  addEl(pastePage, 'photo', { photo: id });
   renderPress();
-  toast('Placed photo on p.' + page);
-  return true;
+  toast('Glued to page ' + pastePage + ' \u2014 drag it where it goes');
 }
 var activeLogFilter = 'all';
 
@@ -1425,6 +1420,7 @@ function addJournal() {
 
 function renderAll() {
   renderNames();
+  renderBar();
   if (typeof fillSettings === 'function') fillSettings();
   renderLogs();
   renderProjects();
@@ -1581,7 +1577,6 @@ function pageLabel(page, pages) {
 // the way to it, in the PDF and in the printed sheet, never on the surface
 // being edited. The DOM is rebuilt only when the format changes, and text is
 // painted in place, because re-rendering under the caret fights the cursor.
-var armedPhoto = null;
 var pageSig = '';
 
 function pressState() {
@@ -1842,10 +1837,11 @@ function printTestSheet() {
 
 function clearSheet() {
   var ps = pressState();
-  ps.panels.forEach(function (p) { p.body = ''; p.photo = null; });
+  pasteMark();
+  ps.panels.forEach(function (p) { p.body = ''; p.photo = null; p.els = []; });
   savePress();
   renderPress();
-  toast('Cleared the sheet');
+  toast('Cleared the pages');
 }
 // ---------- the paste-up ----------
 // A zine is not a document. It is a board somebody glued things onto and then
@@ -2455,15 +2451,14 @@ function renderInspector() {
   var box = document.getElementById('inspector');
   if (!box) return;
   var hint = document.getElementById('addhint');
-  if (hint) hint.textContent = 'Adding to ' + pasteTargetLabel() + '.';
+  if (hint) {
+    hint.textContent = 'onto ' + pasteTargetLabel() + ' \u00b7 drag to move \u00b7 double-click to type \u00b7 drop or paste anything';
+  }
 
   var el = selectedEl();
   if (!el) {
     box.className = 'inspector';
-    box.innerHTML = '<span class="sub">Nothing selected. Click something on the sheet, ' +
-      'or add a cutting above. Drag to move, double-click a text cutting to type ' +
-      'into it, Escape to come back out. Arrow keys nudge, [ and ] change what is ' +
-      'on top, Alt drags off the grid, Shift turns in steps of fifteen.</span>';
+    box.innerHTML = '';
     return;
   }
   box.className = 'inspector on';
@@ -2478,24 +2473,14 @@ function renderInspector() {
       : '');
 }
 
-// A photograph arrives from the tray: whatever is armed, or the most recent
-// one, because making somebody arm a photo before they can place one is a
-// step that teaches nothing.
-function pastePhotoId() {
-  if (armedPhoto && photoCache[armedPhoto]) return armedPhoto;
-  var recent = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
-  if (recent) return recent.photo;
-  var any = Object.keys(photoCache);
-  return any.length ? any[0] : null;
-}
-
 function addToPasteup(kind) {
-  var extra = {};
   if (kind === 'photo') {
-    extra.photo = pastePhotoId();
-    if (!extra.photo) { toast('No photos yet — add one from the log first'); return; }
+    // A photograph comes from the device, through the same intake as a drop.
+    var input = document.getElementById('pastephotofile');
+    if (input) input.click();
+    return;
   }
+  var extra = {};
   if (kind === 'text') extra.text = 'NEW CUTTING';
   addEl(pastePage, kind, extra);
   renderPress();
@@ -2615,6 +2600,15 @@ document.addEventListener('paste', function (ev) {
   var text = cd.getData('text/plain');
   if (text) { ev.preventDefault(); acceptText(pastePage, text, null); }
 });
+
+// + PHOTO on the press: the device's picker, then the same path as a drop.
+var pasteInput = document.getElementById('pastephotofile');
+if (pasteInput) {
+  pasteInput.addEventListener('change', function (e) {
+    if (e.target.files && e.target.files.length) acceptFiles(pastePage, e.target.files, null);
+    e.target.value = '';
+  });
+}
 // ---------- the fit meter ----------
 // A press that silently eats a paragraph is not a press. Every panel is
 // measured against its own box and the words that will not print are counted
@@ -4221,6 +4215,18 @@ function exportIssueFile(no) {
   toast('Issue №' + no + ' exported — the file is the press as well');
 }
 
+// The verb on the bar. Whatever was published last is what you hand on; a
+// draft is not an issue until the bell has rung for it.
+function handOn() {
+  var last = lastPublished();
+  if (!last) {
+    toast('Nothing published yet \u2014 assemble an issue at the desk and ring the bell');
+    location.hash = '#desk';
+    return;
+  }
+  exportIssueFile(last.no);
+}
+
 // A contributor opens the issue file, writes a piece, and sends back a few
 // kilobytes. No server anywhere in that loop.
 function exportPieceBundle(id) {
@@ -4481,28 +4487,66 @@ function startEmpty() {
   toast('Empty. The first issue is yours alone.');
 }
 // ---------- router ----------
+// The press is the surface and is always on screen. Every other view is a
+// drawer over it, one at a time, and the landing replaces both when an issue
+// file opens. The old hashes still work: log, journal and projects are tabs
+// of the notebook now, and anything unknown is the press.
 var views = document.querySelectorAll('section[data-view]');
 var navs = document.querySelectorAll('[data-nav]');
+var NOTEBOOK_TABS = { log: 1, journal: 1, projects: 1 };
 
 function showView() {
-  var h = (location.hash || '#log').slice(1).split('/')[0];
-  var hit = false;
-  views.forEach(function (v) {
-    var on = v.getAttribute('data-view') === h;
-    v.classList.toggle('on', on);
-    if (on) hit = true;
-  });
-  if (!hit) {
-    h = 'log';
-    views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === 'log'); });
-  }
+  var h = (location.hash || '#press').slice(1).split('/')[0];
+  var tab = null;
+  if (NOTEBOOK_TABS[h]) { tab = h; h = 'notebook'; }
+  var known = false;
+  views.forEach(function (v) { if (v.getAttribute('data-view') === h) known = true; });
+  if (!known) h = 'press';
+
+  var landing = h === 'issue';
+  var drawer = (h !== 'press' && !landing) ? h : null;
+  document.body.classList.toggle('landing', landing);
+  if (drawer) document.body.setAttribute('data-drawer', drawer);
+  else document.body.removeAttribute('data-drawer');
+
+  views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === h); });
   navs.forEach(function (a) { a.classList.toggle('here', a.getAttribute('data-nav') === h); });
-  document.body.classList.toggle('landing', h === 'issue');
-  if (h === 'issue') renderLanding();
-  if (h === 'press') renderPress();
-  window.scrollTo(0, 0);
+
+  if (tab) showNotebookTab(tab);
+  if (drawer) ensureClose(document.querySelector('section[data-view="' + drawer + '"]'));
+  if (landing) renderLanding(); else renderPress();
+  renderBar();
+  measureBar();
+  if (!drawer) window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', showView);
+
+function showNotebookTab(tab) {
+  document.querySelectorAll('[data-ntab]').forEach(function (b) {
+    b.classList.toggle('on', b.getAttribute('data-ntab') === tab);
+  });
+  document.querySelectorAll('[data-npane]').forEach(function (p) {
+    p.classList.toggle('on', p.getAttribute('data-npane') === tab);
+  });
+}
+
+function ensureClose(sec) {
+  var head = sec && sec.querySelector('.view-head');
+  if (!head || head.querySelector('.drawer-close')) return;
+  head.insertAdjacentHTML('beforeend', '<button class="btn quiet drawer-close" data-closedrawer>CLOSE</button>');
+}
+
+// Drawers hang below the bar, whatever height the bar wrapped to.
+function measureBar() {
+  var bar = document.querySelector('header.chrome');
+  document.body.style.setProperty('--barh', (bar ? bar.offsetHeight : 0) + 'px');
+}
+window.addEventListener('resize', measureBar);
+
+function renderBar() {
+  var z = document.getElementById('barzine');
+  if (z) z.textContent = state.zine || 'STOOP ZINE';
+}
 
 // ---------- events ----------
 function hit(target, sel) { return target.closest ? target.closest(sel) : null; }
@@ -4511,12 +4555,14 @@ document.addEventListener('click', function (e) {
   var t = e.target;
   var el;
 
-  // Arming a photo turns every panel into a drop target for one click.
-  if ((el = hit(t, '[data-traypic]'))) { armPhoto(el.getAttribute('data-traypic')); return; }
-  if (armedPhoto && (el = hit(t, '.panel'))) {
-    e.preventDefault();
-    if (placePhoto(Number(el.getAttribute('data-page')))) return;
-  }
+  // The bar and the drawers.
+  if ((el = hit(t, '[data-nav].here'))) { e.preventDefault(); location.hash = '#press'; return; }
+  if (hit(t, '[data-closedrawer]') || hit(t, '#scrim')) { location.hash = '#press'; return; }
+  if ((el = hit(t, '[data-ntab]'))) { location.hash = '#' + el.getAttribute('data-ntab'); return; }
+  if (hit(t, '#handonbtn')) return handOn();
+
+  // One click glues a photograph the scene already has to the page last touched.
+  if ((el = hit(t, '[data-traypic]'))) { placeFromTray(el.getAttribute('data-traypic')); return; }
   if ((el = hit(t, '[data-delpanelpic]'))) {
     pressState().panels[Number(el.getAttribute('data-delpanelpic')) - 1].photo = null;
     savePress(); renderPress(); return;
@@ -4640,6 +4686,7 @@ function saveBell() {
 }
 
 document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.body.hasAttribute('data-drawer')) { location.hash = '#press'; return; }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'loginput') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }

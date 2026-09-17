@@ -102,6 +102,7 @@ module.exports = async function scene(browser, ok) {
   // ---- and refuses to print it without asking
   dialogMode = 'dismiss';
   lastDialog = null;
+  await go('#paper');
   await page.click('#pdfzinebtn');
   await page.waitForTimeout(700);
   ok('SAVING A BLANK SHEET ASKS FIRST', !!lastDialog && /empty/i.test(lastDialog),

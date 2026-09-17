@@ -1,26 +1,64 @@
 // ---------- router ----------
+// The press is the surface and is always on screen. Every other view is a
+// drawer over it, one at a time, and the landing replaces both when an issue
+// file opens. The old hashes still work: log, journal and projects are tabs
+// of the notebook now, and anything unknown is the press.
 var views = document.querySelectorAll('section[data-view]');
 var navs = document.querySelectorAll('[data-nav]');
+var NOTEBOOK_TABS = { log: 1, journal: 1, projects: 1 };
 
 function showView() {
-  var h = (location.hash || '#log').slice(1).split('/')[0];
-  var hit = false;
-  views.forEach(function (v) {
-    var on = v.getAttribute('data-view') === h;
-    v.classList.toggle('on', on);
-    if (on) hit = true;
-  });
-  if (!hit) {
-    h = 'log';
-    views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === 'log'); });
-  }
+  var h = (location.hash || '#press').slice(1).split('/')[0];
+  var tab = null;
+  if (NOTEBOOK_TABS[h]) { tab = h; h = 'notebook'; }
+  var known = false;
+  views.forEach(function (v) { if (v.getAttribute('data-view') === h) known = true; });
+  if (!known) h = 'press';
+
+  var landing = h === 'issue';
+  var drawer = (h !== 'press' && !landing) ? h : null;
+  document.body.classList.toggle('landing', landing);
+  if (drawer) document.body.setAttribute('data-drawer', drawer);
+  else document.body.removeAttribute('data-drawer');
+
+  views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === h); });
   navs.forEach(function (a) { a.classList.toggle('here', a.getAttribute('data-nav') === h); });
-  document.body.classList.toggle('landing', h === 'issue');
-  if (h === 'issue') renderLanding();
-  if (h === 'press') renderPress();
-  window.scrollTo(0, 0);
+
+  if (tab) showNotebookTab(tab);
+  if (drawer) ensureClose(document.querySelector('section[data-view="' + drawer + '"]'));
+  if (landing) renderLanding(); else renderPress();
+  renderBar();
+  measureBar();
+  if (!drawer) window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', showView);
+
+function showNotebookTab(tab) {
+  document.querySelectorAll('[data-ntab]').forEach(function (b) {
+    b.classList.toggle('on', b.getAttribute('data-ntab') === tab);
+  });
+  document.querySelectorAll('[data-npane]').forEach(function (p) {
+    p.classList.toggle('on', p.getAttribute('data-npane') === tab);
+  });
+}
+
+function ensureClose(sec) {
+  var head = sec && sec.querySelector('.view-head');
+  if (!head || head.querySelector('.drawer-close')) return;
+  head.insertAdjacentHTML('beforeend', '<button class="btn quiet drawer-close" data-closedrawer>CLOSE</button>');
+}
+
+// Drawers hang below the bar, whatever height the bar wrapped to.
+function measureBar() {
+  var bar = document.querySelector('header.chrome');
+  document.body.style.setProperty('--barh', (bar ? bar.offsetHeight : 0) + 'px');
+}
+window.addEventListener('resize', measureBar);
+
+function renderBar() {
+  var z = document.getElementById('barzine');
+  if (z) z.textContent = state.zine || 'STOOP ZINE';
+}
 
 // ---------- events ----------
 function hit(target, sel) { return target.closest ? target.closest(sel) : null; }
@@ -29,12 +67,14 @@ document.addEventListener('click', function (e) {
   var t = e.target;
   var el;
 
-  // Arming a photo turns every panel into a drop target for one click.
-  if ((el = hit(t, '[data-traypic]'))) { armPhoto(el.getAttribute('data-traypic')); return; }
-  if (armedPhoto && (el = hit(t, '.panel'))) {
-    e.preventDefault();
-    if (placePhoto(Number(el.getAttribute('data-page')))) return;
-  }
+  // The bar and the drawers.
+  if ((el = hit(t, '[data-nav].here'))) { e.preventDefault(); location.hash = '#press'; return; }
+  if (hit(t, '[data-closedrawer]') || hit(t, '#scrim')) { location.hash = '#press'; return; }
+  if ((el = hit(t, '[data-ntab]'))) { location.hash = '#' + el.getAttribute('data-ntab'); return; }
+  if (hit(t, '#handonbtn')) return handOn();
+
+  // One click glues a photograph the scene already has to the page last touched.
+  if ((el = hit(t, '[data-traypic]'))) { placeFromTray(el.getAttribute('data-traypic')); return; }
   if ((el = hit(t, '[data-delpanelpic]'))) {
     pressState().panels[Number(el.getAttribute('data-delpanelpic')) - 1].photo = null;
     savePress(); renderPress(); return;
@@ -158,6 +198,7 @@ function saveBell() {
 }
 
 document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && document.body.hasAttribute('data-drawer')) { location.hash = '#press'; return; }
   if (e.key !== 'Enter') return;
   if (e.target.id === 'loginput') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }

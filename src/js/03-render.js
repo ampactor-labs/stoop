@@ -178,6 +178,7 @@ function addJournal() {
 
 function renderAll() {
   renderNames();
+  renderBar();
   if (typeof fillSettings === 'function') fillSettings();
   renderLogs();
   renderProjects();

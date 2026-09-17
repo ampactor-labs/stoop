@@ -40,16 +40,16 @@
 .h-rot::after { content: ''; position: absolute; left: 50%; top: 9px; width: 1px; height: 10px; background: var(--red); }
 
 /* The paste-up strip under the toolbar */
-.pasteup-bar .press-actions { margin-top: .5rem; }
-.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin-top: .7rem; border-top: 1px dashed var(--grey); padding-top: .6rem; }
-.inspector.on { color: var(--bone); }
+.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: .3rem 0 .8rem; }
+.inspector:empty { display: none; }
+.inspector.on { color: var(--bone); border: 1px dashed var(--grey); padding: .5rem .7rem; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
 
 /* Nothing that only exists to be grabbed may reach the paper. */
 @media print {
-  .h, .pasteup-bar { display: none !important; }
+  .h, .pasteup-strip, .inspector, .phototray { display: none !important; }
   .el.sel { outline: none !important; }
 }
 

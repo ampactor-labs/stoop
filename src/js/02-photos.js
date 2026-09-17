@@ -254,44 +254,27 @@ function intakePhotos(fileList) {
   }, Promise.resolve([]));
 }
 
-// ---------- the photo tray ----------
+// ---------- the photo strip ----------
+// Every photograph the scene has, as thumbs above the pages. One click glues
+// one to the page last touched, as a cutting; drag it where it goes. There is
+// nothing to arm and no second click, because a photograph on the strip is
+// already the thing you want on the page.
 function renderTray() {
   var tray = document.getElementById('phototray');
   if (!tray) return;
   var ids = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
     .filter(function (l) { return l.photo && photoCache[l.photo]; })
     .map(function (l) { return l.photo; });
-
-  if (!ids.length) {
-    tray.innerHTML = '<span class="sub">No photos yet. Add some from the log, then drop them into panels here.</span>';
-    return;
-  }
+  Object.keys(photoCache).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
   tray.innerHTML = ids.map(function (id) {
-    return '<img class="tray-photo' + (armedPhoto === id ? ' armed' : '') +
-      '" data-traypic="' + esc(id) + '" src="' + esc(photoCache[id]) + '" alt="">';
+    return '<img class="tray-photo" data-traypic="' + esc(id) + '" src="' + esc(photoCache[id]) +
+      '" alt="" title="Glue this to the page">';
   }).join('');
 }
 
-function armPhoto(id) {
-  armedPhoto = armedPhoto === id ? null : id;
-  renderTray();
-  var hint = document.getElementById('trayhint');
-  if (hint) {
-    hint.textContent = armedPhoto
-      ? 'Photo armed — now click the panel you want it on.'
-      : 'Click a photo to arm it, then click a panel to place it.';
-    hint.classList.toggle('on', !!armedPhoto);
-  }
-}
-
-function placePhoto(page) {
-  if (!armedPhoto) return false;
-  var ps = pressState();
-  if (!ps.panels[page - 1]) return false;
-  ps.panels[page - 1].photo = armedPhoto;
-  armPhoto(null);
-  savePress();
+function placeFromTray(id) {
+  if (!photoCache[id]) return;
+  addEl(pastePage, 'photo', { photo: id });
   renderPress();
-  toast('Placed photo on p.' + page);
-  return true;
+  toast('Glued to page ' + pastePage + ' \u2014 drag it where it goes');
 }

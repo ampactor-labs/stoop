@@ -8,20 +8,40 @@
   body{background:var(--night);color:var(--bone);font-family:ui-sans-serif,system-ui,'Helvetica Neue',Arial,sans-serif;line-height:1.45}
   ::selection{background:var(--orange);color:var(--night)}
 
-  /* ---------- chrome ---------- */
-  header.chrome{position:sticky;top:0;z-index:10;background:var(--night);border-bottom:2px solid var(--bone);
-    display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem;padding:.5rem .9rem}
+  /* ---------- the bar ---------- */
+  header.chrome{position:sticky;top:0;z-index:30;background:var(--night);border-bottom:2px solid var(--bone);
+    display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.45rem .9rem}
   .wordmark{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1.5rem;letter-spacing:.12em;color:var(--bone);text-decoration:none}
   .wordmark b{color:var(--orange)}
-  nav.chrome-nav{display:flex;flex-wrap:wrap;gap:.15rem;margin-left:auto}
-  nav.chrome-nav a{font-family:'Courier New',monospace;font-size:.8rem;color:var(--blue);text-decoration:none;padding:.25rem .5rem;border:1px solid transparent}
-  nav.chrome-nav a:hover{border-color:var(--blue)}
+  .barzine{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--bone);text-decoration:none;border-bottom:2px solid var(--orange);padding-bottom:1px}
+  nav.chrome-nav{display:flex;flex-wrap:wrap;gap:.15rem;margin-left:auto;align-items:center}
+  nav.chrome-nav a,nav.chrome-nav button{font-family:'Courier New',monospace;font-size:.8rem;color:var(--blue);background:none;text-decoration:none;padding:.25rem .5rem;border:1px solid transparent;cursor:pointer}
+  nav.chrome-nav a:hover,nav.chrome-nav button:hover{border-color:var(--blue)}
   nav.chrome-nav a.here{color:var(--night);background:var(--bone);border-color:var(--bone)}
+  nav.chrome-nav .verb{color:var(--orange);border-color:var(--orange);margin-left:.2rem}
+  nav.chrome-nav .verb:hover{background:var(--orange);color:var(--night)}
+  nav.chrome-nav a.verb.here{background:var(--orange);color:var(--night)}
 
-  main{max-width:860px;margin:0 auto;padding:1.2rem .9rem 4rem}
+  main{max-width:960px;margin:0 auto;padding:1rem .9rem 4rem}
+
+  /* The press is the surface and is always on screen. Every other view is a
+     drawer over it, one at a time, below the bar so the bar stays usable;
+     the scrim, Escape, or CLOSE puts it away. The landing replaces both. */
   section[data-view]{display:none}
-  section[data-view].on{display:block;animation:flick .12s steps(2) 1}
+  section[data-view="press"]{display:block}
+  body.landing section[data-view="press"]{display:none}
+  section[data-view="issue"].on{display:block;animation:flick .12s steps(2) 1}
+  section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{display:block;position:fixed;top:var(--barh,0);right:0;bottom:0;
+    width:min(540px,100vw);z-index:20;overflow-y:auto;background:var(--night);border-left:2px solid var(--bone);
+    padding:1rem .9rem 3rem;animation:slide .14s ease-out}
+  @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
   @keyframes flick{0%{opacity:.4}100%{opacity:1}}
+  .scrim{display:none;position:fixed;left:0;right:0;bottom:0;top:var(--barh,0);z-index:15;background:rgba(0,0,0,.55)}
+  body[data-drawer] .scrim{display:block}
+  section[data-view] .view-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1rem}
+  section[data-view] .view-head h1{margin:0}
+  section[data-view] .view-head .view-sub{flex-basis:100%;margin-top:0}
+  .drawer-close{margin-left:auto}
 
   h1,h2,h3{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;letter-spacing:.06em;line-height:1.05;margin:.4rem 0}
   a{color:var(--blue)}

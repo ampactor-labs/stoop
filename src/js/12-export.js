@@ -107,6 +107,18 @@ function exportIssueFile(no) {
   toast('Issue №' + no + ' exported — the file is the press as well');
 }
 
+// The verb on the bar. Whatever was published last is what you hand on; a
+// draft is not an issue until the bell has rung for it.
+function handOn() {
+  var last = lastPublished();
+  if (!last) {
+    toast('Nothing published yet \u2014 assemble an issue at the desk and ring the bell');
+    location.hash = '#desk';
+    return;
+  }
+  exportIssueFile(last.no);
+}
+
 // A contributor opens the issue file, writes a piece, and sends back a few
 // kilobytes. No server anywhere in that loop.
 function exportPieceBundle(id) {

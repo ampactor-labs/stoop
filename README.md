@@ -25,7 +25,7 @@ A working press, and the documents that argue for it.
 
 ### The app
 
-[`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. Seven views — **log**, **journal**, **projects**, **the desk**, **the press**, **the shelf**, and settings & sync.
+[`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. One surface — **the press**, showing the issue as pages — with four drawers off it (**the desk**, **the shelf**, **the notebook** for log, journal and projects, and **the scene** for who writes and how it travels) and two verbs: **paper** and **hand it on**.
 
 The first three are sources. You write in them, and they mint pieces; a piece is a title, a byline, a kind and a body. A scene is however many people it is — the roster in settings takes as many as write for you, and a byline arriving in a piece file from somebody else's copy keeps their name.
 
@@ -44,16 +44,16 @@ Photos dither to 1-bit on intake, so a page-sized photo costs tens of kilobytes 
 ### One cycle
 
 ```
-write things down          log, journal, projects
+the notebook               log, journal, projects
      |
 the desk                   SUBMIT a piece, or DRAW FROM LOG, JOURNAL & PROJECTS
      |                     CUT what does not run, write the editor's note
-     |                     COMPILE ONTO THE SHEET
+     |                     COMPILE ONTO THE PAGES
      |                     RING THE BELL - PUBLISH
      |
-the press                  paste it up, TEST SHEET, SWAP FOLD, SAVE PDF, fold
+the press                  paste it up, then PAPER: test sheet, swap fold, SAVE PDF, fold
      |
-the shelf                  EXPORT, and hand that file to somebody
+HAND IT ON                 the latest issue as one file that is also a press
 ```
 
 Then again next cycle. The second issue is the whole project.

@@ -86,8 +86,19 @@
 
 /* The press */
 .press-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-.fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--ink); padding: .35rem .6rem; margin: .7rem 0 0; }
-.fitmeter.bad { background: var(--ink); color: var(--paper); }
+.press-top { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+.fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--grey); color: var(--bone); background: var(--soot); padding: .35rem .6rem; margin: 0; }
+.fitmeter:empty { display: none; }
+.fitmeter.bad { background: var(--red); color: #fff; border-color: var(--red); }
+.pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
+.pasteup-strip .sub { margin-left: .3rem; }
+
+/* Notebook tabs */
+.drawer-tabs { display: flex; gap: .3rem; margin: .6rem 0 1rem; border-bottom: 1px solid var(--grey); }
+.drawer-tabs .tab { font-family: 'Courier New', monospace; font-size: .8rem; background: none; border: 1px solid transparent; border-bottom: none; color: var(--blue); padding: .35rem .7rem; cursor: pointer; }
+.drawer-tabs .tab.on { color: var(--night); background: var(--bone); border-color: var(--bone); }
+.ntab { display: none; }
+.ntab.on { display: block; }
 .sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
 .sheetwrap { margin-bottom: 1.2rem; width: max-content; }
 .sheetlabel { font-family: 'Courier New', monospace; font-size: .7rem; color: var(--grey); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }

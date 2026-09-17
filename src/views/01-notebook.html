@@ -1,0 +1,65 @@
+<section data-view="notebook">
+  <div class="view-head">
+    <h1>NOTEBOOK</h1>
+    <p class="view-sub">Where the raw material lives. The desk draws pieces from here once a cycle.</p>
+  </div>
+  <nav class="drawer-tabs">
+    <button class="tab on" data-ntab="log">LOG</button>
+    <button class="tab" data-ntab="journal">JOURNAL</button>
+    <button class="tab" data-ntab="projects">PROJECTS</button>
+  </nav>
+
+  <div class="ntab on" data-npane="log">
+    <div class="paper">
+      <div class="form-row">
+        <input type="text" id="loginput" class="text-input" placeholder="A line: a thought, a quote, a link, an idea" maxlength="280">
+        <select id="logtag" class="select-input">
+          <option value="moment">moment</option>
+          <option value="quote">quote</option>
+          <option value="idea">idea</option>
+          <option value="link">link</option>
+        </select>
+        <button class="btn" id="logaddbtn">POST</button>
+      </div>
+      <div class="form-row">
+        <input type="file" id="photofile" accept="image/*" multiple hidden>
+        <button class="btn wide" id="photobtn">ADD PHOTOS</button>
+        <span class="sub">Dithered to 1-bit on the way in: small, private, and ready for a photocopier. Type a caption first and it lands on the first one.</span>
+      </div>
+      <div class="filter-row">
+        <span class="sub">filter:</span>
+        <span id="logfilters"></span>
+      </div>
+    </div>
+    <div id="loglist" class="log-stream"></div>
+  </div>
+
+  <div class="ntab" data-npane="journal">
+    <div class="paper">
+      <div class="form-grid">
+        <div class="form-row">
+          <input type="text" id="journaltitle" class="text-input" placeholder="A title">
+          <select id="journalauthor" class="select-input"></select>
+        </div>
+        <textarea id="journalbody" class="textarea-input" rows="4" placeholder="Longer than a line: a report, a reflection, a rant, a recipe"></textarea>
+        <div class="form-actions">
+          <button class="btn" id="journaladdbtn">SAVE ENTRY</button>
+        </div>
+      </div>
+    </div>
+    <div id="journallist" class="journal-list"></div>
+  </div>
+
+  <div class="ntab" data-npane="projects">
+    <div class="paper">
+      <div class="form-grid">
+        <input type="text" id="projecttitle" class="text-input" placeholder="Something ongoing: a build, a series, a plan">
+        <textarea id="projectdesc" class="textarea-input" rows="2" placeholder="Where it stands, what is next"></textarea>
+        <div class="form-actions">
+          <button class="btn" id="projectaddbtn">CREATE PROJECT</button>
+        </div>
+      </div>
+    </div>
+    <div id="projectlist" class="project-grid"></div>
+  </div>
+</section>

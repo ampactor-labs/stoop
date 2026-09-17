@@ -73,3 +73,12 @@ document.addEventListener('paste', function (ev) {
   var text = cd.getData('text/plain');
   if (text) { ev.preventDefault(); acceptText(pastePage, text, null); }
 });
+
+// + PHOTO on the press: the device's picker, then the same path as a drop.
+var pasteInput = document.getElementById('pastephotofile');
+if (pasteInput) {
+  pasteInput.addEventListener('change', function (e) {
+    if (e.target.files && e.target.files.length) acceptFiles(pastePage, e.target.files, null);
+    e.target.value = '';
+  });
+}

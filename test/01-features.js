@@ -97,6 +97,7 @@ module.exports = async function features(browser, ok) {
      JSON.stringify(onScreen) === JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8]) &&
      (await page.locator('#sheetzone .panel.flip').count()) === 0, JSON.stringify(onScreen));
   await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
+  await go('#paper');
   await page.click('#printzinebtn');
   await page.waitForTimeout(300);
   const slots = await page.evaluate(() =>
@@ -135,6 +136,8 @@ module.exports = async function features(browser, ok) {
   p2.on('pageerror', e => errs.push('second device: ' + e.message));
   await p2.goto(APP);
   await p2.waitForTimeout(600);
+  await p2.evaluate(() => { location.hash = '#log'; });
+  await p2.waitForTimeout(250);
   await p2.fill('#loginput', 'A note only this device has');
   await p2.click('#logaddbtn');
   await p2.waitForTimeout(200);

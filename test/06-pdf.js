@@ -91,8 +91,10 @@ module.exports = async function pdf(browser, ok) {
 
   async function save(format, name) {
     await go('#press');
+    await go('#press');
     await page.selectOption('#formatsel', format);
     await page.waitForTimeout(600);
+    await go('#paper');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
     const file = path.join(dir, name);
     await dl.saveAs(file);
@@ -125,8 +127,10 @@ module.exports = async function pdf(browser, ok) {
   // The flyer: portrait, and the tear strip is a comb of dashed cuts with the
   // address turned on its side in every tab.
   await go('#press');
+  await go('#press');
   await page.selectOption('#formatsel', 'fold8');
   await page.waitForTimeout(500);
+  await go('#paper');
   const [fdl] = await Promise.all([page.waitForEvent('download'), page.click('#flyerbtn')]);
   const flyerFile = path.join(dir, 'flyer.pdf');
   await fdl.saveAs(flyerFile);

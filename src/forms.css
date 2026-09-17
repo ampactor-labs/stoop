@@ -103,25 +103,8 @@
   background: #fff;
   image-rendering: pixelated;
 }
-.tray-box { padding-bottom: .8rem; }
-.tray-head { display: flex; align-items: baseline; gap: .8rem; flex-wrap: wrap; }
-.tray-head h2 { margin: 0; }
-#trayhint.on { color: #a8380f; font-weight: bold; }
-.phototray {
-  display: flex;
-  gap: .5rem;
-  overflow-x: auto;
-  padding: .6rem 0 .2rem;
-  min-height: 2rem;
-  align-items: flex-start;
-}
-.tray-photo {
-  height: 72px;
-  border: 2px solid var(--ink);
-  background: #fff;
-  cursor: pointer;
-  flex: 0 0 auto;
-  image-rendering: pixelated;
-}
+/* The photo strip above the pages: every photograph the scene has. */
+.phototray { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem 0 .4rem; align-items: flex-start; }
+.phototray:empty { display: none; }
+.tray-photo { height: 56px; border: 2px solid var(--bone); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; }
 .tray-photo:hover { outline: 2px solid var(--orange); }
-.tray-photo.armed { outline: 3px solid var(--orange); transform: translateY(-3px); }

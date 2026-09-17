@@ -58,6 +58,7 @@ module.exports = async function robustness(browser, ok) {
         journal: []
       }));
     });
+    await go(page, '#log');
     await page.click('[data-logfilter="both"]');
     await page.waitForTimeout(250);
     ok('a v2 "Together" entry migrates and stays filterable',
@@ -152,11 +153,11 @@ module.exports = async function robustness(browser, ok) {
     page.on('pageerror', e => errs.push(e.message));
     await page.goto(APP);
     await page.waitForTimeout(600);
-    const logOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
-    await go(page, '#press');
     const pressOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
-    ok('no sideways scroll on a phone', !logOverflow && !pressOverflow && errs.length === 0,
-       JSON.stringify({ logOverflow, pressOverflow }));
+    await go(page, '#notebook');
+    const drawerOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+    ok('no sideways scroll on a phone, pages or drawer', !pressOverflow && !drawerOverflow && errs.length === 0,
+       JSON.stringify({ pressOverflow, drawerOverflow }));
     await ctx.close();
   }
 };

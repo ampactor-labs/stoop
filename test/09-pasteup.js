@@ -173,6 +173,7 @@ module.exports = async function pasteup(browser, ok) {
   await page.waitForTimeout(600);
 
   // ---- and it reaches the paper
+  await go('#paper');
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 25000 }),
     page.click('#pdfzinebtn')

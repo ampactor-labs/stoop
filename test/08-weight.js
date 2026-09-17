@@ -86,13 +86,14 @@ async function publish(browser, errs, dir, photos) {
   await go('#press');
   const tray = await page.evaluate(() =>
     [...document.querySelectorAll('[data-traypic]')].map(e => e.getAttribute('data-traypic')));
+  // One click glues a photograph to the page last touched.
   for (let i = 0; i < tray.length && i < 8; i++) {
-    await page.click('[data-traypic="' + tray[i] + '"]');
-    await page.waitForTimeout(110);
     await page.click('[data-page="' + (i + 1) + '"]');
+    await page.waitForTimeout(110);
+    await page.click('[data-traypic="' + tray[i] + '"]');
     await page.waitForTimeout(150);
   }
-  const placed = await page.locator('.panel-photo').count();
+  const placed = await page.locator('.el-photo').count();
 
   await go('#desk');
   await page.click('#buildissuebtn');
@@ -118,15 +119,16 @@ module.exports = async function weight(browser, ok) {
 
   ok('every page of the full issue carries a photograph', full.placed === 8, full.placed + ' placed');
 
-  // The fixed term. check.sh ratchets the built fragment at 192 KB without a
-  // browser; this measures the same thing from the other side, the press as
-  // it actually rides in a file, which is the file less the seed it carries.
+  // The fixed term. check.sh ratchets the built fragment at 256 KB without a
+  // browser, a number derived from the megabyte ceiling less eight
+  // photographs; this measures the same thing from the other side, the press
+  // as it actually rides in a file, which is the file less the seed.
   // Comparing the whole bare file against the same number once put the
   // document wrapper and the seed on the wrong side of the ledger.
   const seedOf = (html) => (html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/) || ['', ''])[1];
   const pressBytes = bareBytes - Buffer.byteLength(seedOf(bare.html));
   ok('the press is a fixed cost, and it has not crept',
-     pressBytes < 192 * KB, Math.round(pressBytes / KB) + ' KB, ratchet 192 KB');
+     pressBytes < 256 * KB, Math.round(pressBytes / KB) + ' KB, ratchet 256 KB');
 
   // The marginal term, and the one with a principle under it.
   const perPhoto = (fullBytes - bareBytes) / full.placed;

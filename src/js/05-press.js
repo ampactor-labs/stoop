@@ -5,7 +5,6 @@
 // the way to it, in the PDF and in the printed sheet, never on the surface
 // being edited. The DOM is rebuilt only when the format changes, and text is
 // painted in place, because re-rendering under the caret fights the cursor.
-var armedPhoto = null;
 var pageSig = '';
 
 function pressState() {
@@ -266,8 +265,9 @@ function printTestSheet() {
 
 function clearSheet() {
   var ps = pressState();
-  ps.panels.forEach(function (p) { p.body = ''; p.photo = null; });
+  pasteMark();
+  ps.panels.forEach(function (p) { p.body = ''; p.photo = null; p.els = []; });
   savePress();
   renderPress();
-  toast('Cleared the sheet');
+  toast('Cleared the pages');
 }

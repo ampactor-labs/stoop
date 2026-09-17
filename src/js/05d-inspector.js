@@ -33,15 +33,14 @@ function renderInspector() {
   var box = document.getElementById('inspector');
   if (!box) return;
   var hint = document.getElementById('addhint');
-  if (hint) hint.textContent = 'Adding to ' + pasteTargetLabel() + '.';
+  if (hint) {
+    hint.textContent = 'onto ' + pasteTargetLabel() + ' \u00b7 drag to move \u00b7 double-click to type \u00b7 drop or paste anything';
+  }
 
   var el = selectedEl();
   if (!el) {
     box.className = 'inspector';
-    box.innerHTML = '<span class="sub">Nothing selected. Click something on the sheet, ' +
-      'or add a cutting above. Drag to move, double-click a text cutting to type ' +
-      'into it, Escape to come back out. Arrow keys nudge, [ and ] change what is ' +
-      'on top, Alt drags off the grid, Shift turns in steps of fifteen.</span>';
+    box.innerHTML = '';
     return;
   }
   box.className = 'inspector on';
@@ -56,24 +55,14 @@ function renderInspector() {
       : '');
 }
 
-// A photograph arrives from the tray: whatever is armed, or the most recent
-// one, because making somebody arm a photo before they can place one is a
-// step that teaches nothing.
-function pastePhotoId() {
-  if (armedPhoto && photoCache[armedPhoto]) return armedPhoto;
-  var recent = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
-  if (recent) return recent.photo;
-  var any = Object.keys(photoCache);
-  return any.length ? any[0] : null;
-}
-
 function addToPasteup(kind) {
-  var extra = {};
   if (kind === 'photo') {
-    extra.photo = pastePhotoId();
-    if (!extra.photo) { toast('No photos yet — add one from the log first'); return; }
+    // A photograph comes from the device, through the same intake as a drop.
+    var input = document.getElementById('pastephotofile');
+    if (input) input.click();
+    return;
   }
+  var extra = {};
   if (kind === 'text') extra.text = 'NEW CUTTING';
   addEl(pastePage, kind, extra);
   renderPress();

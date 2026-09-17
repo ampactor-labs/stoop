@@ -1,60 +1,20 @@
 <section data-view="press">
-  <div class="view-head">
-    <h1>THE PRESS</h1>
-    <p class="view-sub">Your pages, right way up. Paper gets the imposition: the PDF and the printed sheet fold back into this order.</p>
-  </div>
-
-  <div class="paper">
-    <div class="press-actions">
-      <select id="formatsel" class="text-input"></select>
-      <button class="btn done" id="printzinebtn">PRINT</button>
-      <button class="btn" id="pdfzinebtn">SAVE PDF</button>
-      <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
-      <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
-      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
-      <button class="btn quiet" id="clearzinebtn">CLEAR SHEET</button>
-    </div>
-    <p class="sub">The PDF is exact: right paper, no margins, nothing for a print dialog to argue with, and a file you can hand to a copy shop. Printing from the browser works too, at <strong>100% scale, margins none</strong>, in the orientation the format names. Click any heading or body to edit it; edits save as you type. Print a numbered test sheet before committing good paper — printers and folding hands vary, and if the numbers come out shuffled, hit SWAP FOLD and test again.</p>
+  <div class="press-top">
+    <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
     <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
     <p class="fitmeter" id="pressstatus"></p>
   </div>
-
-  <div class="paper tray-box">
-    <div class="tray-head">
-      <h2>PHOTOS</h2>
-      <span class="sub" id="trayhint">Click a photo to arm it, then click a panel to place it.</span>
-    </div>
-    <div id="phototray" class="phototray"></div>
+  <div class="pasteup-strip">
+    <button class="btn" data-addel="text">+ TEXT</button>
+    <button class="btn" data-addel="photo">+ PHOTO</button>
+    <button class="btn quiet" data-addel="box">+ BOX</button>
+    <button class="btn quiet" data-addel="rule">+ RULE</button>
+    <button class="btn quiet" id="undobtn">UNDO</button>
+    <button class="btn quiet" id="redobtn">REDO</button>
+    <span class="sub" id="addhint"></span>
+    <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
   </div>
-
-  <div class="paper pasteup-bar">
-    <div class="tray-head">
-      <h2>PASTE-UP</h2>
-      <span class="sub" id="addhint">Click a panel first.</span>
-    </div>
-    <div class="press-actions">
-      <button class="btn" data-addel="text">+ TEXT</button>
-      <button class="btn" data-addel="photo">+ PHOTO</button>
-      <button class="btn quiet" data-addel="box">+ BOX</button>
-      <button class="btn quiet" data-addel="rule">+ RULE</button>
-      <button class="btn quiet" id="undobtn">UNDO</button>
-      <button class="btn quiet" id="redobtn">REDO</button>
-    </div>
-    <p class="sub">Flowed text comes from the desk and re-flows when you change format. A cutting is placed by hand and stays where you put it, at whatever angle, over whatever it likes — held as a fraction of the panel, so changing format moves it with the page instead of losing it.</p>
-    <div id="inspector" class="inspector"></div>
-  </div>
-
+  <div id="phototray" class="phototray"></div>
+  <div id="inspector" class="inspector"></div>
   <div class="sheetzone" id="sheetzone"></div>
-
-  <div class="paper fold-guide">
-    <h2>HOW TO FOLD (one sheet, one cut)</h2>
-    <ol class="fold-steps">
-      <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
-      <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
-      <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
-      <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
-      <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
-    </ol>
-    <p class="sub">Saddle-stitch formats print several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
-  </div>
 </section>
