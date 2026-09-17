@@ -46,7 +46,7 @@ You open the press. You make Issue 01. You export `nightbus-01.html`. That file 
 
 Credible exit stops being a policy and becomes a file. The fork guarantee becomes "send it to someone." Portable addressing works with no address at all, because the issue is its own host. And it is the one thing on the board a competitor cannot bolt on, because it requires the whole application to be small enough to fit inside its own output.
 
-That is why the size discipline matters. The app was 61,612 bytes when this was written and is about 108,000 built, 32,000 gzipped, now that it carries a desk, a shelf, an imposition solver and a QR encoder. An issue carrying six dithered photos runs two to five hundred kilobytes, so the press is a minority of the payload it rides in. Every law in `check.sh` that reads as asceticism — zero external requests, reproducible outputs, the ceiling, no CDN — is the engineering requirement for a press that fits in its own product. The constraints were built first. This plan is what they were for.
+That is why the size discipline matters. The app was 61,612 bytes when this was written and is about 141,000 built, 42,000 gzipped, now that it carries a desk, a shelf, an imposition solver, a QR encoder and a PDF writer. Measured on a real exported issue, the press is a flat 143 KB and each dithered photograph is about 83 KB, so an issue of plain text is almost entirely press and a full eight-page issue with a photograph on every page is about 818 KB, of which the press is a fifth. Both numbers are held by `test/08-weight.js`, against an issue it publishes and weighs rather than against an assertion. Every law in `check.sh` that reads as asceticism — zero external requests, reproducible outputs, the ratchet, no CDN — is the engineering requirement for a press that fits in its own product. The constraints were built first. This plan is what they were for.
 
 ## What this supersedes
 
@@ -142,7 +142,7 @@ The distinctive thing about this repository is that its rules are executable. A 
 - **The nothing-is-clipped law.** No issue content is ever silently dropped; overflow is reported, never eaten. Phase 0.
 - **The one-source law.** Both renderings of an issue derive from the same pieces; a build where they disagree fails. Phase 3.
 - **The solver law.** Law 5 compares the hand kit against the computed imposition rather than a hardcoded pair. Phase 3.
-- **The self-carrying law.** The exported issue contains a working press, and the press is a minority of the payload. Phase 4.
+- **The self-carrying law.** The exported issue contains a working press, and the press is a flat cost beside the work it carries. Phase 4.
 - **The portability law.** Zero absolute URLs in any built output, so the directory survives being moved to another host, a thumb drive, or a tarball. Already the rule in `DESIGN.md` and `tool/SPEC.md`; now checked. Phase 4.
 - **The archive-integrity law.** An issue built at version N still renders at version N+1. A self-carrying archive that breaks its own back issues is worse than no archive. Phase 4.
 

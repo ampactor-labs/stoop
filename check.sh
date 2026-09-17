@@ -57,16 +57,24 @@ for hand in A B; do
   : "$lower"
 done
 
-# 6. The self-carrying budget. Every issue this app exports carries the app
-# inside it, so the press has to stay a minority of the payload it rides in.
-# An issue with a few dithered photographs runs 200-500 KB; 256 KB is the point
-# past which the press stops being a rounding error on its own output.
+# 6. The press's fixed cost. Every issue this app exports carries the app
+# inside it, so the app's size is paid again in every issue file anyone sends.
+#
+# The number that actually matters is the issue file, and check.sh cannot build
+# one — that needs a browser. So the real ceiling lives in test/08-weight.js,
+# which publishes an issue and weighs it. This check guards the one term of it
+# that is cheap to measure: the part that is identical in every issue, whether
+# it carries photographs or not.
+#
+# Measured, an issue file costs about 143 KB of press plus about 83 KB per
+# photograph, so a full eight-page issue with a photograph on every page runs
+# around 818 KB. The ceiling below is a ratchet rather than a derived limit: it
+# sits above what the build measures today, so that growing the press by a
+# third has to be somebody's decision instead of nobody's accident.
 bytes=$(wc -c < artifact/index.html)
-if [ "$bytes" -gt 262144 ]; then
-  echo "FAIL: app fragment is $((bytes / 1024)) KB; the self-carrying ceiling is 256 KB"
+if [ "$bytes" -gt 196608 ]; then
+  echo "FAIL: press is $((bytes / 1024)) KB; the ratchet is 192 KB (test/08-weight.js holds the issue-file ceiling)"
   fail=1
-elif [ "$bytes" -gt 131072 ]; then
-  echo "WARN: app fragment over 128 KB; half the self-carrying budget is spent"
 fi
 
 # 8. Portability: built output names no host, so a scene directory survives

@@ -54,8 +54,11 @@ module.exports = async function selfcarry(browser, ok) {
   ok('the file is named for its scene and issue', /nightbus-01\.html/.test(dl.suggestedFilename()),
      dl.suggestedFilename());
   ok('the file reaches for nothing on any network', !/(src|href)="https?:/.test(html));
-  ok('the press is a minority of what it rides in — or close to it',
-     html.length < 400 * 1024, Math.round(html.length / 1024) + ' KB');
+  // What this file weighs, and why, is test/08-weight.js. Here it only has to
+  // be a file rather than a download: an issue of plain text is the press and
+  // almost nothing else, which is the fixed cost every issue pays.
+  ok('an issue of text is the press and little else',
+     html.length < 192 * 1024, Math.round(html.length / 1024) + ' KB');
   await ctx.close();
 
   // ---- the machine that has never seen stoop

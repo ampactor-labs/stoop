@@ -1,8 +1,9 @@
 // ---------- the self-carrying issue ----------
 // An exported issue is the reading view, the imposed sheet, the shelf, and a
 // working press for the next issue, in one file: the app's own HTML plus a
-// seed it boots from. It fits because the app is smaller than one issue's
-// photographs. SEED_ID lives in 01-store.js, where the store can see it.
+// seed it boots from. The press is a flat cost of about 143 KB, which is two
+// photographs' worth; test/08-weight.js is where that is measured and held.
+// SEED_ID lives in 01-store.js, where the store can see it.
 
 function sceneSlug() {
   var a = (state.address || '').replace(/\/+$/, '');

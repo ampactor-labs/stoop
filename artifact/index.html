@@ -601,7 +601,7 @@
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 134 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 138 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -982,7 +982,87 @@ function ditherToBitmap(img) {
     d[p * 4 + 3] = 255;
   }
   ctx.putImageData(imageData, 0, 0);
-  return canvas.toDataURL('image/png');
+
+  var rowBytes = Math.ceil(w / 8);
+  var bits = new Uint8Array(rowBytes * h);
+  for (var by = 0; by < h; by++) {
+    for (var bx = 0; bx < w; bx++) {
+      // 1 is white, matching greyscale PNG and the PDF's DeviceGray.
+      if (d[(by * w + bx) * 4] >= 128) bits[by * rowBytes + (bx >> 3)] |= 0x80 >> (bx & 7);
+    }
+  }
+  return png1bit(w, h, bits).then(function (url) {
+    return url || canvas.toDataURL('image/png');
+  });
+}
+
+// ---------- storing two tones in two tones ----------
+// The dither leaves exactly two values in the image. The browser's own encoder
+// does not care: toDataURL writes whatever the canvas holds, which is 32-bit
+// RGBA, and a photograph comes out about five times the size of the black and
+// white it actually contains. That surcharge is not paid once — it is paid
+// again in every issue file the photograph rides in, and an issue file is the
+// thing people hand to each other. So the intake writes the PNG itself, at the
+// one bit per pixel the picture is made of. pdfAddImage has always packed the
+// same bits this way for the printer; this is the screen's copy catching up.
+var CRC_TABLE = (function () {
+  var t = new Int32Array(256);
+  for (var n = 0; n < 256; n++) {
+    var c = n;
+    for (var k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  var c = -1;
+  for (var i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ -1) >>> 0;
+}
+
+function pngChunk(type, data) {
+  var out = new Uint8Array(12 + data.length);
+  var view = new DataView(out.buffer);
+  view.setUint32(0, data.length);
+  for (var i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+  out.set(data, 8);
+  view.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+  return out;
+}
+
+function png1bit(w, h, bits) {
+  var rowBytes = Math.ceil(w / 8);
+  var raw = new Uint8Array((rowBytes + 1) * h);
+  for (var y = 0; y < h; y++) {
+    // Filter 0. The other four predict from neighbouring pixels, and dither
+    // grain is exactly the signal nothing can predict; they cost bytes here.
+    raw[y * (rowBytes + 1)] = 0;
+    raw.set(bits.subarray(y * rowBytes, (y + 1) * rowBytes), y * (rowBytes + 1) + 1);
+  }
+  return deflate(raw).then(function (z) {
+    if (!z) return null;
+    var ihdr = new Uint8Array(13);
+    var v = new DataView(ihdr.buffer);
+    v.setUint32(0, w);
+    v.setUint32(4, h);
+    ihdr[8] = 1;  // one bit per sample
+    ihdr[9] = 0;  // greyscale, no palette to carry
+    var parts = [
+      new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+      pngChunk('IHDR', ihdr),
+      pngChunk('IDAT', z),
+      pngChunk('IEND', new Uint8Array(0))
+    ];
+    var file = new Uint8Array(parts.reduce(function (a, q) { return a + q.length; }, 0));
+    var at = 0;
+    parts.forEach(function (q) { file.set(q, at); at += q.length; });
+    var s = '';
+    for (var i = 0; i < file.length; i += 8192) {
+      s += String.fromCharCode.apply(null, file.subarray(i, i + 8192));
+    }
+    return 'data:image/png;base64,' + btoa(s);
+  }).catch(function () { return null; });
 }
 
 // Returns the new photo ids, in the order the files were chosen.
@@ -998,7 +1078,9 @@ function intakePhotos(fileList) {
       return readImage(file)
         .then(function (img) {
           var id = uid('ph');
-          return photoPut(id, ditherToBitmap(img)).then(function () { return ids.concat(id); });
+          return ditherToBitmap(img)
+            .then(function (url) { return photoPut(id, url); })
+            .then(function () { return ids.concat(id); });
         })
         .catch(function () { toast('Skipped a file that is not an image'); return ids; });
     });
@@ -2859,8 +2941,9 @@ function saveFlyer(title, issue, url, photoId, name) {
 // ---------- the self-carrying issue ----------
 // An exported issue is the reading view, the imposed sheet, the shelf, and a
 // working press for the next issue, in one file: the app's own HTML plus a
-// seed it boots from. It fits because the app is smaller than one issue's
-// photographs. SEED_ID lives in 01-store.js, where the store can see it.
+// seed it boots from. The press is a flat cost of about 143 KB, which is two
+// photographs' worth; test/08-weight.js is where that is measured and held.
+// SEED_ID lives in 01-store.js, where the store can see it.
 
 function sceneSlug() {
   var a = (state.address || '').replace(/\/+$/, '');
