@@ -135,7 +135,7 @@ function deflate(bytes) {
   } catch (e) { return Promise.resolve(null); }
 }
 
-function packBitmap(dataUrl) {
+function packBitmap(dataUrl, gen) {
   return new Promise(function (resolve) {
     var img = new Image();
     img.onload = function () {
@@ -155,6 +155,17 @@ function packBitmap(dataUrl) {
           if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
         }
       }
+      // A copy of a copy: dust lands as black, thin things drop out as white,
+      // from a fixed seed so every print of the issue wears the same marks.
+      if (gen) {
+        var flips = Math.floor(w * h * gen * 0.004);
+        for (var k = 0; k < flips; k++) {
+          var r = hash32('dust' + k);
+          var px = r % w, py = (r >>> 12) % h;
+          var byteAt = py * rowBytes + (px >> 3), bit = 0x80 >> (px & 7);
+          if ((r >>> 28) & 1) out[byteAt] &= ~bit; else out[byteAt] |= bit;
+        }
+      }
       resolve({ w: w, h: h, bits: out });
     };
     img.onerror = function () { resolve(null); };
@@ -162,8 +173,8 @@ function packBitmap(dataUrl) {
   });
 }
 
-function pdfAddImage(doc, dataUrl) {
-  return packBitmap(dataUrl).then(function (bm) {
+function pdfAddImage(doc, dataUrl, gen) {
+  return packBitmap(dataUrl, gen).then(function (bm) {
     if (!bm) return null;
     return deflate(bm.bits).then(function (packed) {
       var dict = '/Type/XObject/Subtype/Image/Width ' + bm.w + '/Height ' + bm.h +

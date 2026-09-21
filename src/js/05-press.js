@@ -178,6 +178,7 @@ function renderPress() {
   pressStatus();
   renderTray();
   renderInspector();
+  renderGen();
 }
 
 // Ringing the bell archives the issue and starts the next one, so the sheet on
@@ -257,7 +258,7 @@ function printDraft() {
   capturePanels();
   if (!confirmSheet('Print')) return;
   var ps = pressState();
-  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null);
+  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null, genOf(ps));
 }
 
 function printTestSheet() {

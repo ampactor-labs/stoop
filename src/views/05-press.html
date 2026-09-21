@@ -1,6 +1,7 @@
 <section data-view="press">
   <div class="press-top">
     <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
+    <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
     <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
     <p class="fitmeter" id="pressstatus"></p>
   </div>
@@ -9,11 +10,13 @@
     <button class="btn" data-addel="photo">+ PHOTO</button>
     <button class="btn quiet" data-addel="box">+ BOX</button>
     <button class="btn quiet" data-addel="rule">+ RULE</button>
+    <button class="btn quiet" id="stampbtn">+ STAMP</button>
     <button class="btn quiet" id="undobtn">UNDO</button>
     <button class="btn quiet" id="redobtn">REDO</button>
     <span class="sub" id="addhint"></span>
     <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
   </div>
+  <div id="stamps" class="stamps"></div>
   <div id="phototray" class="phototray"></div>
   <div id="inspector" class="inspector"></div>
   <div class="sheetzone" id="sheetzone"></div>

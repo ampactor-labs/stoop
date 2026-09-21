@@ -36,6 +36,23 @@ function ransomSpec(text) {
   });
 }
 
+// Marker: every word written a little differently, the way a hand does.
+function markerSpec(text) {
+  return String(text || '').split(/(\s+)/).map(function (w, i) {
+    if (!w.trim()) return { ch: w, space: true };
+    var r = hash32('m' + i + ':' + w);
+    return { ch: w, tilt: ((r % 9) - 4) * 0.6, scale: 0.94 + ((r >>> 5) % 13) / 100 };
+  });
+}
+
+function markerHtml(text) {
+  return markerSpec(text).map(function (w) {
+    if (w.space) return /\n/.test(w.ch) ? '<br>' : ' ';
+    return '<span class="rm" style="transform:rotate(' + w.tilt.toFixed(1) + 'deg);font-size:' +
+      w.scale.toFixed(2) + 'em">' + esc(w.ch) + '</span>';
+  }).join('');
+}
+
 function ransomHtml(text) {
   return ransomSpec(text).map(function (c) {
     if (c.ch === ' ') return ' ';
@@ -55,19 +72,24 @@ function elGeom(el) {
 function elBody(el, pics, editable, editing) {
   if (el.kind === 'rule') return '<div class="elrule"></div>';
   if (el.kind === 'box') return '';
+  if (el.kind === 'stamp') return stampHtml(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
     if (!src) return '<div class="elmissing">photo</div>';
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="">';
   }
-  var cls = 'eltext v-' + (el.voice || 'type') + (el.ink === 'white' ? ' knock' : '');
+  var voice = voiceOf(el);
+  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
   var style = 'font-size:' + (el.size || 12) + 'px';
-  if (el.voice === 'ransom') {
+  if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
   }
-  // Every voice but ransom is edited where it sits. Ransom is per-character
-  // markup, and typing into that fights the caret on every keystroke, so it
-  // is edited in the inspector instead.
+  if (voice === 'marker') {
+    return '<div class="' + cls + '" style="' + style + '">' + markerHtml(el.text) + '</div>';
+  }
+  // Type, headline and stencil are edited where they sit. Ransom and marker
+  // are per-piece markup, and typing into that fights the caret on every
+  // keystroke, so they are edited in the inspector instead.
   return '<div class="' + cls + '" style="' + style + '"' +
     (editable && editing ? ' contenteditable="true"' : '') +
     (editable ? ' data-eltext="' + esc(el.id) + '"' : '') +

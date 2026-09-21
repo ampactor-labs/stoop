@@ -15,3 +15,30 @@
 <div id="reprintzone" class="reprintzone"></div>
 <div class="scrim" id="scrim"></div>
 <div class="flash" id="flash"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="gen1" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.1" result="d"/>
+    <feComponentTransfer in="d"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+  </filter>
+  <filter id="gen2" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="5" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="d"/>
+    <feComponentTransfer in="d" result="t"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="1" seed="9" result="s"/>
+    <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -3.9" result="dots"/>
+    <feFlood flood-color="#000" result="ink"/>
+    <feComposite in="ink" in2="dots" operator="in" result="toner"/>
+    <feMerge><feMergeNode in="t"/><feMergeNode in="toner"/></feMerge>
+  </filter>
+  <filter id="gen3" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.6" result="d"/>
+    <feComponentTransfer in="d" result="t"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" seed="13" result="s"/>
+    <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  7 0 0 0 -4.1" result="dots"/>
+    <feFlood flood-color="#000" result="ink"/>
+    <feComposite in="ink" in2="dots" operator="in" result="toner"/>
+    <feMerge><feMergeNode in="t"/><feMergeNode in="toner"/></feMerge>
+  </filter>
+</svg>

@@ -11,9 +11,11 @@
 // nothing. Fractions move with the panel, so a collage survives the change the
 // same way a paragraph does.
 
-var VOICES = ['type', 'head', 'ransom', 'hand'];
-var VOICE_SIZE = { type: 11.5, head: 20, ransom: 15, hand: 14 };
-var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', ransom: 'RANSOM', hand: 'HAND' };
+var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom'];
+var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15 };
+var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM' };
+// Issues made before the marker existed called their pen voice "hand".
+function voiceOf(el) { return el.voice === 'hand' ? 'marker' : (el.voice || 'type'); }
 var pasteSel = null;
 // A text cutting is a thing you move until you say otherwise. Editable text
 // under the pointer would eat the drag, so typing is a mode you enter on a
@@ -93,7 +95,8 @@ var PASTE_DEFAULTS = {
   text: { w: 0.52, h: 0.16 },
   photo: { w: 0.55, h: 0.34 },
   rule: { w: 0.66, h: 0.012 },
-  box: { w: 0.45, h: 0.26 }
+  box: { w: 0.45, h: 0.26 },
+  stamp: { w: 0.3, h: 0.12 }
 };
 
 function topZ(panel) {
@@ -134,6 +137,12 @@ function addEl(page, kind, extra) {
   }
   if (kind === 'photo') el.photo = extra && extra.photo;
   if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
+  if (kind === 'stamp') {
+    el.stamp = (extra && extra.stamp) || 'free';
+    var st = STAMPS[el.stamp] || PASTE_DEFAULTS.stamp;
+    el.w = st.w; el.h = st.h;
+    el.rot = crooked(els.length * 53 + page * 7) * 2;
+  }
   if (extra && extra.at) {
     el.x = Math.max(-0.2, Math.min(1, extra.at.x - el.w / 2));
     el.y = Math.max(-0.2, Math.min(1, extra.at.y - el.h / 2));
@@ -181,7 +190,7 @@ function raiseEl(id, toFront) {
 function cycleVoice(id) {
   var hit = findEl(id);
   if (!hit || hit.el.kind !== 'text') return;
-  var next = VOICES[(VOICES.indexOf(hit.el.voice) + 1) % VOICES.length];
+  var next = VOICES[(VOICES.indexOf(voiceOf(hit.el)) + 1) % VOICES.length];
   updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
   renderPress();
   toast(VOICE_LABEL[next]);

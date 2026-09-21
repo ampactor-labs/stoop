@@ -303,6 +303,13 @@
 .pages .panel { width: var(--pw); height: var(--ph); flex: none; border: none; box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); }
 .spread .panel + .panel { box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); border-left: 1px dashed #bbb; }
 
+/* Generation: the copier's wear, on the pages and on the printed sheet. The
+   panel with the caret in it is left clean so typing stays crisp. */
+.pages[data-gen="1"] .panel:not(:focus-within), .sheet[data-gen="1"] .panel { filter: url(#gen1); }
+.pages[data-gen="2"] .panel:not(:focus-within), .sheet[data-gen="2"] .panel { filter: url(#gen2); }
+.pages[data-gen="3"] .panel:not(:focus-within), .sheet[data-gen="3"] .panel { filter: url(#gen3); }
+#genbtn.on { background: var(--fg); color: #fff; border-color: var(--fg); }
+
 /* Numbered test sheet: fold this first and read the page numbers in order. */
 .testnum { display: none; position: absolute; inset: 0; background: #fff; z-index: 2; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
 .testnum b { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; font-size: 140px; color: var(--ink); }
@@ -378,8 +385,24 @@ body.landing main { padding-top: 2.4rem; }
    a headline cut off a newspaper, letters off a magazine, and a pen. */
 .v-type { font-family: 'Courier New', monospace; line-height: 1.45; }
 .v-head { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; line-height: .95; letter-spacing: .02em; text-transform: uppercase; }
-.v-hand { font-family: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive; line-height: 1.3; }
+.v-marker { font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif; line-height: 1.3; letter-spacing: .03em; }
+.rm { display: inline-block; }
+/* Stencil: Impact with bridges cut through it, the way a sprayed letter has
+   to be held together. A mask, so it needs no font nobody has. */
+.v-stencil { font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif; line-height: 1; letter-spacing: .08em; text-transform: uppercase;
+  -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); }
 .v-ransom { line-height: 1.5; }
+
+/* Stamps */
+.elstamp { width: 100%; height: 100%; position: relative; color: var(--ink); }
+.stampsvg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stamptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 1px; white-space: nowrap; container-type: size; }
+.el-stamp .stamptext { font-size: 62cqh; }
+.stamps { display: none; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .2rem 0 .6rem; }
+.stamps.on { display: flex; }
+.stampbtn { height: 34px; width: auto; background: #fff; border: 2px solid var(--fg); color: var(--ink); cursor: pointer; position: relative; padding: 0; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
+.stampbtn .stamptext { font-size: 20px; }
+.stampbtn:hover { outline: 2px solid var(--spot); }
 
 /* Ransom note: every character cut from somewhere else. The four families are
    whatever any machine already has, because a webfont would mean a request. */
@@ -464,6 +487,33 @@ body.landing main { padding-top: 2.4rem; }
 <div id="reprintzone" class="reprintzone"></div>
 <div class="scrim" id="scrim"></div>
 <div class="flash" id="flash"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="gen1" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.1" result="d"/>
+    <feComponentTransfer in="d"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+  </filter>
+  <filter id="gen2" x="-2%" y="-2%" width="104%" height="104%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="5" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="d"/>
+    <feComponentTransfer in="d" result="t"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="1" seed="9" result="s"/>
+    <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -3.9" result="dots"/>
+    <feFlood flood-color="#000" result="ink"/>
+    <feComposite in="ink" in2="dots" operator="in" result="toner"/>
+    <feMerge><feMergeNode in="t"/><feMergeNode in="toner"/></feMerge>
+  </filter>
+  <filter id="gen3" x="-3%" y="-3%" width="106%" height="106%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.6" result="d"/>
+    <feComponentTransfer in="d" result="t"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" seed="13" result="s"/>
+    <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  7 0 0 0 -4.1" result="dots"/>
+    <feFlood flood-color="#000" result="ink"/>
+    <feComposite in="ink" in2="dots" operator="in" result="toner"/>
+    <feMerge><feMergeNode in="t"/><feMergeNode in="toner"/></feMerge>
+  </filter>
+</svg>
 
 <main>
 
@@ -535,6 +585,7 @@ body.landing main { padding-top: 2.4rem; }
 <section data-view="press">
   <div class="press-top">
     <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
+    <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
     <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
     <p class="fitmeter" id="pressstatus"></p>
   </div>
@@ -543,11 +594,13 @@ body.landing main { padding-top: 2.4rem; }
     <button class="btn" data-addel="photo">+ PHOTO</button>
     <button class="btn quiet" data-addel="box">+ BOX</button>
     <button class="btn quiet" data-addel="rule">+ RULE</button>
+    <button class="btn quiet" id="stampbtn">+ STAMP</button>
     <button class="btn quiet" id="undobtn">UNDO</button>
     <button class="btn quiet" id="redobtn">REDO</button>
     <span class="sub" id="addhint"></span>
     <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
   </div>
+  <div id="stamps" class="stamps"></div>
   <div id="phototray" class="phototray"></div>
   <div id="inspector" class="inspector"></div>
   <div class="sheetzone" id="sheetzone"></div>
@@ -669,7 +722,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 182 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 198 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -1617,6 +1670,7 @@ function renderPress() {
   pressStatus();
   renderTray();
   renderInspector();
+  renderGen();
 }
 
 // Ringing the bell archives the issue and starts the next one, so the sheet on
@@ -1696,7 +1750,7 @@ function printDraft() {
   capturePanels();
   if (!confirmSheet('Print')) return;
   var ps = pressState();
-  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null);
+  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null, genOf(ps));
 }
 
 function printTestSheet() {
@@ -1726,9 +1780,11 @@ function clearSheet() {
 // nothing. Fractions move with the panel, so a collage survives the change the
 // same way a paragraph does.
 
-var VOICES = ['type', 'head', 'ransom', 'hand'];
-var VOICE_SIZE = { type: 11.5, head: 20, ransom: 15, hand: 14 };
-var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', ransom: 'RANSOM', hand: 'HAND' };
+var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom'];
+var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15 };
+var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM' };
+// Issues made before the marker existed called their pen voice "hand".
+function voiceOf(el) { return el.voice === 'hand' ? 'marker' : (el.voice || 'type'); }
 var pasteSel = null;
 // A text cutting is a thing you move until you say otherwise. Editable text
 // under the pointer would eat the drag, so typing is a mode you enter on a
@@ -1808,7 +1864,8 @@ var PASTE_DEFAULTS = {
   text: { w: 0.52, h: 0.16 },
   photo: { w: 0.55, h: 0.34 },
   rule: { w: 0.66, h: 0.012 },
-  box: { w: 0.45, h: 0.26 }
+  box: { w: 0.45, h: 0.26 },
+  stamp: { w: 0.3, h: 0.12 }
 };
 
 function topZ(panel) {
@@ -1849,6 +1906,12 @@ function addEl(page, kind, extra) {
   }
   if (kind === 'photo') el.photo = extra && extra.photo;
   if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
+  if (kind === 'stamp') {
+    el.stamp = (extra && extra.stamp) || 'free';
+    var st = STAMPS[el.stamp] || PASTE_DEFAULTS.stamp;
+    el.w = st.w; el.h = st.h;
+    el.rot = crooked(els.length * 53 + page * 7) * 2;
+  }
   if (extra && extra.at) {
     el.x = Math.max(-0.2, Math.min(1, extra.at.x - el.w / 2));
     el.y = Math.max(-0.2, Math.min(1, extra.at.y - el.h / 2));
@@ -1896,7 +1959,7 @@ function raiseEl(id, toFront) {
 function cycleVoice(id) {
   var hit = findEl(id);
   if (!hit || hit.el.kind !== 'text') return;
-  var next = VOICES[(VOICES.indexOf(hit.el.voice) + 1) % VOICES.length];
+  var next = VOICES[(VOICES.indexOf(voiceOf(hit.el)) + 1) % VOICES.length];
   updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
   renderPress();
   toast(VOICE_LABEL[next]);
@@ -1965,6 +2028,23 @@ function ransomSpec(text) {
   });
 }
 
+// Marker: every word written a little differently, the way a hand does.
+function markerSpec(text) {
+  return String(text || '').split(/(\s+)/).map(function (w, i) {
+    if (!w.trim()) return { ch: w, space: true };
+    var r = hash32('m' + i + ':' + w);
+    return { ch: w, tilt: ((r % 9) - 4) * 0.6, scale: 0.94 + ((r >>> 5) % 13) / 100 };
+  });
+}
+
+function markerHtml(text) {
+  return markerSpec(text).map(function (w) {
+    if (w.space) return /\n/.test(w.ch) ? '<br>' : ' ';
+    return '<span class="rm" style="transform:rotate(' + w.tilt.toFixed(1) + 'deg);font-size:' +
+      w.scale.toFixed(2) + 'em">' + esc(w.ch) + '</span>';
+  }).join('');
+}
+
 function ransomHtml(text) {
   return ransomSpec(text).map(function (c) {
     if (c.ch === ' ') return ' ';
@@ -1984,19 +2064,24 @@ function elGeom(el) {
 function elBody(el, pics, editable, editing) {
   if (el.kind === 'rule') return '<div class="elrule"></div>';
   if (el.kind === 'box') return '';
+  if (el.kind === 'stamp') return stampHtml(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
     if (!src) return '<div class="elmissing">photo</div>';
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="">';
   }
-  var cls = 'eltext v-' + (el.voice || 'type') + (el.ink === 'white' ? ' knock' : '');
+  var voice = voiceOf(el);
+  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
   var style = 'font-size:' + (el.size || 12) + 'px';
-  if (el.voice === 'ransom') {
+  if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
   }
-  // Every voice but ransom is edited where it sits. Ransom is per-character
-  // markup, and typing into that fights the caret on every keystroke, so it
-  // is edited in the inspector instead.
+  if (voice === 'marker') {
+    return '<div class="' + cls + '" style="' + style + '">' + markerHtml(el.text) + '</div>';
+  }
+  // Type, headline and stencil are edited where they sit. Ransom and marker
+  // are per-piece markup, and typing into that fights the caret on every
+  // keystroke, so they are edited in the inspector instead.
   return '<div class="' + cls + '" style="' + style + '"' +
     (editable && editing ? ' contenteditable="true"' : '') +
     (editable ? ' data-eltext="' + esc(el.id) + '"' : '') +
@@ -2226,7 +2311,7 @@ document.addEventListener('dblclick', function (ev) {
   var node = ev.target.closest && ev.target.closest('.el');
   if (!node) return;
   var hit = findEl(node.getAttribute('data-el'));
-  if (!hit || hit.el.kind !== 'text' || hit.el.voice === 'ransom') return;
+  if (!hit || hit.el.kind !== 'text' || voiceOf(hit.el) === 'ransom' || voiceOf(hit.el) === 'marker') return;
   pasteEditing = hit.el.id;
   selectEl(hit.el.id);
   var live = liveEl(hit.el.id);
@@ -2301,7 +2386,7 @@ function pasteTargetLabel() {
 function inspectorButtons(el) {
   var b = [];
   if (el.kind === 'text') {
-    b.push(['elvoice', VOICE_LABEL[el.voice || 'type']]);
+    b.push(['elvoice', VOICE_LABEL[voiceOf(el)]]);
     b.push(['elsmaller', 'A−']);
     b.push(['elbigger', 'A+']);
     b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'BLACK ON WHITE']);
@@ -2337,9 +2422,10 @@ function renderInspector() {
     '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
     Math.round(el.h * 100) + ' of the panel</span></div>' +
     '<div class="press-actions">' + inspectorButtons(el) + '</div>' +
-    (el.kind === 'text' && el.voice === 'ransom'
-      ? '<textarea class="text-input" id="ransomtext" rows="2" ' +
-        'placeholder="Cut the letters from a magazine">' + esc(el.text || '') + '</textarea>'
+    (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
+      ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
+        (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
+        '">' + esc(el.text || '') + '</textarea>'
       : '');
 }
 
@@ -2385,7 +2471,8 @@ document.addEventListener('input', function (ev) {
   updateEl(pasteSel, { text: ev.target.value });
   var zone = document.getElementById('sheetzone');
   var node = zone && zone.querySelector('[data-el="' + pasteSel + '"] .eltext');
-  if (node) node.innerHTML = ransomHtml(ev.target.value);
+  var el = selectedEl();
+  if (node && el) node.innerHTML = voiceOf(el) === 'marker' ? markerHtml(ev.target.value) : ransomHtml(ev.target.value);
 });
 
 // Which panel a new cutting lands on is simply the last one touched.
@@ -2528,6 +2615,144 @@ function checkFit() {
   }
   return total;
 }
+// ---------- stamps ----------
+// The grammar of the form, ready cut: FREE, TAKE ONE, an arrow, a star, a
+// strip of tape, a staple, a barcode that scans nothing. Each is one small
+// description in a unit box, and the same description is drawn as SVG on
+// the screen and as path operators on paper, so the two cannot drift.
+//
+//   p: polygon, points in 0..1     r: filled rect [x, y, w, h]
+//   o: outlined rect [x,y,w,h,stroke]   l: line [x1, y1, x2, y2, stroke]
+//   t: text, drawn upright and fitted to the box
+var STAMPS = {
+  free:    { w: 0.34, h: 0.11, ops: [{ o: [0.02, 0.06, 0.96, 0.88, 0.07] }, { t: 'FREE' }] },
+  takeone: { w: 0.44, h: 0.11, ops: [{ o: [0.02, 0.06, 0.96, 0.88, 0.06] }, { t: 'TAKE ONE' }] },
+  copy:    { w: 0.6,  h: 0.1,  ops: [{ o: [0.01, 0.06, 0.98, 0.88, 0.05] }, { t: 'PHOTOCOPY THIS' }] },
+  no:      { w: 0.16, h: 0.13, ops: [{ t: '№' }] },
+  arrow:   { w: 0.3,  h: 0.14, ops: [{ p: [[0, 0.32], [0.62, 0.32], [0.62, 0], [1, 0.5], [0.62, 1], [0.62, 0.68], [0, 0.68]] }] },
+  star:    { w: 0.16, h: 0.2,  ops: [{ p: [[0.5, 0], [0.62, 0.36], [1, 0.38], [0.7, 0.62], [0.8, 1], [0.5, 0.78], [0.2, 1], [0.3, 0.62], [0, 0.38], [0.38, 0.36]] }] },
+  tape:    { w: 0.4,  h: 0.07, ops: [{ o: [0, 0, 1, 1, 0.04] }, { l: [0.05, 1, 0.2, 0, 0.03] }, { l: [0.25, 1, 0.4, 0, 0.03] }, { l: [0.45, 1, 0.6, 0, 0.03] }, { l: [0.65, 1, 0.8, 0, 0.03] }, { l: [0.85, 1, 1, 0, 0.03] }] },
+  staple:  { w: 0.07, h: 0.03, ops: [{ r: [0, 0, 1, 0.34] }, { r: [0, 0.34, 0.14, 0.66] }, { r: [0.86, 0.34, 0.14, 0.66] }] },
+  barcode: { w: 0.3,  h: 0.1,  ops: [] }
+};
+var STAMP_ORDER = ['free', 'takeone', 'copy', 'no', 'arrow', 'star', 'tape', 'staple', 'barcode'];
+
+// The barcode's bars come from a hash so every copy of the issue draws the
+// same nothing.
+(function () {
+  var x = 0, i = 0;
+  while (x < 0.98) {
+    var r = hash32('bar' + i);
+    var w = 0.012 + (r % 4) * 0.008;
+    var gap = 0.008 + ((r >>> 4) % 3) * 0.008;
+    STAMPS.barcode.ops.push({ r: [x, 0, w, 0.82] });
+    x += w + gap;
+    i++;
+  }
+})();
+
+function stampSvg(id) {
+  var st = STAMPS[id];
+  if (!st) return '';
+  var W = 100, H = 100;
+  var body = st.ops.map(function (op) {
+    if (op.p) {
+      return '<polygon points="' + op.p.map(function (pt) { return (pt[0] * W).toFixed(1) + ',' + (pt[1] * H).toFixed(1); }).join(' ') + '"/>';
+    }
+    if (op.r) return '<rect x="' + op.r[0] * W + '" y="' + op.r[1] * H + '" width="' + op.r[2] * W + '" height="' + op.r[3] * H + '"/>';
+    if (op.o) {
+      return '<rect x="' + op.o[0] * W + '" y="' + op.o[1] * H + '" width="' + op.o[2] * W + '" height="' + op.o[3] * H +
+        '" fill="none" stroke="currentColor" stroke-width="' + (op.o[4] * H).toFixed(1) + '" vector-effect="non-scaling-stroke"/>';
+    }
+    if (op.l) {
+      return '<line x1="' + op.l[0] * W + '" y1="' + op.l[1] * H + '" x2="' + op.l[2] * W + '" y2="' + op.l[3] * H +
+        '" stroke="currentColor" stroke-width="' + (op.l[4] * H).toFixed(1) + '" vector-effect="non-scaling-stroke"/>';
+    }
+    return '';
+  }).join('');
+  var text = st.ops.filter(function (op) { return op.t; })[0];
+  return '<svg class="stampsvg" viewBox="0 0 100 100" preserveAspectRatio="none" fill="currentColor">' + body + '</svg>' +
+    (text ? '<div class="stamptext">' + esc(text.t) + '</div>' : '');
+}
+
+function stampHtml(el) {
+  return '<div class="elstamp">' + stampSvg(el.stamp) + '</div>';
+}
+
+// The palette under + STAMP: every stamp, drawn small, one click to glue it
+// to the page last touched.
+function renderStampPalette(open) {
+  var box = document.getElementById('stamps');
+  if (!box) return;
+  box.classList.toggle('on', !!open);
+  if (!open) { box.innerHTML = ''; return; }
+  box.innerHTML = STAMP_ORDER.map(function (id) {
+    var st = STAMPS[id];
+    return '<button class="stampbtn" data-stamp="' + id + '" title="' + id + '" style="aspect-ratio:' +
+      (st.w / st.h).toFixed(2) + '">' + stampSvg(id) + '</button>';
+  }).join('');
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target;
+  if (t.closest && t.closest('#stampbtn')) {
+    var box = document.getElementById('stamps');
+    renderStampPalette(!(box && box.classList.contains('on')));
+    return;
+  }
+  var pick = t.closest && t.closest('[data-stamp]');
+  if (pick) {
+    addEl(pastePage, 'stamp', { stamp: pick.getAttribute('data-stamp') });
+    renderStampPalette(false);
+    renderPress();
+    toast('Stamped. Drag it, turn it.');
+  }
+});
+// ---------- generation ----------
+// How many times this has been through the copier. Nought is the master;
+// three is the copy somebody's cousin made of the copy they found in a
+// laundromat. On screen it is an SVG filter that frays edges and throws
+// toner; on paper it is speckle over every panel and dust in the
+// photographs, drawn from the same seed on every machine.
+var GEN_LABEL = ['GEN 0 · master', 'GEN 1 · a copy', 'GEN 2 · copy of a copy', 'GEN 3 · laundromat'];
+
+function genOf(ps) {
+  var g = parseInt(ps && ps.gen, 10);
+  return g >= 0 && g <= 3 ? g : 0;
+}
+
+function renderGen() {
+  var ps = pressState();
+  var g = genOf(ps);
+  var btn = document.getElementById('genbtn');
+  if (btn) { btn.textContent = GEN_LABEL[g]; btn.classList.toggle('on', g > 0); }
+  var run = document.querySelector('#sheetzone .pages');
+  if (run) run.setAttribute('data-gen', String(g));
+}
+
+function cycleGen() {
+  var ps = pressState();
+  ps.gen = (genOf(ps) + 1) % 4;
+  savePress();
+  renderGen();
+  toast(GEN_LABEL[genOf(ps)]);
+}
+
+// Deterministic speckle for one panel: a list of tiny rects in 0..1 space.
+function speckle(gen, seed) {
+  var out = [];
+  if (!gen) return out;
+  var n = gen * gen * 28;
+  for (var i = 0; i < n; i++) {
+    var r = hash32(seed + ':' + i);
+    out.push({ x: (r % 1000) / 1000, y: ((r >>> 10) % 1000) / 1000, s: 0.4 + ((r >>> 20) % 5) * 0.35 });
+  }
+  return out;
+}
+
+document.addEventListener('click', function (ev) {
+  if (ev.target.closest && ev.target.closest('#genbtn')) cycleGen();
+});
 // ---------- the desk ----------
 // Exactly one person holds the final cut on any given issue, and the desk goes
 // round whoever is on the roster, in order: alone it is always yours, at two
@@ -2701,6 +2926,7 @@ function buildIssue() {
     title: (ps.panels[0] && ps.panels[0].h) || state.zine || 'STOOP ZINE',
     format: ps.format,
     hand: ps.hand,
+    gen: genOf(ps),
     editor: c.editor,
     note: note ? note.value.trim() : '',
     panels: JSON.parse(JSON.stringify(ps.panels)),
@@ -2776,7 +3002,7 @@ function renderDesk() {
 // is what goes to the printer, whether for the draft, a numbered test sheet,
 // or a back issue off the shelf. Test numbers are always in the markup and
 // shown only when the print zone carries the testing class.
-function staticSheetHtml(panels, formatId, hand, photos, url) {
+function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
   var pages = plan.format.pages;
@@ -2785,7 +3011,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url) {
     '" alt=""><span>' + esc(url.replace(/^https?:\/\//, '')) + '</span></div>' : '';
   return plan.sheets.map(function (sheet, i) {
     return '<div class="sheetwrap"><div class="sheetlabel">' + esc(sheet.side) + '</div>' +
-      '<div class="sheet" data-sheet="' + i + '" style="width:' + paper.w + ';height:' + paper.h +
+      '<div class="sheet" data-sheet="' + i + '" data-gen="' + (gen || 0) + '" style="width:' + paper.w + ';height:' + paper.h +
       ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
       sheet.slots.map(function (slot) {
         var p = panels[slot.page - 1] || { h: '', body: '', photo: null };
@@ -2909,10 +3135,10 @@ function readIssue(no) {
 // browser, and the zone is emptied again when the dialog closes. Opening a
 // back issue this way never costs the draft, because the draft is not what
 // is being printed.
-function printSheet(panels, format, hand, url, testing, note) {
+function printSheet(panels, format, hand, url, testing, note, gen) {
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url);
+  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url, gen);
   zone.classList.toggle('testing', !!testing);
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paperOf(format).css + '; margin: 0; }';
@@ -2925,7 +3151,7 @@ function reprintIssue(no) {
   var iss = issueByNo(no);
   if (!iss) return;
   printSheet(iss.panels, iss.format, iss.hand, issueUrl(iss.no), false,
-    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched');
+    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen);
 }
 
 // The keyboard shortcut prints the sheet too. Somebody who presses print on
@@ -2936,7 +3162,7 @@ window.addEventListener('beforeprint', function () {
   var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue));
+  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps));
   document.body.classList.add('reprinting');
 });
 
@@ -3454,7 +3680,7 @@ function deflate(bytes) {
   } catch (e) { return Promise.resolve(null); }
 }
 
-function packBitmap(dataUrl) {
+function packBitmap(dataUrl, gen) {
   return new Promise(function (resolve) {
     var img = new Image();
     img.onload = function () {
@@ -3474,6 +3700,17 @@ function packBitmap(dataUrl) {
           if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
         }
       }
+      // A copy of a copy: dust lands as black, thin things drop out as white,
+      // from a fixed seed so every print of the issue wears the same marks.
+      if (gen) {
+        var flips = Math.floor(w * h * gen * 0.004);
+        for (var k = 0; k < flips; k++) {
+          var r = hash32('dust' + k);
+          var px = r % w, py = (r >>> 12) % h;
+          var byteAt = py * rowBytes + (px >> 3), bit = 0x80 >> (px & 7);
+          if ((r >>> 28) & 1) out[byteAt] &= ~bit; else out[byteAt] |= bit;
+        }
+      }
       resolve({ w: w, h: h, bits: out });
     };
     img.onerror = function () { resolve(null); };
@@ -3481,8 +3718,8 @@ function packBitmap(dataUrl) {
   });
 }
 
-function pdfAddImage(doc, dataUrl) {
-  return packBitmap(dataUrl).then(function (bm) {
+function pdfAddImage(doc, dataUrl, gen) {
+  return packBitmap(dataUrl, gen).then(function (bm) {
     if (!bm) return null;
     return deflate(bm.bits).then(function (packed) {
       var dict = '/Type/XObject/Subtype/Image/Width ' + bm.w + '/Height ' + bm.h +
@@ -3592,10 +3829,11 @@ function pdfPanel(panel, page, pages, box, images, url) {
 // A flipped panel is the same drawing rotated half a turn about its own
 // centre, which is the one place this file has to think in two directions at
 // once. Everything inside the q/Q pair is drawn as though it were upright.
-function pdfSheetContent(sheet, panels, geom, images, url, issue) {
+function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
+    ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
@@ -3611,7 +3849,7 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue) {
 
 // ---------- the public call ----------
 // Gathers every image the sheet needs, then writes one page per printed side.
-function buildSheetPdf(panels, formatId, hand, url, issue) {
+function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
   var geom = pdfLayout(formatId);
@@ -3630,7 +3868,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
   var chain = Promise.resolve();
   wanted.forEach(function (id) {
     chain = chain.then(function () {
-      return pdfAddImage(doc, photoCache[id]).then(function (ref) { if (ref) images[id] = ref; });
+      return pdfAddImage(doc, photoCache[id], gen).then(function (ref) { if (ref) images[id] = ref; });
     });
   });
   if (url) {
@@ -3655,7 +3893,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
 
     var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
     var kids = plan.sheets.map(function (sheet) {
-      var content = doc.stream('', pdfBytes(pdfSheetContent(sheet, panels, geom, images, url, issue)));
+      var content = doc.stream('', pdfBytes(pdfSheetContent(sheet, panels, geom, images, url, issue, gen)));
       return doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R/MediaBox[0 0 ' +
         geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']/Resources<<' + resources +
         '>>/Contents ' + content + ' 0 R>>']);
@@ -3667,9 +3905,9 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
   });
 }
 
-function savePdf(panels, formatId, hand, url, issue, name) {
+function savePdf(panels, formatId, hand, url, issue, name, gen) {
   toast('Writing the PDF…');
-  return buildSheetPdf(panels, formatId, hand, url, issue).then(function (blob) {
+  return buildSheetPdf(panels, formatId, hand, url, issue, gen).then(function (blob) {
     var href = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = href;
@@ -3699,6 +3937,8 @@ var TIMES_ITALIC_W = [250,333,420,500,500,833,778,214,333,333,500,675,250,333,25
 var FACES = {
   type: { f: 'F1', w: null },
   head: { f: 'F2', w: HELV_BOLD_W },
+  marker: { f: 'F2', w: HELV_BOLD_W },
+  stencil: { f: 'F2', w: HELV_BOLD_W },
   hand: { f: 'F6', w: TIMES_ITALIC_W },
   ransom: { f: 'F2', w: HELV_BOLD_W }
 };
@@ -3710,7 +3950,7 @@ var RANSOM_FACES = [
 ];
 
 function faceOf(el) {
-  return FACES[el.voice || 'type'] || FACES.type;
+  return FACES[voiceOf(el)] || FACES.type;
 }
 
 function glyphWidth(face, ch, size) {
@@ -3816,19 +4056,60 @@ function pdfElRansom(el, g) {
   return ops;
 }
 
+// Marker: each word turned by its own small angle about its own centre, the
+// same angles the screen derived.
+function pdfElMarker(el, g, face, size) {
+  var ops = '';
+  var lead = size * 1.3;
+  var x = g.x + 2;
+  var y = g.top - size;
+  markerSpec(el.text).forEach(function (w) {
+    if (w.space) {
+      if (/\n/.test(w.ch)) { x = g.x + 2; y -= lead; } else { x += glyphWidth(face, ' ', size); }
+      return;
+    }
+    var s = size * w.scale;
+    var ww = runWidth(face, w.ch, s);
+    if (x + ww > g.x + g.w && x > g.x + 2) { x = g.x + 2; y -= lead; }
+    if (y < g.y - g.h * 0.6 - size) return;
+    ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
+      'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
+      ' Tm (' + pdfEsc(w.ch) + ') Tj ET\nQ\n';
+    x += ww;
+  });
+  return ops;
+}
+
 function pdfElText(el, g) {
-  if ((el.voice || 'type') === 'ransom') return pdfElRansom(el, g);
+  var voice = voiceOf(el);
+  if (voice === 'ransom') return pdfElRansom(el, g);
   var face = faceOf(el);
   var size = el.size || 12;
-  var lead = size * ((el.voice === 'head') ? 1.0 : 1.45);
   var ops = '';
   if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
+  if (voice === 'marker') return ops + pdfElMarker(el, g, face, size) + '0 g\n';
+  var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
   var y = g.top - size;
-  wrapFace(el.text, face, size, g.w - 4).forEach(function (line) {
-    if (y < g.y - size * 0.3) return;
+  var text = voice === 'stencil' ? String(el.text || '').toUpperCase() : el.text;
+  // The box was sized to the screen's layout in a condensed face; the paper
+  // face runs wider and may wrap a line longer. A cutting hangs over its box
+  // rather than losing a line, up to a little more than half its height.
+  wrapFace(text, face, size, g.w - 4).forEach(function (line) {
+    if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      ops += 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+      var draw = 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(line) + ') Tj ET\n';
+      if (voice === 'stencil') {
+        // The screen masks bridges through the letters at fixed intervals;
+        // on paper the line is drawn once per band of ink, clipped to it.
+        var band = size * 0.42, gap = size * 0.08, top = y + size * 0.9;
+        for (var b = top; b > y - size * 0.3; b -= band + gap) {
+          ops += 'q ' + g.x.toFixed(2) + ' ' + (b - band).toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
+            band.toFixed(2) + ' re W n\n' + draw + 'Q\n';
+        }
+      } else {
+        ops += draw;
+      }
     }
     y -= lead;
   });
@@ -3845,6 +4126,8 @@ function pdfEl(el, box, images) {
     ops += el.ink === 'white' ? '0 g ' + rect(g) + ' f\n' : 'q 2 w 0 G ' + rect(g) + ' S Q\n';
   } else if (el.kind === 'photo') {
     ops += pdfElPhoto(el, g, images);
+  } else if (el.kind === 'stamp') {
+    ops += pdfElStamp(el, g);
   } else {
     ops += pdfElText(el, g);
   }
@@ -3970,6 +4253,45 @@ function saveFlyer(title, issue, url, photoId, name) {
   }).catch(function (e) {
     toast('Could not write the flyer: ' + e.message);
   });
+}
+// ---------- stamps, on paper ----------
+// The same unit-box descriptions in 05g-stamps.js, as path operators. A
+// stamp's text is fitted to its box in Helvetica-Bold, which is the nearest
+// standard face to the Impact the screen uses.
+function pdfElStamp(el, g) {
+  var st = STAMPS[el.stamp];
+  if (!st) return '';
+  var X = function (v) { return (g.x + v * g.w).toFixed(2); };
+  var Y = function (v) { return (g.top - v * g.h).toFixed(2); };
+  var ops = '0 g 0 G\n';
+  st.ops.forEach(function (op) {
+    if (op.p) {
+      ops += op.p.map(function (pt, i) { return X(pt[0]) + ' ' + Y(pt[1]) + (i ? ' l' : ' m'); }).join(' ') + ' f\n';
+    } else if (op.r) {
+      ops += X(op.r[0]) + ' ' + Y(op.r[1] + op.r[3]) + ' ' + (op.r[2] * g.w).toFixed(2) + ' ' + (op.r[3] * g.h).toFixed(2) + ' re f\n';
+    } else if (op.o) {
+      ops += 'q ' + (op.o[4] * g.h).toFixed(2) + ' w ' + X(op.o[0]) + ' ' + Y(op.o[1] + op.o[3]) + ' ' +
+        (op.o[2] * g.w).toFixed(2) + ' ' + (op.o[3] * g.h).toFixed(2) + ' re S Q\n';
+    } else if (op.l) {
+      ops += 'q ' + (op.l[4] * g.h).toFixed(2) + ' w ' + X(op.l[0]) + ' ' + Y(op.l[1]) + ' m ' + X(op.l[2]) + ' ' + Y(op.l[3]) + ' l S Q\n';
+    } else if (op.t) {
+      var face = FACES.head;
+      var size = g.h * 0.72;
+      while (size > 4 && runWidth(face, op.t, size) > g.w * 0.86) size -= 0.5;
+      var tw = runWidth(face, op.t, size);
+      ops += 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.cx - tw / 2).toFixed(2) + ' ' +
+        (g.cy - size * 0.36).toFixed(2) + ' Tm (' + pdfEsc(op.t) + ') Tj ET\n';
+    }
+  });
+  return ops;
+}
+
+// Toner over a panel, at the generation the issue was printed at.
+function pdfSpeckle(gen, box, seed) {
+  return speckle(gen, seed).map(function (d) {
+    return (box.left + d.x * box.w).toFixed(2) + ' ' + (box.top - d.y * box.h).toFixed(2) + ' ' +
+      d.s.toFixed(2) + ' ' + d.s.toFixed(2) + ' re';
+  }).join(' ') + (gen ? ' f\n' : '');
 }
 // ---------- the self-carrying issue ----------
 // An exported issue is the reading view, the imposed sheet, the shelf, and a
@@ -4459,7 +4781,7 @@ document.addEventListener('click', function (e) {
   if ((el = hit(t, '[data-pdfissue]'))) {
     var iss = issueByNo(el.getAttribute('data-pdfissue'));
     if (iss) savePdf(iss.panels, iss.format, iss.hand, issueUrl(iss.no), iss.no,
-      sceneSlug() + '-' + iss.no + '.pdf');
+      sceneSlug() + '-' + iss.no + '.pdf', iss.gen);
     return;
   }
   if ((el = hit(t, '[data-piecebundle]'))) return exportPieceBundle(el.getAttribute('data-piecebundle'));
@@ -4471,7 +4793,7 @@ document.addEventListener('click', function (e) {
     if (!confirmSheet('Save a PDF')) return;
     var ps = pressState();
     return savePdf(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), ps.issue,
-      sceneSlug() + '-' + ps.issue + '.pdf');
+      sceneSlug() + '-' + ps.issue + '.pdf', genOf(ps));
   }
   if (hit(t, '#flyerbtn')) {
     capturePanels();

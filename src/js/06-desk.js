@@ -171,6 +171,7 @@ function buildIssue() {
     title: (ps.panels[0] && ps.panels[0].h) || state.zine || 'STOOP ZINE',
     format: ps.format,
     hand: ps.hand,
+    gen: genOf(ps),
     editor: c.editor,
     note: note ? note.value.trim() : '',
     panels: JSON.parse(JSON.stringify(ps.panels)),

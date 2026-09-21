@@ -13,7 +13,7 @@ function pasteTargetLabel() {
 function inspectorButtons(el) {
   var b = [];
   if (el.kind === 'text') {
-    b.push(['elvoice', VOICE_LABEL[el.voice || 'type']]);
+    b.push(['elvoice', VOICE_LABEL[voiceOf(el)]]);
     b.push(['elsmaller', 'A−']);
     b.push(['elbigger', 'A+']);
     b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'BLACK ON WHITE']);
@@ -49,9 +49,10 @@ function renderInspector() {
     '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
     Math.round(el.h * 100) + ' of the panel</span></div>' +
     '<div class="press-actions">' + inspectorButtons(el) + '</div>' +
-    (el.kind === 'text' && el.voice === 'ransom'
-      ? '<textarea class="text-input" id="ransomtext" rows="2" ' +
-        'placeholder="Cut the letters from a magazine">' + esc(el.text || '') + '</textarea>'
+    (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
+      ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
+        (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
+        '">' + esc(el.text || '') + '</textarea>'
       : '');
 }
 
@@ -97,7 +98,8 @@ document.addEventListener('input', function (ev) {
   updateEl(pasteSel, { text: ev.target.value });
   var zone = document.getElementById('sheetzone');
   var node = zone && zone.querySelector('[data-el="' + pasteSel + '"] .eltext');
-  if (node) node.innerHTML = ransomHtml(ev.target.value);
+  var el = selectedEl();
+  if (node && el) node.innerHTML = voiceOf(el) === 'marker' ? markerHtml(ev.target.value) : ransomHtml(ev.target.value);
 });
 
 // Which panel a new cutting lands on is simply the last one touched.

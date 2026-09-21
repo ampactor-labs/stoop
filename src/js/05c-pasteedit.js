@@ -155,7 +155,7 @@ document.addEventListener('dblclick', function (ev) {
   var node = ev.target.closest && ev.target.closest('.el');
   if (!node) return;
   var hit = findEl(node.getAttribute('data-el'));
-  if (!hit || hit.el.kind !== 'text' || hit.el.voice === 'ransom') return;
+  if (!hit || hit.el.kind !== 'text' || voiceOf(hit.el) === 'ransom' || voiceOf(hit.el) === 'marker') return;
   pasteEditing = hit.el.id;
   selectEl(hit.el.id);
   var live = liveEl(hit.el.id);

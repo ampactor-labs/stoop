@@ -101,7 +101,7 @@ document.addEventListener('click', function (e) {
   if ((el = hit(t, '[data-pdfissue]'))) {
     var iss = issueByNo(el.getAttribute('data-pdfissue'));
     if (iss) savePdf(iss.panels, iss.format, iss.hand, issueUrl(iss.no), iss.no,
-      sceneSlug() + '-' + iss.no + '.pdf');
+      sceneSlug() + '-' + iss.no + '.pdf', iss.gen);
     return;
   }
   if ((el = hit(t, '[data-piecebundle]'))) return exportPieceBundle(el.getAttribute('data-piecebundle'));
@@ -113,7 +113,7 @@ document.addEventListener('click', function (e) {
     if (!confirmSheet('Save a PDF')) return;
     var ps = pressState();
     return savePdf(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), ps.issue,
-      sceneSlug() + '-' + ps.issue + '.pdf');
+      sceneSlug() + '-' + ps.issue + '.pdf', genOf(ps));
   }
   if (hit(t, '#flyerbtn')) {
     capturePanels();

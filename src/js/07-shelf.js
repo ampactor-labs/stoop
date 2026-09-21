@@ -7,7 +7,7 @@
 // is what goes to the printer, whether for the draft, a numbered test sheet,
 // or a back issue off the shelf. Test numbers are always in the markup and
 // shown only when the print zone carries the testing class.
-function staticSheetHtml(panels, formatId, hand, photos, url) {
+function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
   var pages = plan.format.pages;
@@ -16,7 +16,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url) {
     '" alt=""><span>' + esc(url.replace(/^https?:\/\//, '')) + '</span></div>' : '';
   return plan.sheets.map(function (sheet, i) {
     return '<div class="sheetwrap"><div class="sheetlabel">' + esc(sheet.side) + '</div>' +
-      '<div class="sheet" data-sheet="' + i + '" style="width:' + paper.w + ';height:' + paper.h +
+      '<div class="sheet" data-sheet="' + i + '" data-gen="' + (gen || 0) + '" style="width:' + paper.w + ';height:' + paper.h +
       ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
       sheet.slots.map(function (slot) {
         var p = panels[slot.page - 1] || { h: '', body: '', photo: null };
@@ -140,10 +140,10 @@ function readIssue(no) {
 // browser, and the zone is emptied again when the dialog closes. Opening a
 // back issue this way never costs the draft, because the draft is not what
 // is being printed.
-function printSheet(panels, format, hand, url, testing, note) {
+function printSheet(panels, format, hand, url, testing, note, gen) {
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url);
+  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url, gen);
   zone.classList.toggle('testing', !!testing);
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paperOf(format).css + '; margin: 0; }';
@@ -156,7 +156,7 @@ function reprintIssue(no) {
   var iss = issueByNo(no);
   if (!iss) return;
   printSheet(iss.panels, iss.format, iss.hand, issueUrl(iss.no), false,
-    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched');
+    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen);
 }
 
 // The keyboard shortcut prints the sheet too. Somebody who presses print on
@@ -167,7 +167,7 @@ window.addEventListener('beforeprint', function () {
   var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue));
+  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps));
   document.body.classList.add('reprinting');
 });
 

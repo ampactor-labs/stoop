@@ -14,6 +14,8 @@ var TIMES_ITALIC_W = [250,333,420,500,500,833,778,214,333,333,500,675,250,333,25
 var FACES = {
   type: { f: 'F1', w: null },
   head: { f: 'F2', w: HELV_BOLD_W },
+  marker: { f: 'F2', w: HELV_BOLD_W },
+  stencil: { f: 'F2', w: HELV_BOLD_W },
   hand: { f: 'F6', w: TIMES_ITALIC_W },
   ransom: { f: 'F2', w: HELV_BOLD_W }
 };
@@ -25,7 +27,7 @@ var RANSOM_FACES = [
 ];
 
 function faceOf(el) {
-  return FACES[el.voice || 'type'] || FACES.type;
+  return FACES[voiceOf(el)] || FACES.type;
 }
 
 function glyphWidth(face, ch, size) {
@@ -131,19 +133,60 @@ function pdfElRansom(el, g) {
   return ops;
 }
 
+// Marker: each word turned by its own small angle about its own centre, the
+// same angles the screen derived.
+function pdfElMarker(el, g, face, size) {
+  var ops = '';
+  var lead = size * 1.3;
+  var x = g.x + 2;
+  var y = g.top - size;
+  markerSpec(el.text).forEach(function (w) {
+    if (w.space) {
+      if (/\n/.test(w.ch)) { x = g.x + 2; y -= lead; } else { x += glyphWidth(face, ' ', size); }
+      return;
+    }
+    var s = size * w.scale;
+    var ww = runWidth(face, w.ch, s);
+    if (x + ww > g.x + g.w && x > g.x + 2) { x = g.x + 2; y -= lead; }
+    if (y < g.y - g.h * 0.6 - size) return;
+    ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
+      'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
+      ' Tm (' + pdfEsc(w.ch) + ') Tj ET\nQ\n';
+    x += ww;
+  });
+  return ops;
+}
+
 function pdfElText(el, g) {
-  if ((el.voice || 'type') === 'ransom') return pdfElRansom(el, g);
+  var voice = voiceOf(el);
+  if (voice === 'ransom') return pdfElRansom(el, g);
   var face = faceOf(el);
   var size = el.size || 12;
-  var lead = size * ((el.voice === 'head') ? 1.0 : 1.45);
   var ops = '';
   if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
+  if (voice === 'marker') return ops + pdfElMarker(el, g, face, size) + '0 g\n';
+  var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
   var y = g.top - size;
-  wrapFace(el.text, face, size, g.w - 4).forEach(function (line) {
-    if (y < g.y - size * 0.3) return;
+  var text = voice === 'stencil' ? String(el.text || '').toUpperCase() : el.text;
+  // The box was sized to the screen's layout in a condensed face; the paper
+  // face runs wider and may wrap a line longer. A cutting hangs over its box
+  // rather than losing a line, up to a little more than half its height.
+  wrapFace(text, face, size, g.w - 4).forEach(function (line) {
+    if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      ops += 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+      var draw = 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(line) + ') Tj ET\n';
+      if (voice === 'stencil') {
+        // The screen masks bridges through the letters at fixed intervals;
+        // on paper the line is drawn once per band of ink, clipped to it.
+        var band = size * 0.42, gap = size * 0.08, top = y + size * 0.9;
+        for (var b = top; b > y - size * 0.3; b -= band + gap) {
+          ops += 'q ' + g.x.toFixed(2) + ' ' + (b - band).toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
+            band.toFixed(2) + ' re W n\n' + draw + 'Q\n';
+        }
+      } else {
+        ops += draw;
+      }
     }
     y -= lead;
   });
@@ -160,6 +203,8 @@ function pdfEl(el, box, images) {
     ops += el.ink === 'white' ? '0 g ' + rect(g) + ' f\n' : 'q 2 w 0 G ' + rect(g) + ' S Q\n';
   } else if (el.kind === 'photo') {
     ops += pdfElPhoto(el, g, images);
+  } else if (el.kind === 'stamp') {
+    ops += pdfElStamp(el, g);
   } else {
     ops += pdfElText(el, g);
   }

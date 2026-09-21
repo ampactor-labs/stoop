@@ -113,6 +113,13 @@
 .pages .panel { width: var(--pw); height: var(--ph); flex: none; border: none; box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); }
 .spread .panel + .panel { box-shadow: 0 0 0 1px #000, 4px 4px 0 rgba(0,0,0,.45); border-left: 1px dashed #bbb; }
 
+/* Generation: the copier's wear, on the pages and on the printed sheet. The
+   panel with the caret in it is left clean so typing stays crisp. */
+.pages[data-gen="1"] .panel:not(:focus-within), .sheet[data-gen="1"] .panel { filter: url(#gen1); }
+.pages[data-gen="2"] .panel:not(:focus-within), .sheet[data-gen="2"] .panel { filter: url(#gen2); }
+.pages[data-gen="3"] .panel:not(:focus-within), .sheet[data-gen="3"] .panel { filter: url(#gen3); }
+#genbtn.on { background: var(--fg); color: #fff; border-color: var(--fg); }
+
 /* Numbered test sheet: fold this first and read the page numbers in order. */
 .testnum { display: none; position: absolute; inset: 0; background: #fff; z-index: 2; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
 .testnum b { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; font-size: 140px; color: var(--ink); }

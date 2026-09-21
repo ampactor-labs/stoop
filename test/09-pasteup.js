@@ -90,10 +90,21 @@ module.exports = async function pasteup(browser, ok) {
   // ---- voices, and the ransom note
   await page.click('[data-page="1"] .el');
   await page.waitForTimeout(200);
-  await page.click('[data-elvoice]');
-  await page.waitForTimeout(250);
-  await page.click('[data-elvoice]');
-  await page.waitForTimeout(250);
+  // Five voices, in order. Walk them and check the two new ones on the way.
+  await page.click('[data-elvoice]'); await page.waitForTimeout(200);   // head
+  await page.click('[data-elvoice]'); await page.waitForTimeout(250);   // marker
+  await page.fill('#ransomtext', 'no gods no masters'); await page.waitForTimeout(300);
+  const markerWords = await page.evaluate(() => [...document.querySelectorAll('[data-page="1"] .v-marker .rm')]
+    .map(s => s.style.transform));
+  ok('MARKER TURNS EVERY WORD BY ITS OWN SMALL ANGLE',
+     markerWords.length === 4 && new Set(markerWords).size > 1, markerWords.join(' '));
+  await page.click('[data-elvoice]'); await page.waitForTimeout(250);   // stencil
+  ok('STENCIL CUTS BRIDGES THROUGH THE LETTERS',
+     /repeating-linear-gradient/.test(await page.evaluate(() => {
+       const s = getComputedStyle(document.querySelector('[data-page="1"] .v-stencil'));
+       return s.maskImage || s.webkitMaskImage || '';
+     })));
+  await page.click('[data-elvoice]'); await page.waitForTimeout(250);   // ransom
   ok('the voice cycles to the ransom note',
      (await page.locator('[data-elvoice]').innerText()).trim() === 'RANSOM',
      await page.locator('[data-elvoice]').innerText());
@@ -107,6 +118,29 @@ module.exports = async function pasteup(browser, ok) {
   ok('the letters are not all identical',
      new Set(cut.map(c => c.split('|')[0])).size > 1,
      [...new Set(cut.map(c => c.split('|')[0]))].join(' '));
+
+  // ---- stamps: one geometry on screen and on paper
+  await page.click('[data-page="3"]');
+  await page.click('#stampbtn'); await page.waitForTimeout(200);
+  ok('the stamp palette shows every stamp', (await page.locator('#stamps [data-stamp]').count()) === 9);
+  await page.click('[data-stamp="copy"]'); await page.waitForTimeout(300);
+  ok('A STAMP IS A CUTTING',
+     (await page.locator('[data-page="3"] .el-stamp .stampsvg').count()) === 1 &&
+     /PHOTOCOPY THIS/.test(await page.locator('[data-page="3"] .el-stamp').innerText()));
+  await page.click('[data-page="3"]');
+  await page.click('#stampbtn'); await page.waitForTimeout(200);
+  await page.click('[data-stamp="barcode"]'); await page.waitForTimeout(300);
+  ok('and a barcode is a pile of bars from a hash',
+     (await page.locator('[data-page="3"] .el-stamp svg rect').count()) > 12);
+
+  // ---- generation: the copier's wear, on screen, in the issue, on paper
+  await page.click('#genbtn'); await page.waitForTimeout(150);
+  await page.click('#genbtn'); await page.waitForTimeout(200);
+  ok('GEN 2 IS A COPY OF A COPY',
+     (await page.evaluate(() => document.querySelector('#sheetzone .pages').getAttribute('data-gen'))) === '2' &&
+     /copy of a copy/i.test(await page.locator('#genbtn').innerText()));
+  ok('and the wear is a filter on every page but the one being typed into',
+     /url\("?#gen2"?\)/.test(await page.evaluate(() => getComputedStyle(document.querySelector('[data-page="4"]')).filter)));
 
   // ---- undo and redo
   const elCount = () => page.evaluate(() => document.querySelectorAll('.el').length);
@@ -184,6 +218,10 @@ module.exports = async function pasteup(browser, ok) {
   ok('THE PASTE-UP REACHES THE PDF', raw.length > 2000 && /%PDF/.test(raw));
   ok('and the cut letters bring their own faces with them',
      /Times-Bold/.test(raw) && /Courier-Bold/.test(raw) && /Helvetica-BoldOblique/.test(raw));
+  ok('THE STAMP IS ON THE PAPER, AS PATHS AND AS ITS WORDS',
+     /\(PHOTOCOPY THIS\) Tj/.test(raw) && (raw.match(/ re f\n/g) || []).length > 12);
+  ok('and gen 2 threw toner over the panels', (raw.match(/ re /g) || []).length > 8 * 100,
+     (raw.match(/ re /g) || []).length + ' rects');
 
   // ---- and it travels
   await go('#desk');
@@ -197,6 +235,7 @@ module.exports = async function pasteup(browser, ok) {
   await dl2.saveAs(file);
   const html = fs.readFileSync(file, 'utf8');
   ok('the exported issue carries the paste-up', /"els":\[/.test(html));
+  ok('and remembers which generation it was printed at', /"gen":2/.test(html));
 
   const fresh = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
   const other = await fresh.newPage();

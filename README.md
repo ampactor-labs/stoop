@@ -25,7 +25,7 @@ A working press, and the documents that argue for it.
 
 ### The app
 
-[`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. One surface — **the press**, showing the issue as pages — with four drawers off it (**the desk**, **the shelf**, **the notebook** for log, journal and projects, and **the scene** for who writes and how it travels) and two verbs: **paper** and **hand it on**.
+[`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. One surface — **the press**, showing the issue as pages — with four drawers off it (**the desk**, **the shelf**, **the scraps** you wrote down, and **the scene** for who writes and how it travels) and two verbs: **paper** and **hand it on**.
 
 The first three are sources. You write in them, and they mint pieces; a piece is a title, a byline, a kind and a body. A scene is however many people it is — the roster in settings takes as many as write for you, and a byline arriving in a piece file from somebody else's copy keeps their name.
 
@@ -33,7 +33,7 @@ At **the desk**, whoever holds the chair this cycle reads the tray, cuts what wi
 
 **The press** shows the issue as pages — cover, facing spreads, back cover — right way up, the way it will read and not the way the printer needs it. Paper gets the imposition: one sheet of eight panels with a single cut, at Letter or A4, or a saddle-stitch signature at eight, twelve or sixteen pages, computed rather than hardcoded, so changing format re-flows the same pieces without a word being retyped. A panel clips what will not fit, because a printer will too, and the fit meter says how many words that is rather than letting them vanish.
 
-On top of that sits **the paste-up**, because a zine is not a document — it is a board somebody glued things onto and then photocopied. Drop a cutting on any panel and drag it anywhere, at any angle, over anything: text in four voices (typewriter, headline, ransom note cut letter by letter from four different faces, and a hand), photographs, rules and blocks, black on white or knocked out white on black. Everything is held as a fraction of its panel rather than as a measurement, so a collage survives a change of format the same way a paragraph does. Drag to move, double-click to type, arrow keys to nudge, and undo the whole way back. All of it prints: the PDF writer draws every cutting at its true angle with real font metrics, so what is on screen is what comes out of the copier.
+On top of that sits **the paste-up**, because a zine is not a document — it is a board somebody glued things onto and then photocopied. Drop a cutting on any panel and drag it anywhere, at any angle, over anything: text in five voices (typewriter, headline, marker, stencil with the bridges cut through it, and a ransom note cut letter by letter from four faces), photographs, rules, blocks, and stamps — FREE, TAKE ONE, PHOTOCOPY THIS, an arrow, a star, tape, a staple, a barcode that scans nothing — black on white or knocked out. GENERATION says how many times the issue has been through the copier, from master to laundromat, and the wear it draws is seeded so it prints the same everywhere. Everything is held as a fraction of its panel rather than as a measurement, so a collage survives a change of format the same way a paragraph does. Drag to move, double-click to type, arrow keys to nudge, and undo the whole way back. All of it prints: the PDF writer draws every cutting at its true angle with real font metrics, so what is on screen is what comes out of the copier.
 
 **The shelf** keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly however the current draft happens to be set. The compile window is bounded by the last issue's timestamp, so issue two cannot reprint issue one.
 
@@ -44,7 +44,7 @@ Photos dither to 1-bit on intake, so a page-sized photo costs tens of kilobytes 
 ### One cycle
 
 ```
-the notebook               log, journal, projects
+the scraps                 lines, pages, photos — everything you wrote down
      |
 the desk                   SUBMIT a piece, or DRAW FROM LOG, JOURNAL & PROJECTS
      |                     CUT what does not run, write the editor's note

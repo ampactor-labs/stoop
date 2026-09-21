@@ -70,6 +70,8 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
 }
 ```
 
+`gen` is optional and is 0 to 3: how many times the issue has been through the copier. A reader MAY render wear for it (frayed edges, toner speckle, dust in the photographs) and MUST derive that wear from fixed seeds rather than randomness, so every print of the issue wears the same marks. Absent means 0.
+
 `panels` has exactly as many entries as the format has pages, in reading order: index 0 is page 1, the front cover; the last index is the back cover. `h` is the heading, `body` is plain text with newlines significant, `photo` is a photo id or `null`.
 
 ### The paste-up
@@ -90,11 +92,11 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
 }
 ```
 
-- `kind` is `text`, `photo`, `rule` or `box`. A reader MUST ignore an element whose kind it does not know rather than refusing the issue.
+- `kind` is `text`, `photo`, `rule`, `box` or `stamp`. A reader MUST ignore an element whose kind it does not know rather than refusing the issue. A `stamp` names one of `free`, `takeone`, `copy`, `no`, `arrow`, `star`, `tape`, `staple` or `barcode` in `stamp`; it is a fixed drawing at the element's box and angle, and a reader that does not know the name SHOULD draw nothing there rather than a placeholder.
 - **`x`, `y`, `w` and `h` are fractions of the panel, not lengths.** A panel is a different size in every format, and the same issue re-imposed from an eight-page fold to a sixteen-page signature must carry its collage with it. Writers MUST NOT store points or pixels here. Values outside 0–1 are legal: a cutting may hang over the edge, and the panel clips it.
 - `rot` is degrees clockwise about the element's own centre, matching CSS. A page printed upside down by the imposition rotates the whole panel; `rot` is relative to the panel, never to the sheet.
 - `z` orders elements within one panel and nothing else.
-- `voice` applies to `text` and is `type`, `head`, `ransom` or `hand`. `ransom` renders each character separately in a mixed face, size and tilt; those MUST be derived from the character and its index rather than drawn at random, so the same issue cuts the same letters on every machine and on paper. `size` is the type size in points at the panel's true printed size.
+- `voice` applies to `text` and is `type`, `head`, `marker`, `stencil` or `ransom`. `ransom` renders each character separately in a mixed face, size and tilt, and `marker` turns each word by its own small angle; both MUST be derived from the text and the position rather than drawn at random, so the same issue cuts the same letters on every machine and on paper. `stencil` is a heavy capital face with horizontal bridges cut through it at a fixed interval of the type size. Older files carry `hand`; readers SHOULD treat it as `marker`. `size` is the type size in points at the panel's true printed size.
 - `ink` is `black` or `white`. On `text` it knocks the type out of a filled block; on `box` it fills the box instead of outlining it.
 - `photo` on a `photo` element names an id in `photos`. `crop` true fills the box and clips the overflow; absent or false fits the whole frame inside it.
 

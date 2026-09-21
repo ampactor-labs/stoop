@@ -98,10 +98,11 @@ function pdfPanel(panel, page, pages, box, images, url) {
 // A flipped panel is the same drawing rotated half a turn about its own
 // centre, which is the one place this file has to think in two directions at
 // once. Everything inside the q/Q pair is drawn as though it were upright.
-function pdfSheetContent(sheet, panels, geom, images, url, issue) {
+function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
+    ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
@@ -117,7 +118,7 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue) {
 
 // ---------- the public call ----------
 // Gathers every image the sheet needs, then writes one page per printed side.
-function buildSheetPdf(panels, formatId, hand, url, issue) {
+function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
   var geom = pdfLayout(formatId);
@@ -136,7 +137,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
   var chain = Promise.resolve();
   wanted.forEach(function (id) {
     chain = chain.then(function () {
-      return pdfAddImage(doc, photoCache[id]).then(function (ref) { if (ref) images[id] = ref; });
+      return pdfAddImage(doc, photoCache[id], gen).then(function (ref) { if (ref) images[id] = ref; });
     });
   });
   if (url) {
@@ -161,7 +162,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
 
     var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
     var kids = plan.sheets.map(function (sheet) {
-      var content = doc.stream('', pdfBytes(pdfSheetContent(sheet, panels, geom, images, url, issue)));
+      var content = doc.stream('', pdfBytes(pdfSheetContent(sheet, panels, geom, images, url, issue, gen)));
       return doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R/MediaBox[0 0 ' +
         geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']/Resources<<' + resources +
         '>>/Contents ' + content + ' 0 R>>']);
@@ -173,9 +174,9 @@ function buildSheetPdf(panels, formatId, hand, url, issue) {
   });
 }
 
-function savePdf(panels, formatId, hand, url, issue, name) {
+function savePdf(panels, formatId, hand, url, issue, name, gen) {
   toast('Writing the PDF…');
-  return buildSheetPdf(panels, formatId, hand, url, issue).then(function (blob) {
+  return buildSheetPdf(panels, formatId, hand, url, issue, gen).then(function (blob) {
     var href = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = href;
