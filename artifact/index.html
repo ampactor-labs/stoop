@@ -365,6 +365,18 @@ body.landing main { padding-top: 2.4rem; }
 
 /* A panel that is about to receive something says so. */
 .panel.dropping { outline: 3px dashed var(--orange); outline-offset: -3px; }
+
+/* The nudge on a fresh cover. Drawn by the press only, never stored, never printed. */
+.pages .cover .body:empty::before { content: 'click anything \00b7 type \00b7 drop a photo'; color: #b5b0a6; font-style: italic; }
+.pages .panel h3:empty::before { content: '\00a0'; }
+
+/* The copier lamp. */
+.flash { position: fixed; inset: 0; pointer-events: none; z-index: 60; opacity: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.0) 35%, rgba(255,255,255,.85) 50%, rgba(255,255,255,.0) 65%, transparent 100%);
+  background-size: 300% 100%; }
+.flash.go { animation: lamp .55s ease-in-out 1; }
+@keyframes lamp { 0% { opacity: 1; background-position: 100% 0; } 100% { opacity: 1; background-position: 0% 0; } }
+.barzine[contenteditable]:focus { outline: none; background: var(--soot); padding: 0 .3rem; }
 /* ---------- the paste-up ---------- */
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
@@ -435,7 +447,7 @@ body.landing main { padding-top: 2.4rem; }
 
 <header class="chrome">
   <a class="wordmark" href="#press">STOO<b>P</b></a>
-  <a class="barzine" id="barzine" href="#backup" title="The scene: who writes, what it is called, where it lives">STOOP ZINE</a>
+  <span class="barzine" id="barzine" contenteditable="true" spellcheck="false" title="Click to name it">STOOP ZINE</span>
   <button class="author-toggle" id="authortoggle" title="Switch who is writing"><span id="authorname">Me</span></button>
   <nav class="chrome-nav">
     <a href="#desk" data-nav="desk">desk</a>
@@ -449,6 +461,7 @@ body.landing main { padding-top: 2.4rem; }
 <style id="pagerule">@page { size: letter landscape; margin: 0; }</style>
 <div id="reprintzone" class="reprintzone"></div>
 <div class="scrim" id="scrim"></div>
+<div class="flash" id="flash"></div>
 
 <main>
 
@@ -527,16 +540,6 @@ body.landing main { padding-top: 2.4rem; }
   </div>
 
   <div class="paper">
-    <p class="sub">The algorithm is a person, and this is where they sit. One accountable neighbour holds the final cut for one cycle; at two people the chair alternates, odd issues and even. There are no metrics to consult and nothing to A/B — sequence is taste.</p>
-    <div class="form-row">
-      <label class="sub" for="bellinput">THE BELL</label>
-      <input type="date" id="bellinput" class="text-input">
-      <button class="btn quiet" id="savebellbtn">SET THE BELL</button>
-    </div>
-  </div>
-
-  <div class="paper">
-    <h2>SUBMIT A PIECE</h2>
     <div class="form-row">
       <input type="text" id="piecetitle" class="text-input" maxlength="60" placeholder="Title">
       <select id="piecekind" class="text-input">
@@ -549,25 +552,28 @@ body.landing main { padding-top: 2.4rem; }
       </select>
       <button class="btn" id="piecesubmitbtn">SUBMIT</button>
     </div>
-    <textarea id="piecebody" class="text-input" rows="4" placeholder="The piece itself."></textarea>
-    <p class="sub">Or draw one from what is already written: only what has been added since the last issue shipped, so issue two never reprints issue one.</p>
-    <button class="btn quiet" id="drawsourcesbtn">DRAW FROM LOG, JOURNAL &amp; PROJECTS</button>
+    <textarea id="piecebody" class="text-input" rows="4" placeholder="The piece."></textarea>
+    <button class="btn quiet" id="drawsourcesbtn">PULL IN THE NEW SCRAPS</button>
   </div>
 
   <div class="paper">
     <h2>THE TRAY</h2>
     <div id="desktray"></div>
-    <p class="sub">Cuts are conversations, not deletions: the maker keeps the piece, and it can run next cycle.</p>
+    <p class="sub">A cut is not a delete. It keeps, and it can run next time.</p>
   </div>
 
   <div class="paper">
-    <h2>EDITOR'S NOTE</h2>
-    <textarea id="editornote" class="text-input" rows="3" placeholder="What this issue is, and who has the desk next."></textarea>
-    <div class="press-actions">
-      <button class="btn" id="compileissuebtn">COMPILE ONTO THE SHEET</button>
-      <button class="btn done" id="buildissuebtn">RING THE BELL — PUBLISH</button>
+    <textarea id="editornote" class="text-input" rows="2" placeholder="Editor's note, if you want one."></textarea>
+    <div class="form-row">
+      <label class="sub" for="bellinput">BELL</label>
+      <input type="date" id="bellinput" class="text-input">
+      <button class="btn quiet" id="savebellbtn">SET</button>
     </div>
-    <p class="sub">Compiling flows the tray onto the press. Ringing the bell archives the sheet to the shelf exactly as it stands, empties the tray, and hands the desk to the other pair of hands.</p>
+    <div class="press-actions">
+      <button class="btn" id="compileissuebtn">FLOW ONTO THE PAGES</button>
+      <button class="btn done" id="buildissuebtn">RING THE BELL</button>
+    </div>
+    <p class="sub">The bell puts this issue on the shelf as it stands and hands the desk on.</p>
   </div>
 </section>
 <section data-view="press">
@@ -595,94 +601,83 @@ body.landing main { padding-top: 2.4rem; }
     <h1>THE SHELF</h1>
     <p class="view-sub" id="shelfcount">no issues yet</p>
   </div>
-
   <div class="paper">
-    <p class="sub">Streams forget; shelves remember. Every issue is kept whole — its pages, its format, its fold — so a back issue reprints exactly as it shipped rather than as today's draft happens to be set. <strong>Export</strong> writes a single file that is the issue, the shelf behind it, and a working press for the next one.</p>
     <div id="shelflist" class="shelf-list"></div>
   </div>
-
   <div id="shelfreader" class="shelfreader"></div>
 </section>
 <section data-view="backup">
   <div class="view-head">
     <h1>SCENE</h1>
-    <p class="view-sub">Who writes, what it is called, where it lives, and how it travels between devices.</p>
+    <p class="view-sub">Who writes, what it is called, where it lives.</p>
   </div>
 
   <div class="paper">
-    <h2>WHO IS HERE</h2>
-    <p class="sub">Everybody who writes for this zine. Entries are stored against a person, not a spelling, so renaming somebody keeps every past piece attached to them — which is also why anyone with work in the archive cannot be removed.</p>
+    <h2>WHO</h2>
     <div id="roster"></div>
     <div class="form-row">
       <input type="text" id="newperson" class="text-input" maxlength="24" placeholder="Add somebody">
       <button class="btn quiet" id="addpersonbtn">ADD</button>
-      <button class="btn" id="savenamesbtn">SAVE NAMES</button>
+      <button class="btn" id="savenamesbtn">SAVE</button>
     </div>
+    <p class="sub">Anyone with work on the shelf stays on the roster.</p>
   </div>
 
   <div class="paper">
-    <h2>THE ZINE'S NAME</h2>
-    <p class="sub">What goes on the cover, the flyer, and the name of every file this press exports. Change it here and the next issue you compile carries it.</p>
+    <h2>NAME</h2>
     <div class="form-row">
       <input type="text" id="zinename" class="text-input" maxlength="40" placeholder="SPLIT LIP">
-      <button class="btn" id="savezinebtn">SAVE NAME</button>
+      <button class="btn" id="savezinebtn">SAVE</button>
     </div>
+    <p class="sub">Or click it in the bar.</p>
   </div>
 
   <div class="paper">
-    <h2>THE ADDRESS</h2>
-    <p class="sub">Where this scene's issues live, if they live anywhere. The back cover prints it as text and as a code, so somebody who finds the paper can reach the archive. Leave it empty and the paper simply carries no address.</p>
+    <h2>ADDRESS</h2>
     <div class="form-row">
-      <input type="text" id="addressinput" class="text-input" placeholder="ampactor.dev/stoop/nightbus">
-      <button class="btn" id="savenamesbtn2">SAVE ADDRESS</button>
+      <input type="text" id="addressinput" class="text-input" placeholder="somewhere.org/splitlip (or nothing)">
+      <button class="btn" id="savenamesbtn2">SAVE</button>
     </div>
+    <p class="sub">Goes on the back cover as text and a code. Leave it blank and the paper just carries no address.</p>
   </div>
 
   <div class="paper">
-    <h2>TAKE A PIECE IN</h2>
-    <p class="sub">A contributor exports a piece from their own copy and sends you the file; drop it here and it lands in the tray. An exported issue works the same way — importing one puts its back issues on your shelf. Merging the same file twice changes nothing.</p>
+    <h2>TAKE IN</h2>
     <input type="file" id="bundlefile" accept="text/html,.html" hidden>
-    <button class="btn" id="bundlebtn">IMPORT A PIECE OR ISSUE FILE</button>
+    <button class="btn" id="bundlebtn">A PIECE OR ISSUE SOMEBODY SENT</button>
+    <p class="sub">Their file lands in your tray or on your shelf. Twice does nothing.</p>
   </div>
 
   <div class="paper">
-    <h2>CARRY IT ACROSS</h2>
-    <p class="sub">There is no server and no account: everything lives in this browser. To share a notebook between two phones or laptops, export here and import there. <strong>Merge</strong> keeps both sides and prefers the newer copy of anything held by both, so you can each export, swap files, and merge — both devices end up agreeing. <strong>Replace</strong> overwrites this device entirely.</p>
+    <h2>OTHER DEVICES</h2>
     <div class="press-actions">
-      <button class="btn" id="exportbtn">EXPORT BACKUP (photos included)</button>
+      <button class="btn" id="exportbtn">BACKUP</button>
       <input type="file" id="importfile" accept="application/json,.json" hidden>
-      <button class="btn quiet" id="mergebtn">MERGE A BACKUP IN</button>
-      <button class="btn quiet" id="replacebtn">REPLACE FROM BACKUP</button>
+      <button class="btn quiet" id="mergebtn">MERGE ONE IN</button>
+      <button class="btn quiet" id="replacebtn">REPLACE FROM ONE</button>
     </div>
+    <p class="sub">Everything lives in this browser and nowhere else. A backup is the only copy that outlives it. Merge keeps both sides.</p>
     <p class="sub" id="importstatus"></p>
   </div>
 
   <div class="paper">
-    <h2>WHERE YOUR THINGS ARE</h2>
-    <p class="sub">Text and lists sit in this browser's local storage; photos sit in its IndexedDB, dithered to 1-bit on the way in so a page-sized image costs tens of kilobytes rather than megabytes. Nothing is uploaded anywhere, because there is nowhere to upload it to. Clearing site data for this page deletes all of it, so export often — the backup file is the only copy that outlives the browser.</p>
-  </div>
-
-  <div class="paper">
-    <h2>START OVER</h2>
-    <p class="sub"><strong>Start empty</strong> clears the sample pieces and everything else, so your first issue is only your own work. <strong>Reset to the sample</strong> puts the demo notebook back.</p>
     <div class="press-actions">
       <button class="btn danger" id="emptybtn">START EMPTY</button>
-      <button class="btn quiet" id="resetbtn">RESET TO THE SAMPLE</button>
+      <button class="btn quiet" id="resetbtn">RESET</button>
     </div>
   </div>
 </section>
 <section data-view="paper">
   <div class="view-head">
     <h1>PAPER</h1>
-    <p class="view-sub">The pages fold into a sheet here. The PDF is exact: right paper, no margins, a file you can hand to a copy shop.</p>
+    <p class="view-sub">Where the pages fold into a sheet.</p>
   </div>
 
   <div class="paper">
     <div class="form-row">
       <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
-      <span class="sub">The format is set above the pages. The fold hand is set here, because it only matters on paper.</span>
     </div>
-    <p class="sub">Print a numbered test sheet before committing good paper — printers and folding hands vary. If the numbers come out shuffled, swap the fold and test again.</p>
+    <p class="sub">Print a test sheet first. Numbers come out shuffled? Swap the fold, test again.</p>
     <div class="press-actions">
       <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
     </div>
@@ -694,7 +689,7 @@ body.landing main { padding-top: 2.4rem; }
       <button class="btn" id="printzinebtn">PRINT FROM THE BROWSER</button>
       <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
     </div>
-    <p class="sub">Printing from the browser works at <strong>100% scale, margins none</strong>, in the orientation the format names. The flyer is a poster with tear-off tabs for a noticeboard.</p>
+    <p class="sub">The PDF is exact — hand it to a copy shop. Browser print: 100%, no margins. The flyer has tear-off tabs.</p>
   </div>
 
   <div class="paper fold-guide">
@@ -712,13 +707,13 @@ body.landing main { padding-top: 2.4rem; }
   <div class="paper">
     <div class="press-actions">
       <button class="btn danger" id="clearzinebtn">CLEAR THE PAGES</button>
-      <span class="sub">Empties every page of the draft, cuttings included. Undo brings it back.</span>
+      <span class="sub">Undo brings it back.</span>
     </div>
   </div>
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 189 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 187 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -737,7 +732,7 @@ var PEOPLE_KEY = 'stoop_people';
 var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
 
-function defaultPeople() { return [{ id: 'a', name: 'Me' }, { id: 'b', name: 'JJ' }]; }
+function defaultPeople() { return [{ id: 'a', name: 'me' }]; }
 
 var people = (function () {
   try {
@@ -852,23 +847,15 @@ function toast(msg) {
 // ---------- seed ----------
 var seedTs = Date.now();
 var defaultData = {
-  logs: [
-    { id: 'l1', author: 'a', tag: 'moment', text: 'First clean run of the workbench setup. Smooth edges on the steel cut.', ts: seedTs - 864e5 },
-    { id: 'l2', author: 'b', tag: 'quote', text: '"The only way out is through, and the best way through is together."', ts: seedTs - 43e6 },
-    { id: 'l3', author: 'both', tag: 'idea', text: 'Weekend road trip sketch: farm stand cider, thrift store run, back before sunset.', ts: seedTs - 6e6 }
-  ],
-  projects: [
-    { id: 'p1', title: 'Backyard Herb Garden', desc: 'Raised cedar bed: basil, rosemary, thyme, cherry tomatoes. Drip irrigation line.', ts: seedTs },
-    { id: 'p2', title: 'Zine Issue #01', desc: 'First dispatch of thoughts, photos, and project notes. 8-page, 1-sheet fold.', ts: seedTs }
-  ],
-  journal: [
-    { id: 'j1', author: 'both', title: 'Sunday Morning Coffee & Quiet', body: 'Made pour-overs, sat on the porch while the sun came up over the street. Talked about where we want our time to go this autumn. Fewer distractions, more physical making.', ts: seedTs - 864e5 }
-  ],
+  logs: [],
+  projects: [],
+  journal: [],
+  // Two pieces in the tray so the desk has something to show. Cut them.
   pieces: [
     { id: 'pc1', kind: 'essay', byline: 'a', title: 'The Seam',
       body: 'The sodium lamps are going over to LED one block at a time, and you can stand on the line: orange behind you, white ahead.',
       photo: null, cut: false, ts: seedTs - 2e5 },
-    { id: 'pc2', kind: 'log', byline: 'b', title: 'Workbench, Week Two',
+    { id: 'pc2', kind: 'log', byline: 'a', title: 'Workbench, Week Two',
       body: 'Trued the rear wheel. The seatpost finally moved, by way of penetrating oil and a personal grudge.',
       photo: null, cut: false, ts: seedTs - 1e5 }
   ],
@@ -1517,21 +1504,11 @@ function impose(formatId, hand) {
 // What each page is for, so a fresh sheet is never eight blank rectangles.
 // Beyond page 8 the seeds run out and the pages are simply numbered, which is
 // the honest state of a signature nobody has written yet.
-var PAGE_SEED = [
-  { h: 'STOOP ZINE', body: 'Our dispatch.\nLife, projects & notes.' },
-  { h: 'THE WEEK', body: 'Moments, highlights and quotes from the daily log.' },
-  { h: 'PROJECTS', body: 'Active builds, shop progress, and creative work.' },
-  { h: 'REFLECTIONS', body: 'Thoughts, milestones, and what we learned.' },
-  { h: 'FROM THE DESK', body: 'Pieces submitted this cycle.' },
-  { h: 'SCRATCHPAD', body: 'Ideas, sketches, recipes, and recommendations.' },
-  { h: 'LOOKING AHEAD', body: 'Next issue: plans, goals, upcoming experiments.' },
-  { h: 'BACK COVER', body: 'Printed on a single sheet of paper.' }
-];
-
+// A fresh page is blank. The cover carries the zine's name and nothing else;
+// the nudge to click and type is drawn by the press, not stored in the page,
+// so it never reaches paper and never has to be deleted.
 function seedPanel(i) {
-  var s = PAGE_SEED[i];
-  if (s) return { h: s.h, body: s.body, photo: null };
-  return { h: 'PAGE ' + (i + 1), body: '', photo: null };
+  return { h: i === 0 ? (state && state.zine) || 'STOOP ZINE' : '', body: '', photo: null };
 }
 
 // Resize a panel array to a format without losing what was written. Growing
@@ -2444,7 +2421,7 @@ function renderInspector() {
   if (!box) return;
   var hint = document.getElementById('addhint');
   if (hint) {
-    hint.textContent = 'onto ' + pasteTargetLabel() + ' \u00b7 drag to move \u00b7 double-click to type \u00b7 drop or paste anything';
+    hint.textContent = pasteTargetLabel() + ' \u00b7 drag \u00b7 double-click to type \u00b7 drop anything';
   }
 
   var el = selectedEl();
@@ -2651,9 +2628,10 @@ function checkFit() {
   return total;
 }
 // ---------- the desk ----------
-// Exactly one person holds the final cut on any given issue. At two people the
-// chair alternates by issue parity, which is simpler than rotation and needs
-// no administering.
+// Exactly one person holds the final cut on any given issue, and the desk goes
+// round whoever is on the roster, in order: alone it is always yours, at two
+// it alternates, at four it comes back every fourth issue. Nobody administers
+// it.
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -2661,13 +2639,13 @@ function cycleState() {
   var c = state.cycle;
   if (!c.no) c.no = '01';
   if (typeof c.bell !== 'number') c.bell = Date.now() + 6048e5;
-  if (c.editor !== 'a' && c.editor !== 'b') c.editor = 'a';
+  if (personIds().indexOf(c.editor) < 0) c.editor = editorFor(c.no);
   return c;
 }
 
-// Odd issues to one hand, even to the other. Nobody administers this.
 function editorFor(no) {
-  return (parseInt(no, 10) || 1) % 2 === 1 ? 'a' : 'b';
+  var ids = personIds();
+  return ids[((parseInt(no, 10) || 1) - 1) % ids.length] || 'a';
 }
 
 function lastIssueTs() {
@@ -3090,10 +3068,8 @@ function renderLanding() {
   var next = cycleState().no;
   box.innerHTML = readingHtml(iss) +
     '<div class="landing-tail">' +
-    '<p class="landing-note">' + esc(iss.title || 'This issue') +
-    ' was made with the press it is carried in. This file is the issue, every issue before it, ' +
-    'and a working press. Nothing was uploaded, nobody signed up, and the copy you are reading ' +
-    'is the whole thing.</p>' +
+    '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
+    'No server, no account. You are holding the whole thing.</p>' +
     '<div class="landing-verbs">' +
     '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
     '<button class="btn big" id="landown">START YOUR OWN</button>' +
@@ -4183,9 +4159,20 @@ function download(name, html) {
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
+// The copier's lamp sweeps the pages once. Half a second; it is the one
+// moment in the whole loop that should feel like a machine did something.
+function copierFlash() {
+  var f = document.getElementById('flash');
+  if (!f) return;
+  f.classList.remove('go');
+  void f.offsetWidth;
+  f.classList.add('go');
+}
+
 function exportIssueFile(no) {
   var iss = issueByNo(no);
   if (!iss) { toast('No such issue on the shelf'); return; }
+  copierFlash();
   // The shelf travels up to and including this issue: a reader who is handed
   // №03 gets №01 and №02 with it, because a zine you cannot read back is a
   // stream with extra steps.
@@ -4204,7 +4191,7 @@ function exportIssueFile(no) {
     open: '#shelf', read: no
   });
   download(sceneSlug() + '-' + no + '.html', html);
-  toast('Issue №' + no + ' exported — the file is the press as well');
+  toast('\u2116' + no + ' is a file now. It is also the press.');
 }
 
 // The verb on the bar. Whatever was published last is what you hand on; a
@@ -4535,10 +4522,6 @@ function measureBar() {
 }
 window.addEventListener('resize', measureBar);
 
-function renderBar() {
-  var z = document.getElementById('barzine');
-  if (z) z.textContent = state.zine || 'STOOP ZINE';
-}
 
 // ---------- events ----------
 function hit(target, sel) { return target.closest ? target.closest(sel) : null; }
@@ -4764,6 +4747,35 @@ photoLoadAll().then(function () {
   renderAll();
   fillSettings();
   showView();
+});
+// ---------- the bar ----------
+// The zine's name, where it is shown and where it is changed. Split from boot
+// only for the line ceiling.
+function renderBar() {
+  var z = document.getElementById('barzine');
+  if (z && document.activeElement !== z) z.textContent = state.zine || 'STOOP ZINE';
+}
+
+// The name is edited where it is shown. It lands on the cover, the flyer and
+// every file this press writes, the moment you leave the field.
+function commitBarName() {
+  var z = document.getElementById('barzine');
+  if (!z) return;
+  var name = z.textContent.replace(/\s+/g, ' ').trim().slice(0, 40);
+  if (!name) { renderBar(); return; }
+  if (name === state.zine) return;
+  state.zine = name;
+  var ps = pressState();
+  if (ps.panels[0]) ps.panels[0].h = name;
+  saveState();
+  renderAll();
+  toast(name);
+}
+document.addEventListener('focusout', function (e) { if (e.target.id === 'barzine') commitBarName(); });
+document.addEventListener('keydown', function (e) {
+  if (e.target.id !== 'barzine') return;
+  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+  if (e.key === 'Escape') { renderBar(); e.target.blur(); }
 });
 
 })();

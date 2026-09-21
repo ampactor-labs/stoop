@@ -33,8 +33,10 @@ module.exports = async function scene(browser, ok) {
   await page.click('#emptybtn');           // dialogs are auto-accepted below
   await page.waitForTimeout(400);
   await page.fill('[data-personid="a"]', 'Mars');
-  await page.fill('[data-personid="b"]', 'Dev');
   await page.click('#savenamesbtn');
+  await page.waitForTimeout(250);
+  await page.fill('#newperson', 'Dev');
+  await page.click('#addpersonbtn');
   await page.waitForTimeout(250);
   await page.fill('#newperson', 'Ro');
   await page.click('#addpersonbtn');

@@ -94,21 +94,11 @@ function impose(formatId, hand) {
 // What each page is for, so a fresh sheet is never eight blank rectangles.
 // Beyond page 8 the seeds run out and the pages are simply numbered, which is
 // the honest state of a signature nobody has written yet.
-var PAGE_SEED = [
-  { h: 'STOOP ZINE', body: 'Our dispatch.\nLife, projects & notes.' },
-  { h: 'THE WEEK', body: 'Moments, highlights and quotes from the daily log.' },
-  { h: 'PROJECTS', body: 'Active builds, shop progress, and creative work.' },
-  { h: 'REFLECTIONS', body: 'Thoughts, milestones, and what we learned.' },
-  { h: 'FROM THE DESK', body: 'Pieces submitted this cycle.' },
-  { h: 'SCRATCHPAD', body: 'Ideas, sketches, recipes, and recommendations.' },
-  { h: 'LOOKING AHEAD', body: 'Next issue: plans, goals, upcoming experiments.' },
-  { h: 'BACK COVER', body: 'Printed on a single sheet of paper.' }
-];
-
+// A fresh page is blank. The cover carries the zine's name and nothing else;
+// the nudge to click and type is drawn by the press, not stored in the page,
+// so it never reaches paper and never has to be deleted.
 function seedPanel(i) {
-  var s = PAGE_SEED[i];
-  if (s) return { h: s.h, body: s.body, photo: null };
-  return { h: 'PAGE ' + (i + 1), body: '', photo: null };
+  return { h: i === 0 ? (state && state.zine) || 'STOOP ZINE' : '', body: '', photo: null };
 }
 
 // Resize a panel array to a format without losing what was written. Growing

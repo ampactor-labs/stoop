@@ -1,7 +1,8 @@
 // ---------- the desk ----------
-// Exactly one person holds the final cut on any given issue. At two people the
-// chair alternates by issue parity, which is simpler than rotation and needs
-// no administering.
+// Exactly one person holds the final cut on any given issue, and the desk goes
+// round whoever is on the roster, in order: alone it is always yours, at two
+// it alternates, at four it comes back every fourth issue. Nobody administers
+// it.
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -9,13 +10,13 @@ function cycleState() {
   var c = state.cycle;
   if (!c.no) c.no = '01';
   if (typeof c.bell !== 'number') c.bell = Date.now() + 6048e5;
-  if (c.editor !== 'a' && c.editor !== 'b') c.editor = 'a';
+  if (personIds().indexOf(c.editor) < 0) c.editor = editorFor(c.no);
   return c;
 }
 
-// Odd issues to one hand, even to the other. Nobody administers this.
 function editorFor(no) {
-  return (parseInt(no, 10) || 1) % 2 === 1 ? 'a' : 'b';
+  var ids = personIds();
+  return ids[((parseInt(no, 10) || 1) - 1) % ids.length] || 'a';
 }
 
 function lastIssueTs() {

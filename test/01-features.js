@@ -20,17 +20,24 @@ module.exports = async function features(browser, ok) {
   // Renaming reaches every surface, and past entries keep their author.
   await go('#backup');
   await page.fill('[data-personid="a"]', 'Ampactor');
-  await page.fill('[data-personid="b"]', 'JJ');
+  await page.click('#savenamesbtn');
+  await page.waitForTimeout(200);
+  await page.fill('#newperson', 'JJ');
+  await page.click('#addpersonbtn');
+  await page.waitForTimeout(200);
+  const bId = await page.evaluate(() => document.querySelectorAll('[data-personid]')[1].getAttribute('data-personid'));
+  await page.fill('[data-personid="' + bId + '"]', 'JJ');
   await page.click('#savenamesbtn');
   await page.waitForTimeout(250);
-  ok('rename reaches the filter chips', (await page.locator('[data-logfilter="b"]').innerText()).trim() === 'JJ');
+  ok('rename reaches the filter chips', (await page.locator('[data-logfilter="' + bId + '"]').innerText()).trim() === 'JJ');
   ok('rename reaches the author toggle', (await page.locator('#authorname').innerText()).trim() === 'Ampactor');
 
   // The joint-author filter matches the joint-author entries.
   await go('#log');
   await page.click('[data-logfilter="both"]');
   await page.waitForTimeout(200);
-  ok('the joint filter matches joint entries', (await page.locator('.log-card').count()) === 1);
+  ok('the joint filter on a fresh log selects nothing, cleanly',
+     (await page.locator('.log-card').count()) === 0 && errs.length === 0);
   await page.click('[data-logfilter="all"]');
   await page.waitForTimeout(150);
 

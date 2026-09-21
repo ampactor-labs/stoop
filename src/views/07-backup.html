@@ -1,68 +1,61 @@
 <section data-view="backup">
   <div class="view-head">
     <h1>SCENE</h1>
-    <p class="view-sub">Who writes, what it is called, where it lives, and how it travels between devices.</p>
+    <p class="view-sub">Who writes, what it is called, where it lives.</p>
   </div>
 
   <div class="paper">
-    <h2>WHO IS HERE</h2>
-    <p class="sub">Everybody who writes for this zine. Entries are stored against a person, not a spelling, so renaming somebody keeps every past piece attached to them — which is also why anyone with work in the archive cannot be removed.</p>
+    <h2>WHO</h2>
     <div id="roster"></div>
     <div class="form-row">
       <input type="text" id="newperson" class="text-input" maxlength="24" placeholder="Add somebody">
       <button class="btn quiet" id="addpersonbtn">ADD</button>
-      <button class="btn" id="savenamesbtn">SAVE NAMES</button>
+      <button class="btn" id="savenamesbtn">SAVE</button>
     </div>
+    <p class="sub">Anyone with work on the shelf stays on the roster.</p>
   </div>
 
   <div class="paper">
-    <h2>THE ZINE'S NAME</h2>
-    <p class="sub">What goes on the cover, the flyer, and the name of every file this press exports. Change it here and the next issue you compile carries it.</p>
+    <h2>NAME</h2>
     <div class="form-row">
       <input type="text" id="zinename" class="text-input" maxlength="40" placeholder="SPLIT LIP">
-      <button class="btn" id="savezinebtn">SAVE NAME</button>
+      <button class="btn" id="savezinebtn">SAVE</button>
     </div>
+    <p class="sub">Or click it in the bar.</p>
   </div>
 
   <div class="paper">
-    <h2>THE ADDRESS</h2>
-    <p class="sub">Where this scene's issues live, if they live anywhere. The back cover prints it as text and as a code, so somebody who finds the paper can reach the archive. Leave it empty and the paper simply carries no address.</p>
+    <h2>ADDRESS</h2>
     <div class="form-row">
-      <input type="text" id="addressinput" class="text-input" placeholder="ampactor.dev/stoop/nightbus">
-      <button class="btn" id="savenamesbtn2">SAVE ADDRESS</button>
+      <input type="text" id="addressinput" class="text-input" placeholder="somewhere.org/splitlip (or nothing)">
+      <button class="btn" id="savenamesbtn2">SAVE</button>
     </div>
+    <p class="sub">Goes on the back cover as text and a code. Leave it blank and the paper just carries no address.</p>
   </div>
 
   <div class="paper">
-    <h2>TAKE A PIECE IN</h2>
-    <p class="sub">A contributor exports a piece from their own copy and sends you the file; drop it here and it lands in the tray. An exported issue works the same way — importing one puts its back issues on your shelf. Merging the same file twice changes nothing.</p>
+    <h2>TAKE IN</h2>
     <input type="file" id="bundlefile" accept="text/html,.html" hidden>
-    <button class="btn" id="bundlebtn">IMPORT A PIECE OR ISSUE FILE</button>
+    <button class="btn" id="bundlebtn">A PIECE OR ISSUE SOMEBODY SENT</button>
+    <p class="sub">Their file lands in your tray or on your shelf. Twice does nothing.</p>
   </div>
 
   <div class="paper">
-    <h2>CARRY IT ACROSS</h2>
-    <p class="sub">There is no server and no account: everything lives in this browser. To share a notebook between two phones or laptops, export here and import there. <strong>Merge</strong> keeps both sides and prefers the newer copy of anything held by both, so you can each export, swap files, and merge — both devices end up agreeing. <strong>Replace</strong> overwrites this device entirely.</p>
+    <h2>OTHER DEVICES</h2>
     <div class="press-actions">
-      <button class="btn" id="exportbtn">EXPORT BACKUP (photos included)</button>
+      <button class="btn" id="exportbtn">BACKUP</button>
       <input type="file" id="importfile" accept="application/json,.json" hidden>
-      <button class="btn quiet" id="mergebtn">MERGE A BACKUP IN</button>
-      <button class="btn quiet" id="replacebtn">REPLACE FROM BACKUP</button>
+      <button class="btn quiet" id="mergebtn">MERGE ONE IN</button>
+      <button class="btn quiet" id="replacebtn">REPLACE FROM ONE</button>
     </div>
+    <p class="sub">Everything lives in this browser and nowhere else. A backup is the only copy that outlives it. Merge keeps both sides.</p>
     <p class="sub" id="importstatus"></p>
   </div>
 
   <div class="paper">
-    <h2>WHERE YOUR THINGS ARE</h2>
-    <p class="sub">Text and lists sit in this browser's local storage; photos sit in its IndexedDB, dithered to 1-bit on the way in so a page-sized image costs tens of kilobytes rather than megabytes. Nothing is uploaded anywhere, because there is nowhere to upload it to. Clearing site data for this page deletes all of it, so export often — the backup file is the only copy that outlives the browser.</p>
-  </div>
-
-  <div class="paper">
-    <h2>START OVER</h2>
-    <p class="sub"><strong>Start empty</strong> clears the sample pieces and everything else, so your first issue is only your own work. <strong>Reset to the sample</strong> puts the demo notebook back.</p>
     <div class="press-actions">
       <button class="btn danger" id="emptybtn">START EMPTY</button>
-      <button class="btn quiet" id="resetbtn">RESET TO THE SAMPLE</button>
+      <button class="btn quiet" id="resetbtn">RESET</button>
     </div>
   </div>
 </section>

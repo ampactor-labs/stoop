@@ -30,8 +30,9 @@ module.exports = async function robustness(browser, ok) {
 
   {
     const { page, errs, ctx } = await withSeed(() => localStorage.setItem('stoop_data_v3', '{not json at all'));
-    ok('corrupt storage falls back to the seed notebook',
-       (await page.locator('.log-card').count()) > 0 && errs.length === 0);
+    await go(page, '#press');
+    ok('corrupt storage falls back to a blank press, not a blank screen',
+       (await page.locator('#sheetzone .panel').count()) === 8 && errs.length === 0);
     await ctx.close();
   }
 

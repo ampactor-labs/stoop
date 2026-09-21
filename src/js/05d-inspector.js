@@ -34,7 +34,7 @@ function renderInspector() {
   if (!box) return;
   var hint = document.getElementById('addhint');
   if (hint) {
-    hint.textContent = 'onto ' + pasteTargetLabel() + ' \u00b7 drag to move \u00b7 double-click to type \u00b7 drop or paste anything';
+    hint.textContent = pasteTargetLabel() + ' \u00b7 drag \u00b7 double-click to type \u00b7 drop anything';
   }
 
   var el = selectedEl();

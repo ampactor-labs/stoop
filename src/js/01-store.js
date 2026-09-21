@@ -14,7 +14,7 @@ var PEOPLE_KEY = 'stoop_people';
 var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
 
-function defaultPeople() { return [{ id: 'a', name: 'Me' }, { id: 'b', name: 'JJ' }]; }
+function defaultPeople() { return [{ id: 'a', name: 'me' }]; }
 
 var people = (function () {
   try {
@@ -129,23 +129,15 @@ function toast(msg) {
 // ---------- seed ----------
 var seedTs = Date.now();
 var defaultData = {
-  logs: [
-    { id: 'l1', author: 'a', tag: 'moment', text: 'First clean run of the workbench setup. Smooth edges on the steel cut.', ts: seedTs - 864e5 },
-    { id: 'l2', author: 'b', tag: 'quote', text: '"The only way out is through, and the best way through is together."', ts: seedTs - 43e6 },
-    { id: 'l3', author: 'both', tag: 'idea', text: 'Weekend road trip sketch: farm stand cider, thrift store run, back before sunset.', ts: seedTs - 6e6 }
-  ],
-  projects: [
-    { id: 'p1', title: 'Backyard Herb Garden', desc: 'Raised cedar bed: basil, rosemary, thyme, cherry tomatoes. Drip irrigation line.', ts: seedTs },
-    { id: 'p2', title: 'Zine Issue #01', desc: 'First dispatch of thoughts, photos, and project notes. 8-page, 1-sheet fold.', ts: seedTs }
-  ],
-  journal: [
-    { id: 'j1', author: 'both', title: 'Sunday Morning Coffee & Quiet', body: 'Made pour-overs, sat on the porch while the sun came up over the street. Talked about where we want our time to go this autumn. Fewer distractions, more physical making.', ts: seedTs - 864e5 }
-  ],
+  logs: [],
+  projects: [],
+  journal: [],
+  // Two pieces in the tray so the desk has something to show. Cut them.
   pieces: [
     { id: 'pc1', kind: 'essay', byline: 'a', title: 'The Seam',
       body: 'The sodium lamps are going over to LED one block at a time, and you can stand on the line: orange behind you, white ahead.',
       photo: null, cut: false, ts: seedTs - 2e5 },
-    { id: 'pc2', kind: 'log', byline: 'b', title: 'Workbench, Week Two',
+    { id: 'pc2', kind: 'log', byline: 'a', title: 'Workbench, Week Two',
       body: 'Trued the rear wheel. The seatpost finally moved, by way of penetrating oil and a personal grudge.',
       photo: null, cut: false, ts: seedTs - 1e5 }
   ],

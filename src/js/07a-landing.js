@@ -16,10 +16,8 @@ function renderLanding() {
   var next = cycleState().no;
   box.innerHTML = readingHtml(iss) +
     '<div class="landing-tail">' +
-    '<p class="landing-note">' + esc(iss.title || 'This issue') +
-    ' was made with the press it is carried in. This file is the issue, every issue before it, ' +
-    'and a working press. Nothing was uploaded, nobody signed up, and the copy you are reading ' +
-    'is the whole thing.</p>' +
+    '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
+    'No server, no account. You are holding the whole thing.</p>' +
     '<div class="landing-verbs">' +
     '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
     '<button class="btn big" id="landown">START YOUR OWN</button>' +

@@ -83,9 +83,20 @@ function download(name, html) {
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
+// The copier's lamp sweeps the pages once. Half a second; it is the one
+// moment in the whole loop that should feel like a machine did something.
+function copierFlash() {
+  var f = document.getElementById('flash');
+  if (!f) return;
+  f.classList.remove('go');
+  void f.offsetWidth;
+  f.classList.add('go');
+}
+
 function exportIssueFile(no) {
   var iss = issueByNo(no);
   if (!iss) { toast('No such issue on the shelf'); return; }
+  copierFlash();
   // The shelf travels up to and including this issue: a reader who is handed
   // №03 gets №01 and №02 with it, because a zine you cannot read back is a
   // stream with extra steps.
@@ -104,7 +115,7 @@ function exportIssueFile(no) {
     open: '#shelf', read: no
   });
   download(sceneSlug() + '-' + no + '.html', html);
-  toast('Issue №' + no + ' exported — the file is the press as well');
+  toast('\u2116' + no + ' is a file now. It is also the press.');
 }
 
 // The verb on the bar. Whatever was published last is what you hand on; a

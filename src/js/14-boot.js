@@ -55,10 +55,6 @@ function measureBar() {
 }
 window.addEventListener('resize', measureBar);
 
-function renderBar() {
-  var z = document.getElementById('barzine');
-  if (z) z.textContent = state.zine || 'STOOP ZINE';
-}
 
 // ---------- events ----------
 function hit(target, sel) { return target.closest ? target.closest(sel) : null; }

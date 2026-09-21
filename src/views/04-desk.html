@@ -5,16 +5,6 @@
   </div>
 
   <div class="paper">
-    <p class="sub">The algorithm is a person, and this is where they sit. One accountable neighbour holds the final cut for one cycle; at two people the chair alternates, odd issues and even. There are no metrics to consult and nothing to A/B — sequence is taste.</p>
-    <div class="form-row">
-      <label class="sub" for="bellinput">THE BELL</label>
-      <input type="date" id="bellinput" class="text-input">
-      <button class="btn quiet" id="savebellbtn">SET THE BELL</button>
-    </div>
-  </div>
-
-  <div class="paper">
-    <h2>SUBMIT A PIECE</h2>
     <div class="form-row">
       <input type="text" id="piecetitle" class="text-input" maxlength="60" placeholder="Title">
       <select id="piecekind" class="text-input">
@@ -27,24 +17,27 @@
       </select>
       <button class="btn" id="piecesubmitbtn">SUBMIT</button>
     </div>
-    <textarea id="piecebody" class="text-input" rows="4" placeholder="The piece itself."></textarea>
-    <p class="sub">Or draw one from what is already written: only what has been added since the last issue shipped, so issue two never reprints issue one.</p>
-    <button class="btn quiet" id="drawsourcesbtn">DRAW FROM LOG, JOURNAL &amp; PROJECTS</button>
+    <textarea id="piecebody" class="text-input" rows="4" placeholder="The piece."></textarea>
+    <button class="btn quiet" id="drawsourcesbtn">PULL IN THE NEW SCRAPS</button>
   </div>
 
   <div class="paper">
     <h2>THE TRAY</h2>
     <div id="desktray"></div>
-    <p class="sub">Cuts are conversations, not deletions: the maker keeps the piece, and it can run next cycle.</p>
+    <p class="sub">A cut is not a delete. It keeps, and it can run next time.</p>
   </div>
 
   <div class="paper">
-    <h2>EDITOR'S NOTE</h2>
-    <textarea id="editornote" class="text-input" rows="3" placeholder="What this issue is, and who has the desk next."></textarea>
-    <div class="press-actions">
-      <button class="btn" id="compileissuebtn">COMPILE ONTO THE SHEET</button>
-      <button class="btn done" id="buildissuebtn">RING THE BELL — PUBLISH</button>
+    <textarea id="editornote" class="text-input" rows="2" placeholder="Editor's note, if you want one."></textarea>
+    <div class="form-row">
+      <label class="sub" for="bellinput">BELL</label>
+      <input type="date" id="bellinput" class="text-input">
+      <button class="btn quiet" id="savebellbtn">SET</button>
     </div>
-    <p class="sub">Compiling flows the tray onto the press. Ringing the bell archives the sheet to the shelf exactly as it stands, empties the tray, and hands the desk to the other pair of hands.</p>
+    <div class="press-actions">
+      <button class="btn" id="compileissuebtn">FLOW ONTO THE PAGES</button>
+      <button class="btn done" id="buildissuebtn">RING THE BELL</button>
+    </div>
+    <p class="sub">The bell puts this issue on the shelf as it stands and hands the desk on.</p>
   </div>
 </section>
