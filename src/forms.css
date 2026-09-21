@@ -2,9 +2,9 @@
 .author-toggle {
   font-family: 'Courier New', monospace;
   font-size: .8rem;
-  background: var(--soot);
-  color: var(--orange);
-  border: 1px solid var(--orange);
+  background: var(--paper);
+  color: var(--fg);
+  border: 1px solid var(--fg);
   padding: .2rem .55rem;
   cursor: pointer;
   border-radius: 3px;
@@ -13,8 +13,8 @@
   gap: .3rem;
 }
 .author-toggle:hover {
-  background: var(--orange);
-  color: var(--night);
+  background: var(--fg);
+  color: #fff;
 }
 .view-head {
   margin-bottom: 1.2rem;
@@ -24,7 +24,7 @@
 .view-head h1 {
   font-size: 2.2rem;
   margin: 0;
-  color: var(--bone);
+  color: var(--fg);
   letter-spacing: .08em;
 }
 .view-sub {
@@ -48,7 +48,7 @@
   box-sizing: border-box;
 }
 .text-input:focus, .select-input:focus, .textarea-input:focus {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--spot);
 }
 .text-input { flex: 1; min-width: 160px; }
 .select-input { min-width: 110px; cursor: pointer; }
@@ -106,5 +106,5 @@
 /* The photo strip above the pages: every photograph the scene has. */
 .phototray { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem 0 .4rem; align-items: flex-start; }
 .phototray:empty { display: none; }
-.tray-photo { height: 56px; border: 2px solid var(--bone); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; }
-.tray-photo:hover { outline: 2px solid var(--orange); }
+.tray-photo { height: 56px; border: 2px solid var(--fg); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
+.tray-photo:hover { outline: 2px solid var(--spot); }

@@ -190,14 +190,17 @@ function sheetIsBlank() {
   });
 }
 
+// Speaks only once there is a published issue to be confused with. A blank
+// press on first open is not a warning, it is a blank press.
 function pressStatus() {
   var el = document.getElementById('pressstatus');
   if (!el) return;
   var last = lastPublished();
   var blank = sheetIsBlank();
+  if (!last) { el.textContent = ''; el.classList.remove('bad'); return; }
   el.textContent = (blank ? 'This sheet is empty. ' : '') +
     'You are looking at the draft for issue \u2116' + pressState().issue + '.' +
-    (last ? ' Issue \u2116' + last.no + ' is published — print that one from the shelf.' : '');
+    ' Issue \u2116' + last.no + ' is published \u2014 print that one from the shelf.';
   el.classList.toggle('bad', blank);
 }
 

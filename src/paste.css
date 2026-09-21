@@ -42,7 +42,7 @@
 /* The paste-up strip under the toolbar */
 .inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: .3rem 0 .8rem; }
 .inspector:empty { display: none; }
-.inspector.on { color: var(--bone); border: 1px dashed var(--grey); padding: .5rem .7rem; }
+.inspector.on { color: var(--fg); border: 1px dashed var(--fg); background: var(--paper); padding: .5rem .7rem; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }

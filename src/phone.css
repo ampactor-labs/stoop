@@ -1,0 +1,23 @@
+/* Loaded last, so these win over the desktop rules in every other file. */
+  /* ---------- a phone ---------- */
+  /* The page comes first. The tools sit on a bar along the bottom where a
+     thumb is, and the nav is one scrolling row instead of three wrapped ones. */
+  @media (max-width: 640px){
+    header.chrome{gap:.3rem .6rem;padding:.4rem .6rem}
+    .wordmark{font-size:1.25rem}
+    nav.chrome-nav{flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;margin-left:0;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    nav.chrome-nav::-webkit-scrollbar{display:none}
+    nav.chrome-nav a,nav.chrome-nav button{white-space:nowrap;padding:.3rem .55rem}
+    main{padding:.6rem .5rem 5.5rem}
+    .press-top{gap:.35rem}
+    .press-top .select-input{width:100%;font-size:.8rem;padding:.35rem .5rem}
+    .fitmeter{font-size:.72rem;padding:.25rem .5rem}
+    .pasteup-strip{position:fixed;left:0;right:0;bottom:0;z-index:25;margin:0;padding:.45rem .5rem;gap:.35rem;flex-wrap:nowrap;overflow-x:auto;
+      background:var(--bg);border-top:3px solid var(--fg);scrollbar-width:none}
+    .pasteup-strip::-webkit-scrollbar{display:none}
+    .pasteup-strip .btn{white-space:nowrap;padding:.4rem .6rem;font-size:.8rem;flex:none}
+    .pasteup-strip .sub{display:none}
+    .inspector.on{position:fixed;left:0;right:0;bottom:3.2rem;z-index:24;margin:0;border-radius:0;border-width:1px 0 0}
+    section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none}
+    .pages{gap:.7rem}
+  }

@@ -9,29 +9,32 @@
 <body>
 <!-- stoop: a press for a periodical — pieces, a desk, a shelf, and an imposed sheet. every issue it exports is the reading view, the sheet, the archive, and a working press for the next one. one file, zero requests. -->
 <style>
+  /* The app is made of the same stuff it makes: off-white stock, black ink,
+     one fluorescent riso pink where a thing wants pressing. */
   :root{
-    --night:#0e0e10; --soot:#1a1a1e; --bone:#ece7db; --ink:#141210;
-    --orange:#ff5f1f; --blue:#5aa9d6; --grey:#8a8578; --paper:#e6e0d2;
-    --red:#d65a5a;
+    --bg:#ebe5d8; --bg2:#e0d9ca; --fg:#141210; --ink:#141210;
+    --spot:#ff3fa4; --link:#141210; --grey:#6f6a60; --paper:#f7f3ea;
+    --red:#d63c3c;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{background:var(--night);color:var(--bone);font-family:ui-sans-serif,system-ui,'Helvetica Neue',Arial,sans-serif;line-height:1.45}
-  ::selection{background:var(--orange);color:var(--night)}
+  body{background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,'Helvetica Neue',Arial,sans-serif;line-height:1.45;
+    background-image:repeating-linear-gradient(115deg,rgba(20,18,16,.035) 0 2px,transparent 2px 7px)}
+  ::selection{background:var(--spot);color:#fff}
 
   /* ---------- the bar ---------- */
-  header.chrome{position:sticky;top:0;z-index:30;background:var(--night);border-bottom:2px solid var(--bone);
+  header.chrome{position:sticky;top:0;z-index:30;background:var(--bg);border-bottom:2px solid var(--fg);
     display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.45rem .9rem}
-  .wordmark{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1.5rem;letter-spacing:.12em;color:var(--bone);text-decoration:none}
-  .wordmark b{color:var(--orange)}
-  .barzine{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--bone);text-decoration:none;border-bottom:2px solid var(--orange);padding-bottom:1px}
+  .wordmark{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1.5rem;letter-spacing:.12em;color:var(--fg);text-decoration:none}
+  .wordmark b{color:var(--spot)}
+  .barzine{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--fg);text-decoration:none;border-bottom:2px solid var(--spot);padding-bottom:1px}
   nav.chrome-nav{display:flex;flex-wrap:wrap;gap:.15rem;margin-left:auto;align-items:center}
-  nav.chrome-nav a,nav.chrome-nav button{font-family:'Courier New',monospace;font-size:.8rem;color:var(--blue);background:none;text-decoration:none;padding:.25rem .5rem;border:1px solid transparent;cursor:pointer}
-  nav.chrome-nav a:hover,nav.chrome-nav button:hover{border-color:var(--blue)}
-  nav.chrome-nav a.here{color:var(--night);background:var(--bone);border-color:var(--bone)}
-  nav.chrome-nav .verb{color:var(--orange);border-color:var(--orange);margin-left:.2rem}
-  nav.chrome-nav .verb:hover{background:var(--orange);color:var(--night)}
-  nav.chrome-nav a.verb.here{background:var(--orange);color:var(--night)}
+  nav.chrome-nav a,nav.chrome-nav button{font-family:'Courier New',monospace;font-size:.8rem;color:var(--link);background:none;text-decoration:none;padding:.25rem .5rem;border:1px solid transparent;cursor:pointer}
+  nav.chrome-nav a:hover,nav.chrome-nav button:hover{border-color:var(--link)}
+  nav.chrome-nav a.here{color:var(--bg);background:var(--fg);border-color:var(--fg)}
+  nav.chrome-nav .verb{color:var(--fg);border-color:var(--spot);background:var(--spot);margin-left:.2rem;font-weight:bold}
+  nav.chrome-nav .verb:hover{background:var(--fg);color:#fff;border-color:var(--fg)}
+  nav.chrome-nav a.verb.here{background:var(--fg);color:#fff;border-color:var(--fg)}
 
   main{max-width:960px;margin:0 auto;padding:1rem .9rem 4rem}
 
@@ -43,11 +46,11 @@
   body.landing section[data-view="press"]{display:none}
   section[data-view="issue"].on{display:block;animation:flick .12s steps(2) 1}
   section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{display:block;position:fixed;top:var(--barh,0);right:0;bottom:0;
-    width:min(540px,100vw);z-index:20;overflow-y:auto;background:var(--night);border-left:2px solid var(--bone);
+    width:min(540px,100vw);z-index:20;overflow-y:auto;background:var(--bg);border-left:3px solid var(--fg);box-shadow:-6px 0 0 rgba(20,18,16,.12);
     padding:1rem .9rem 3rem;animation:slide .14s ease-out}
   @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
   @keyframes flick{0%{opacity:.4}100%{opacity:1}}
-  .scrim{display:none;position:fixed;left:0;right:0;bottom:0;top:var(--barh,0);z-index:15;background:rgba(0,0,0,.55)}
+  .scrim{display:none;position:fixed;left:0;right:0;bottom:0;top:var(--barh,0);z-index:15;background:rgba(20,18,16,.28)}
   body[data-drawer] .scrim{display:block}
   section[data-view] .view-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1rem}
   section[data-view] .view-head h1{margin:0}
@@ -55,10 +58,10 @@
   .drawer-close{margin-left:auto}
 
   h1,h2,h3{font-family:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;letter-spacing:.06em;line-height:1.05;margin:.4rem 0}
-  a{color:var(--blue)}
+  a{color:var(--link)}
   .tag{display:inline-block;font-family:'Courier New',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;
-    border:1px solid var(--bone);padding:.1rem .5rem;margin:0}
-  .tag.cold{border-color:var(--blue);color:var(--blue)}
+    border:1px solid var(--fg);padding:.1rem .5rem;margin:0}
+  .tag.cold{border-color:var(--link);color:var(--link)}
 
   /* photocopy paper panels */
   .paper{background:var(--paper);color:var(--ink);padding:1.1rem 1.2rem;margin:1rem 0;border:2px solid var(--ink);
@@ -68,13 +71,14 @@
   .paper a{color:#155d80;font-weight:bold}
   .paper p,.paper li{font-family:'Courier New',monospace;font-size:.92rem}
 
-  .btn{font-family:'Courier New',monospace;font-size:.85rem;background:none;border:2px solid var(--orange);color:var(--orange);
+  .btn{font-family:'Courier New',monospace;font-size:.85rem;background:none;border:2px solid var(--fg);color:var(--fg);
     padding:.45rem .9rem;cursor:pointer;letter-spacing:.05em}
-  .btn:hover{background:var(--orange);color:var(--night)}
+  .btn:hover{background:var(--fg);color:#fff}
   .btn[disabled]{border-color:var(--grey);color:var(--grey);cursor:not-allowed}
-  .btn.done,.btn.on{background:var(--orange);color:var(--night)}
+  .btn.done,.btn.on{background:var(--spot);border-color:var(--spot);color:var(--fg)}
+  .btn.done:hover,.btn.on:hover{background:var(--fg);border-color:var(--fg);color:#fff}
   .btn.danger{border-color:var(--red);color:var(--red)}
-  .btn.danger:hover{background:var(--red);color:var(--night)}
+  .btn.danger:hover{background:var(--red);color:var(--bg)}
   .paper .btn{border-color:var(--ink);color:var(--ink)}
   .paper .btn:hover{background:var(--ink);color:var(--paper)}
   .paper .btn.done,.paper .btn.on{background:var(--ink);color:var(--paper)}
@@ -86,9 +90,9 @@
 .author-toggle {
   font-family: 'Courier New', monospace;
   font-size: .8rem;
-  background: var(--soot);
-  color: var(--orange);
-  border: 1px solid var(--orange);
+  background: var(--paper);
+  color: var(--fg);
+  border: 1px solid var(--fg);
   padding: .2rem .55rem;
   cursor: pointer;
   border-radius: 3px;
@@ -97,8 +101,8 @@
   gap: .3rem;
 }
 .author-toggle:hover {
-  background: var(--orange);
-  color: var(--night);
+  background: var(--fg);
+  color: #fff;
 }
 .view-head {
   margin-bottom: 1.2rem;
@@ -108,7 +112,7 @@
 .view-head h1 {
   font-size: 2.2rem;
   margin: 0;
-  color: var(--bone);
+  color: var(--fg);
   letter-spacing: .08em;
 }
 .view-sub {
@@ -132,7 +136,7 @@
   box-sizing: border-box;
 }
 .text-input:focus, .select-input:focus, .textarea-input:focus {
-  outline: 2px solid var(--orange);
+  outline: 2px solid var(--spot);
 }
 .text-input { flex: 1; min-width: 160px; }
 .select-input { min-width: 110px; cursor: pointer; }
@@ -190,18 +194,18 @@
 /* The photo strip above the pages: every photograph the scene has. */
 .phototray { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem 0 .4rem; align-items: flex-start; }
 .phototray:empty { display: none; }
-.tray-photo { height: 56px; border: 2px solid var(--bone); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; }
-.tray-photo:hover { outline: 2px solid var(--orange); }
+.tray-photo { height: 56px; border: 2px solid var(--fg); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
+.tray-photo:hover { outline: 2px solid var(--spot); }
 /* Log stream */
 .log-stream { display: flex; flex-direction: column; gap: .7rem; margin-top: 1rem; }
 .log-card {
-  background: var(--soot);
-  border: 1px solid var(--grey);
-  border-left: 4px solid var(--orange);
+  background: var(--paper);
+  border: 1px solid var(--fg);
+  border-left: 4px solid var(--spot);
   padding: .75rem .9rem;
   position: relative;
 }
-.log-card.author-b { border-left-color: var(--blue); }
+.log-card.author-b { border-left-color: var(--grey); }
 .log-card.author-both { border-left-color: #5cd685; }
 .log-meta {
   display: flex;
@@ -211,12 +215,12 @@
   color: var(--grey);
   margin-bottom: .3rem;
 }
-.log-author { font-weight: bold; color: var(--orange); }
-.author-b .log-author { color: var(--blue); }
+.log-author { font-weight: bold; color: var(--spot); }
+.author-b .log-author { color: var(--grey); }
 .author-both .log-author { color: #5cd685; }
-.log-body { font-family: 'Courier New', monospace; font-size: .88rem; color: var(--bone); line-height: 1.4; word-break: break-word; }
+.log-body { font-family: 'Courier New', monospace; font-size: .88rem; color: var(--fg); line-height: 1.4; word-break: break-word; }
 .log-del { background: none; border: none; color: var(--grey); cursor: pointer; font-size: .8rem; }
-.log-del:hover { color: var(--orange); }
+.log-del:hover { color: var(--spot); }
 
 /* Projects */
 .project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
@@ -233,10 +237,10 @@
 
 /* Journal */
 .journal-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
-.journal-card { background: var(--soot); border: 2px solid var(--bone); padding: 1rem 1.2rem; }
+.journal-card { background: var(--paper); border: 2px solid var(--fg); padding: 1rem 1.2rem; }
 .journal-card-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px dashed var(--grey); padding-bottom: .4rem; margin-bottom: .6rem; }
-.journal-card-head h2 { margin: 0; font-size: 1.35rem; color: var(--bone); }
-.journal-card-body { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--bone); line-height: 1.55; white-space: pre-wrap; }
+.journal-card-head h2 { margin: 0; font-size: 1.35rem; color: var(--fg); }
+.journal-card-body { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--fg); line-height: 1.55; white-space: pre-wrap; }
 
 /* The roster */
 .person { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
@@ -281,7 +285,7 @@
 /* The press */
 .press-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 .press-top { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
-.fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--grey); color: var(--bone); background: var(--soot); padding: .35rem .6rem; margin: 0; }
+.fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--fg); color: var(--fg); background: var(--paper); padding: .35rem .6rem; margin: 0; }
 .fitmeter:empty { display: none; }
 .fitmeter.bad { background: var(--red); color: #fff; border-color: var(--red); }
 .pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
@@ -289,8 +293,8 @@
 
 /* Notebook tabs */
 .drawer-tabs { display: flex; gap: .3rem; margin: .6rem 0 1rem; border-bottom: 1px solid var(--grey); }
-.drawer-tabs .tab { font-family: 'Courier New', monospace; font-size: .8rem; background: none; border: 1px solid transparent; border-bottom: none; color: var(--blue); padding: .35rem .7rem; cursor: pointer; }
-.drawer-tabs .tab.on { color: var(--night); background: var(--bone); border-color: var(--bone); }
+.drawer-tabs .tab { font-family: 'Courier New', monospace; font-size: .8rem; background: none; border: 1px solid transparent; border-bottom: none; color: var(--link); padding: .35rem .7rem; cursor: pointer; }
+.drawer-tabs .tab.on { color: var(--bg); background: var(--fg); border-color: var(--fg); }
 .ntab { display: none; }
 .ntab.on { display: block; }
 .sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
@@ -347,7 +351,7 @@
 .reprintzone { display: none; }
 
 /* Toast */
-.toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--orange); color: var(--night); font-family: 'Courier New', monospace; font-size: .85rem; padding: .5rem .9rem; border: 2px solid var(--night); display: none; z-index: 50; }
+.toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--spot); color: var(--fg); font-family: 'Courier New', monospace; font-size: .85rem; font-weight: bold; padding: .5rem .9rem; border: 2px solid var(--fg); box-shadow: 3px 3px 0 var(--fg); display: none; z-index: 50; }
 
 @media print {
   body { background: #fff; color: #000; }
@@ -365,14 +369,14 @@
 body.landing header.chrome { display: none; }
 body.landing main { padding-top: 2.4rem; }
 .landing-tail { max-width: 38rem; margin: 2.2rem auto 0; }
-.landing-note { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--bone); line-height: 1.6; border-left: 3px solid var(--orange); padding-left: .9rem; }
+.landing-note { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--fg); line-height: 1.6; border-left: 3px solid var(--spot); padding-left: .9rem; }
 .landing-verbs { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.2rem; }
 .btn.big { font-size: 1rem; padding: .8rem 1.2rem; }
 .btn.quiet { border-color: var(--grey); color: var(--grey); }
-.btn.quiet:hover { background: var(--grey); color: var(--night); }
+.btn.quiet:hover { background: var(--grey); color: var(--bg); }
 
 /* A panel that is about to receive something says so. */
-.panel.dropping { outline: 3px dashed var(--orange); outline-offset: -3px; }
+.panel.dropping { outline: 3px dashed var(--spot); outline-offset: -3px; }
 
 /* The nudge on a fresh cover. Drawn by the press only, never stored, never printed. */
 .pages .cover .body:empty::before { content: 'click anything \00b7 type \00b7 drop a photo'; color: #b5b0a6; font-style: italic; }
@@ -384,7 +388,7 @@ body.landing main { padding-top: 2.4rem; }
   background-size: 300% 100%; }
 .flash.go { animation: lamp .55s ease-in-out 1; }
 @keyframes lamp { 0% { opacity: 1; background-position: 100% 0; } 100% { opacity: 1; background-position: 0% 0; } }
-.barzine[contenteditable]:focus { outline: none; background: var(--soot); padding: 0 .3rem; }
+.barzine[contenteditable]:focus { outline: none; background: var(--spot); padding: 0 .3rem; }
 /* ---------- the paste-up ---------- */
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
@@ -429,7 +433,7 @@ body.landing main { padding-top: 2.4rem; }
 /* The paste-up strip under the toolbar */
 .inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: .3rem 0 .8rem; }
 .inspector:empty { display: none; }
-.inspector.on { color: var(--bone); border: 1px dashed var(--grey); padding: .5rem .7rem; }
+.inspector.on { color: var(--fg); border: 1px dashed var(--fg); background: var(--paper); padding: .5rem .7rem; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
@@ -451,6 +455,29 @@ body.landing main { padding-top: 2.4rem; }
    never taller than its box by the time anything measures it. */
 .eltext { height: auto; min-height: 100%; }
 .v-ransom { line-height: 1.25; }
+/* Loaded last, so these win over the desktop rules in every other file. */
+  /* ---------- a phone ---------- */
+  /* The page comes first. The tools sit on a bar along the bottom where a
+     thumb is, and the nav is one scrolling row instead of three wrapped ones. */
+  @media (max-width: 640px){
+    header.chrome{gap:.3rem .6rem;padding:.4rem .6rem}
+    .wordmark{font-size:1.25rem}
+    nav.chrome-nav{flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;margin-left:0;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    nav.chrome-nav::-webkit-scrollbar{display:none}
+    nav.chrome-nav a,nav.chrome-nav button{white-space:nowrap;padding:.3rem .55rem}
+    main{padding:.6rem .5rem 5.5rem}
+    .press-top{gap:.35rem}
+    .press-top .select-input{width:100%;font-size:.8rem;padding:.35rem .5rem}
+    .fitmeter{font-size:.72rem;padding:.25rem .5rem}
+    .pasteup-strip{position:fixed;left:0;right:0;bottom:0;z-index:25;margin:0;padding:.45rem .5rem;gap:.35rem;flex-wrap:nowrap;overflow-x:auto;
+      background:var(--bg);border-top:3px solid var(--fg);scrollbar-width:none}
+    .pasteup-strip::-webkit-scrollbar{display:none}
+    .pasteup-strip .btn{white-space:nowrap;padding:.4rem .6rem;font-size:.8rem;flex:none}
+    .pasteup-strip .sub{display:none}
+    .inspector.on{position:fixed;left:0;right:0;bottom:3.2rem;z-index:24;margin:0;border-radius:0;border-width:1px 0 0}
+    section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none}
+    .pages{gap:.7rem}
+  }
 </style>
 
 <header class="chrome">
@@ -721,7 +748,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 187 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 189 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -1739,14 +1766,17 @@ function sheetIsBlank() {
   });
 }
 
+// Speaks only once there is a published issue to be confused with. A blank
+// press on first open is not a warning, it is a blank press.
 function pressStatus() {
   var el = document.getElementById('pressstatus');
   if (!el) return;
   var last = lastPublished();
   var blank = sheetIsBlank();
+  if (!last) { el.textContent = ''; el.classList.remove('bad'); return; }
   el.textContent = (blank ? 'This sheet is empty. ' : '') +
     'You are looking at the draft for issue \u2116' + pressState().issue + '.' +
-    (last ? ' Issue \u2116' + last.no + ' is published — print that one from the shelf.' : '');
+    ' Issue \u2116' + last.no + ' is published \u2014 print that one from the shelf.';
   el.classList.toggle('bad', blank);
 }
 
