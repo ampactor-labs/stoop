@@ -76,10 +76,12 @@ module.exports = async function scene(browser, ok) {
      'tray rows ' + await page.locator('#desktray .sub-row').count());
 
   // ---- a piece credited to the third person keeps her name
+  await go('#backup');
   const roId = await page.evaluate(() => {
-    const opt = [...document.querySelectorAll('#journalauthor option')].find(o => o.textContent.includes('Ro'));
-    return opt ? opt.value : null;
+    const inp = [...document.querySelectorAll('[data-personid]')].find(i => i.value === 'Ro');
+    return inp ? inp.getAttribute('data-personid') : null;
   });
+  await go('#desk');
   await page.fill('#piecetitle', 'HOW TO SCREEN A SHIRT FOR $4');
   await page.fill('#piecebody', 'Embroidery hoop, drywall tape, a squeegee from the auto aisle.');
   await page.click('#piecesubmitbtn');

@@ -15,8 +15,6 @@ function exportBackup() {
     exported: new Date().toISOString(),
     people: people,
     logs: state.logs,
-    projects: state.projects,
-    journal: state.journal,
     pieces: state.pieces,
     issues: state.issues,
     cycle: state.cycle,
@@ -59,8 +57,6 @@ function importBackup(raw, mode) {
 
   if (mode === 'replace') {
     state.logs = incoming.logs;
-    state.projects = incoming.projects;
-    state.journal = incoming.journal;
     state.pieces = incoming.pieces;
     state.issues = incoming.issues;
     state.cycle = incoming.cycle;
@@ -69,13 +65,11 @@ function importBackup(raw, mode) {
     state.press = incoming.press;
   } else {
     var count = function () {
-      return state.logs.length + state.projects.length + state.journal.length +
+      return state.logs.length +
         state.pieces.length + state.issues.length;
     };
     var before = count();
     state.logs = mergeList(state.logs, incoming.logs);
-    state.projects = mergeList(state.projects, incoming.projects);
-    state.journal = mergeList(state.journal, incoming.journal);
     state.pieces = mergeList(state.pieces, incoming.pieces);
     // Issues are keyed by number and never overwritten: a published issue is
     // history, and the copy already on the shelf wins.
@@ -157,7 +151,7 @@ function saveNameFields() {
 
 // Start empty is the opposite of reset: no sample pieces, nothing borrowed.
 function startEmpty() {
-  if (!confirm('Clear everything on this device — logs, journal, projects, pieces and every published issue — and start with a blank press?')) return;
+  if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
     address: state.address, zine: state.zine });
   saveState();

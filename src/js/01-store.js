@@ -71,7 +71,6 @@ function ensurePeople() {
   var found = {};
   function note(id) { if (id && id !== 'both' && !seen[id]) found[id] = 1; }
   (state.logs || []).forEach(function (l) { note(l.author); });
-  (state.journal || []).forEach(function (j) { note(j.author); });
   (state.pieces || []).forEach(function (p) { note(p.byline); });
   (state.issues || []).forEach(function (i) {
     note(i.editor);
@@ -166,8 +165,20 @@ function migrate(data) {
     return item;
   }
   (data.logs || []).forEach(function (l) { l.author = fixAuthor(l.author); fixTs(l); });
-  (data.journal || []).forEach(function (j) { j.author = fixAuthor(j.author); fixTs(j); });
-  (data.projects || []).forEach(fixTs);
+  // Older notebooks kept a journal and a list of projects beside the log.
+  // They were one idea; they arrive as scraps with a title and keep their ids.
+  var have = {};
+  data.logs.forEach(function (l) { have[l.id] = 1; });
+  (data.journal || []).forEach(function (j) {
+    if (!j || have[j.id]) return;
+    data.logs.push(fixTs({ id: j.id, author: fixAuthor(j.author), tag: 'scrap', title: j.title || '', text: j.body || '', ts: j.ts }));
+  });
+  (data.projects || []).forEach(function (p) {
+    if (!p || have[p.id]) return;
+    data.logs.push(fixTs({ id: p.id, author: 'a', tag: 'scrap', title: p.title || '', text: p.desc || '', ts: p.ts }));
+  });
+  data.journal = [];
+  data.projects = [];
   (data.pieces || []).forEach(function (pc) { pc.byline = fixAuthor(pc.byline); fixTs(pc); });
   (data.issues || []).forEach(fixTs);
   return data;

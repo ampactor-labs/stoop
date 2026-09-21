@@ -40,12 +40,10 @@ module.exports = async function robustness(browser, ok) {
     const { page, errs, ctx } = await withSeed(() => localStorage.setItem('stoop_data_v3', JSON.stringify({
       logs: [{ id: 'x', author: 'a', tag: 'moment', text: 'lonely', ts: Date.now() }]
     })));
-    await go(page, '#projects');
-    const projects = await page.locator('#projectlist').innerText();
-    await go(page, '#journal');
-    const journal = await page.locator('#journallist').innerText();
+    await go(page, '#scraps');
+    const stream = await page.locator('#loglist').innerText();
     ok('a backup missing whole collections renders empty states',
-       /No active projects/.test(projects) && /No journal entries/.test(journal) && errs.length === 0);
+       /lonely/.test(stream) && errs.length === 0);
     await ctx.close();
   }
 
@@ -65,8 +63,9 @@ module.exports = async function robustness(browser, ok) {
     ok('a v2 "Together" entry migrates and stays filterable',
        (await page.locator('.log-card').count()) === 1 &&
        /legacy joint/.test(await page.locator('#loglist').innerText()));
-    await go(page, '#projects');
-    ok('a v2 entry survives the upgrade', /legacy project/.test(await page.locator('#projectlist').innerText()));
+    await page.click('[data-logfilter="all"]');
+    await page.waitForTimeout(200);
+    ok('a v2 project arrives as a scrap with its title', /legacy project/.test(await page.locator('#loglist').innerText()));
     ok('the v2 upgrade throws nothing', errs.length === 0, errs.join('|'));
     await ctx.close();
   }

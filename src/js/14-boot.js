@@ -1,16 +1,15 @@
 // ---------- router ----------
 // The press is the surface and is always on screen. Every other view is a
 // drawer over it, one at a time, and the landing replaces both when an issue
-// file opens. The old hashes still work: log, journal and projects are tabs
-// of the notebook now, and anything unknown is the press.
+// file opens. The old hashes still work: log, journal, projects and notebook
+// are all the scraps now, and anything unknown is the press.
 var views = document.querySelectorAll('section[data-view]');
 var navs = document.querySelectorAll('[data-nav]');
-var NOTEBOOK_TABS = { log: 1, journal: 1, projects: 1 };
+var SCRAP_HASHES = { log: 1, journal: 1, projects: 1, notebook: 1 };
 
 function showView() {
   var h = (location.hash || '#press').slice(1).split('/')[0];
-  var tab = null;
-  if (NOTEBOOK_TABS[h]) { tab = h; h = 'notebook'; }
+  if (SCRAP_HASHES[h]) h = 'scraps';
   var known = false;
   views.forEach(function (v) { if (v.getAttribute('data-view') === h) known = true; });
   if (!known) h = 'press';
@@ -24,7 +23,6 @@ function showView() {
   views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === h); });
   navs.forEach(function (a) { a.classList.toggle('here', a.getAttribute('data-nav') === h); });
 
-  if (tab) showNotebookTab(tab);
   if (drawer) ensureClose(document.querySelector('section[data-view="' + drawer + '"]'));
   if (landing) renderLanding(); else renderPress();
   renderBar();
@@ -32,15 +30,6 @@ function showView() {
   if (!drawer) window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', showView);
-
-function showNotebookTab(tab) {
-  document.querySelectorAll('[data-ntab]').forEach(function (b) {
-    b.classList.toggle('on', b.getAttribute('data-ntab') === tab);
-  });
-  document.querySelectorAll('[data-npane]').forEach(function (p) {
-    p.classList.toggle('on', p.getAttribute('data-npane') === tab);
-  });
-}
 
 function ensureClose(sec) {
   var head = sec && sec.querySelector('.view-head');
@@ -66,7 +55,6 @@ document.addEventListener('click', function (e) {
   // The bar and the drawers.
   if ((el = hit(t, '[data-nav].here'))) { e.preventDefault(); location.hash = '#press'; return; }
   if (hit(t, '[data-closedrawer]') || hit(t, '#scrim')) { location.hash = '#press'; return; }
-  if ((el = hit(t, '[data-ntab]'))) { location.hash = '#' + el.getAttribute('data-ntab'); return; }
   if (hit(t, '#handonbtn')) return handOn();
 
   // One click glues a photograph the scene already has to the page last touched.
@@ -94,20 +82,6 @@ document.addEventListener('click', function (e) {
       b.classList.toggle('on', b.getAttribute('data-logfilter') === activeLogFilter);
     });
     return renderLogs();
-  }
-
-  if (hit(t, '#projectaddbtn')) return addProject();
-  if ((el = hit(t, '[data-delproject]'))) {
-    var pid = el.getAttribute('data-delproject');
-    state.projects = state.projects.filter(function (p) { return p.id !== pid; });
-    saveState(); return renderProjects();
-  }
-
-  if (hit(t, '#journaladdbtn')) return addJournal();
-  if ((el = hit(t, '[data-deljournal]'))) {
-    var jid = el.getAttribute('data-deljournal');
-    state.journal = state.journal.filter(function (j) { return j.id !== jid; });
-    saveState(); return renderJournal();
   }
 
   // ---------- the desk ----------
@@ -196,7 +170,8 @@ function saveBell() {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.body.hasAttribute('data-drawer')) { location.hash = '#press'; return; }
   if (e.key !== 'Enter') return;
-  if (e.target.id === 'loginput') { e.preventDefault(); addLog(); }
+  if (e.target.id === 'loginput' && !e.shiftKey) { e.preventDefault(); addLog(); }
+  else if (e.target.id === 'scraptitle') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }
   else if (e.target.id === 'addressinput' || e.target.id === 'zinename' ||
     e.target.hasAttribute('data-personid')) {

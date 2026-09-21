@@ -210,29 +210,10 @@
 .log-author { font-weight: bold; color: var(--spot); }
 .author-b .log-author { color: var(--grey); }
 .author-both .log-author { color: #5cd685; }
-.log-body { font-family: 'Courier New', monospace; font-size: .88rem; color: var(--fg); line-height: 1.4; word-break: break-word; }
+.log-body { font-family: 'Courier New', monospace; font-size: .88rem; color: var(--fg); line-height: 1.4; word-break: break-word; white-space: pre-wrap; }
+.log-title { margin: .1rem 0 .35rem; font-size: 1.15rem; }
 .log-del { background: none; border: none; color: var(--grey); cursor: pointer; font-size: .8rem; }
 .log-del:hover { color: var(--spot); }
-
-/* Projects */
-.project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
-.project-card {
-  background: var(--paper);
-  color: var(--ink);
-  border: 2px solid var(--ink);
-  padding: .9rem 1rem;
-  box-shadow: 4px 4px 0 rgba(0,0,0,.5);
-}
-.project-card h3 { margin: 0 0 .4rem; font-size: 1.3rem; }
-.project-card p { font-family: 'Courier New', monospace; font-size: .85rem; margin: 0 0 .7rem; line-height: 1.4; }
-.project-card-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--ink); padding-top: .45rem; font-size: .75rem; font-family: 'Courier New', monospace; }
-
-/* Journal */
-.journal-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
-.journal-card { background: var(--paper); border: 2px solid var(--fg); padding: 1rem 1.2rem; }
-.journal-card-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px dashed var(--grey); padding-bottom: .4rem; margin-bottom: .6rem; }
-.journal-card-head h2 { margin: 0; font-size: 1.35rem; color: var(--fg); }
-.journal-card-body { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--fg); line-height: 1.55; white-space: pre-wrap; }
 
 /* The roster */
 .person { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
@@ -283,12 +264,6 @@
 .pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
 .pasteup-strip .sub { margin-left: .3rem; }
 
-/* Notebook tabs */
-.drawer-tabs { display: flex; gap: .3rem; margin: .6rem 0 1rem; border-bottom: 1px solid var(--grey); }
-.drawer-tabs .tab { font-family: 'Courier New', monospace; font-size: .8rem; background: none; border: 1px solid transparent; border-bottom: none; color: var(--link); padding: .35rem .7rem; cursor: pointer; }
-.drawer-tabs .tab.on { color: var(--bg); background: var(--fg); border-color: var(--fg); }
-.ntab { display: none; }
-.ntab.on { display: block; }
 .sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
 .sheetwrap { margin-bottom: 1.2rem; width: max-content; }
 .sheetlabel { font-family: 'Courier New', monospace; font-size: .7rem; color: var(--grey); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }
@@ -479,7 +454,7 @@ body.landing main { padding-top: 2.4rem; }
   <nav class="chrome-nav">
     <a href="#desk" data-nav="desk">desk</a>
     <a href="#shelf" data-nav="shelf">shelf</a>
-    <a href="#notebook" data-nav="notebook">notebook</a>
+    <a href="#scraps" data-nav="scraps">scraps</a>
     <a href="#backup" data-nav="backup">scene</a>
     <a href="#paper" data-nav="paper" class="verb">paper</a>
     <button class="verb" id="handonbtn" title="Export the latest issue as a file that is also a press">hand it on</button>
@@ -495,70 +470,24 @@ body.landing main { padding-top: 2.4rem; }
 <section data-view="issue">
   <div id="landing"></div>
 </section>
-<section data-view="notebook">
+<section data-view="scraps">
   <div class="view-head">
-    <h1>NOTEBOOK</h1>
-    <p class="view-sub">Where the raw material lives. The desk draws pieces from here once a cycle.</p>
-  </div>
-  <nav class="drawer-tabs">
-    <button class="tab on" data-ntab="log">LOG</button>
-    <button class="tab" data-ntab="journal">JOURNAL</button>
-    <button class="tab" data-ntab="projects">PROJECTS</button>
-  </nav>
-
-  <div class="ntab on" data-npane="log">
-    <div class="paper">
-      <div class="form-row">
-        <input type="text" id="loginput" class="text-input" placeholder="A line: a thought, a quote, a link, an idea" maxlength="280">
-        <select id="logtag" class="select-input">
-          <option value="moment">moment</option>
-          <option value="quote">quote</option>
-          <option value="idea">idea</option>
-          <option value="link">link</option>
-        </select>
-        <button class="btn" id="logaddbtn">POST</button>
-      </div>
-      <div class="form-row">
-        <input type="file" id="photofile" accept="image/*" multiple hidden>
-        <button class="btn wide" id="photobtn">ADD PHOTOS</button>
-        <span class="sub">Dithered to 1-bit on the way in: small, private, and ready for a photocopier. Type a caption first and it lands on the first one.</span>
-      </div>
-      <div class="filter-row">
-        <span class="sub">filter:</span>
-        <span id="logfilters"></span>
-      </div>
-    </div>
-    <div id="loglist" class="log-stream"></div>
+    <h1>SCRAPS</h1>
+    <p class="view-sub">Everything you wrote down. The desk pulls from here.</p>
   </div>
 
-  <div class="ntab" data-npane="journal">
-    <div class="paper">
-      <div class="form-grid">
-        <div class="form-row">
-          <input type="text" id="journaltitle" class="text-input" placeholder="A title">
-          <select id="journalauthor" class="select-input"></select>
-        </div>
-        <textarea id="journalbody" class="textarea-input" rows="4" placeholder="Longer than a line: a report, a reflection, a rant, a recipe"></textarea>
-        <div class="form-actions">
-          <button class="btn" id="journaladdbtn">SAVE ENTRY</button>
-        </div>
-      </div>
+  <div class="paper">
+    <input type="text" id="scraptitle" class="text-input" maxlength="60" placeholder="Title, if it has one">
+    <textarea id="loginput" class="textarea-input" rows="2" placeholder="A line, or a page."></textarea>
+    <div class="form-row">
+      <button class="btn" id="logaddbtn">KEEP IT</button>
+      <input type="file" id="photofile" accept="image/*" multiple hidden>
+      <button class="btn quiet" id="photobtn">+ PHOTOS</button>
+      <span class="sub" id="logfilters"></span>
     </div>
-    <div id="journallist" class="journal-list"></div>
   </div>
 
-  <div class="ntab" data-npane="projects">
-    <div class="paper">
-      <div class="form-grid">
-        <input type="text" id="projecttitle" class="text-input" placeholder="Something ongoing: a build, a series, a plan">
-        <textarea id="projectdesc" class="textarea-input" rows="2" placeholder="Where it stands, what is next"></textarea>
-        <div class="form-actions">
-          <button class="btn" id="projectaddbtn">CREATE PROJECT</button>
-        </div>
-      </div>
-    </div>
-    <div id="projectlist" class="project-grid"></div>
-  </div>
+  <div id="loglist" class="log-stream"></div>
 </section>
 <section data-view="desk">
   <div class="view-head">
@@ -740,7 +669,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 189 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 182 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -816,7 +745,6 @@ function ensurePeople() {
   var found = {};
   function note(id) { if (id && id !== 'both' && !seen[id]) found[id] = 1; }
   (state.logs || []).forEach(function (l) { note(l.author); });
-  (state.journal || []).forEach(function (j) { note(j.author); });
   (state.pieces || []).forEach(function (p) { note(p.byline); });
   (state.issues || []).forEach(function (i) {
     note(i.editor);
@@ -911,8 +839,20 @@ function migrate(data) {
     return item;
   }
   (data.logs || []).forEach(function (l) { l.author = fixAuthor(l.author); fixTs(l); });
-  (data.journal || []).forEach(function (j) { j.author = fixAuthor(j.author); fixTs(j); });
-  (data.projects || []).forEach(fixTs);
+  // Older notebooks kept a journal and a list of projects beside the log.
+  // They were one idea; they arrive as scraps with a title and keep their ids.
+  var have = {};
+  data.logs.forEach(function (l) { have[l.id] = 1; });
+  (data.journal || []).forEach(function (j) {
+    if (!j || have[j.id]) return;
+    data.logs.push(fixTs({ id: j.id, author: fixAuthor(j.author), tag: 'scrap', title: j.title || '', text: j.body || '', ts: j.ts }));
+  });
+  (data.projects || []).forEach(function (p) {
+    if (!p || have[p.id]) return;
+    data.logs.push(fixTs({ id: p.id, author: 'a', tag: 'scrap', title: p.title || '', text: p.desc || '', ts: p.ts }));
+  });
+  data.journal = [];
+  data.projects = [];
   (data.pieces || []).forEach(function (pc) { pc.byline = fixAuthor(pc.byline); fixTs(pc); });
   (data.issues || []).forEach(fixTs);
   return data;
@@ -1265,14 +1205,6 @@ function renderNames() {
       }).join('');
   }
 
-  var jAuth = document.getElementById('journalauthor');
-  if (jAuth && document.activeElement !== jAuth) {
-    var want = jAuth.value || currentAuthor;
-    jAuth.innerHTML = authorIds().map(function (id) {
-      return '<option value="' + esc(id) + '">\u270d ' + esc(nameOf(id)) + '</option>';
-    }).join('');
-    jAuth.value = authorIds().indexOf(want) >= 0 ? want : currentAuthor;
-  }
   renderRoster();
 }
 
@@ -1281,7 +1213,7 @@ function renderNames() {
 // "Someone".
 function personHasWork(id) {
   var by = function (x) { return x.author === id || x.byline === id; };
-  return state.logs.some(by) || state.journal.some(by) || state.pieces.some(by) ||
+  return state.logs.some(by) || state.pieces.some(by) ||
     state.issues.some(function (i) { return i.editor === id || (i.pieces || []).some(by); });
 }
 
@@ -1314,7 +1246,10 @@ function photoTag(id, cls) {
   return '<img class="' + cls + '" src="' + esc(src) + '" alt="">';
 }
 
-// ---------- log ----------
+// ---------- scraps ----------
+// One stream. A scrap is a line, or a page with a title, or a photograph, by
+// somebody, on a day. The desk draws pieces from it once a cycle. There used
+// to be three of these (log, journal, projects) and they were one idea.
 function renderLogs() {
   var list = document.getElementById('loglist');
   if (!list) return;
@@ -1328,8 +1263,9 @@ function renderLogs() {
   list.innerHTML = rows.map(function (l) {
     return '<div class="log-card author-' + esc(l.author) + '">' +
       '<div class="log-meta"><span><span class="log-author">' + esc(nameOf(l.author)) +
-      '</span> · <span class="tag cold">' + esc(l.tag) + '</span> · ' + esc(fmtStamp(l.ts)) + '</span>' +
-      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete">✕</button></div>' +
+      '</span> \u00b7 ' + esc(fmtStamp(l.ts)) + '</span>' +
+      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete">\u2715</button></div>' +
+      (l.title ? '<h3 class="log-title">' + esc(l.title) + '</h3>' : '') +
       (l.photo ? photoTag(l.photo, 'log-photo') : '') +
       (l.text ? '<div class="log-body">' + esc(l.text) + '</div>' : '') +
       '</div>';
@@ -1338,90 +1274,27 @@ function renderLogs() {
 
 function addLog(photoIds) {
   var inp = document.getElementById('loginput');
-  var tag = document.getElementById('logtag');
+  var tt = document.getElementById('scraptitle');
   var ids = photoIds || [];
   var text = inp ? inp.value.trim() : '';
-  if (!text && !ids.length) return;
+  var title = tt ? tt.value.trim() : '';
+  if (!text && !title && !ids.length) return;
 
   if (ids.length) {
     ids.forEach(function (pid, i) {
       state.logs.push({
         id: uid('l'), author: currentAuthor, tag: 'photo',
-        text: i === 0 ? text : '', photo: pid, ts: Date.now() + i
+        title: i === 0 ? title : '', text: i === 0 ? text : '', photo: pid, ts: Date.now() + i
       });
     });
   } else {
-    state.logs.push({
-      id: uid('l'), author: currentAuthor,
-      tag: (tag && tag.value) || 'moment', text: text, ts: Date.now()
-    });
+    state.logs.push({ id: uid('l'), author: currentAuthor, tag: 'scrap', title: title, text: text, ts: Date.now() });
   }
   if (inp) inp.value = '';
+  if (tt) tt.value = '';
   saveState();
   renderLogs();
-  toast(ids.length ? 'Added ' + ids.length + ' photo(s)' : 'Posted to log');
-}
-
-// ---------- projects ----------
-function renderProjects() {
-  var list = document.getElementById('projectlist');
-  if (!list) return;
-  if (!state.projects.length) {
-    list.innerHTML = '<div class="sub" style="padding:1rem;">No active projects. Start one above.</div>';
-    return;
-  }
-  list.innerHTML = state.projects.map(function (p) {
-    return '<div class="project-card"><h3>' + esc(p.title) + '</h3><p>' + esc(p.desc) + '</p>' +
-      '<div class="project-card-foot"><span>Updated ' + esc(fmtDay(p.ts)) + '</span>' +
-      '<button class="log-del" data-delproject="' + esc(p.id) + '">DELETE</button></div></div>';
-  }).join('');
-}
-
-function addProject() {
-  var t = document.getElementById('projecttitle');
-  var d = document.getElementById('projectdesc');
-  if (!t || !t.value.trim()) return;
-  state.projects.unshift({
-    id: uid('p'), title: t.value.trim(), desc: (d && d.value.trim()) || '', ts: Date.now()
-  });
-  t.value = '';
-  if (d) d.value = '';
-  saveState();
-  renderProjects();
-  toast('Created project');
-}
-
-// ---------- journal ----------
-function renderJournal() {
-  var list = document.getElementById('journallist');
-  if (!list) return;
-  if (!state.journal.length) {
-    list.innerHTML = '<div class="paper sub" style="text-align:center;">No journal entries yet.</div>';
-    return;
-  }
-  list.innerHTML = state.journal.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .map(function (j) {
-      return '<div class="journal-card"><div class="journal-card-head"><h2>' + esc(j.title) + '</h2>' +
-        '<span class="sub">' + esc(nameOf(j.author)) + ' · ' + esc(fmtDay(j.ts)) +
-        ' <button class="log-del" data-deljournal="' + esc(j.id) + '">✕</button></span></div>' +
-        '<div class="journal-card-body">' + esc(j.body) + '</div></div>';
-    }).join('');
-}
-
-function addJournal() {
-  var t = document.getElementById('journaltitle');
-  var a = document.getElementById('journalauthor');
-  var b = document.getElementById('journalbody');
-  if (!t || !t.value.trim() || !b || !b.value.trim()) { toast('Needs a title and some words'); return; }
-  state.journal.unshift({
-    id: uid('j'), author: (a && a.value) || currentAuthor,
-    title: t.value.trim(), body: b.value.trim(), ts: Date.now()
-  });
-  t.value = '';
-  b.value = '';
-  saveState();
-  renderJournal();
-  toast('Saved journal entry');
+  toast(ids.length ? 'Kept ' + ids.length + ' photo(s)' : 'Kept');
 }
 
 function renderAll() {
@@ -1429,8 +1302,6 @@ function renderAll() {
   renderBar();
   if (typeof fillSettings === 'function') fillSettings();
   renderLogs();
-  renderProjects();
-  renderJournal();
   renderDesk();
   renderShelf();
   renderPress();
@@ -2734,43 +2605,39 @@ function dropPiece(id) {
   renderDesk();
 }
 
-// ---------- minting pieces from what was already written ----------
-// The log, the journal and the projects are sources, not destinations. This
-// draws from them once per cycle: only what was written since the last issue
-// shipped, so issue two never reprints issue one.
+// ---------- minting pieces from scraps ----------
+// Scraps are a source, not a destination. Once a cycle the desk draws what
+// was written since the last issue shipped, so issue two never reprints
+// issue one. A scrap with a title, or a long one, is a piece of its own; the
+// short ones run together as one piece, the way a log column does.
 function draftFromSources() {
   var since = lastIssueTs();
-  var fresh = function (item) { return (item.ts || 0) > since; };
-  var made = 0;
-
-  var logs = state.logs.filter(function (l) { return fresh(l) && l.text; })
+  var fresh = state.logs.filter(function (l) { return (l.ts || 0) > since && (l.text || l.title || l.photo); })
     .sort(function (x, y) { return x.ts - y.ts; });
-  if (logs.length) {
-    addPiece({
-      kind: 'log', title: 'The Week', byline: 'both',
-      body: logs.slice(0, 6).map(function (l) { return '• [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n'),
-      photo: (state.logs.filter(function (l) { return fresh(l) && l.photo && photoCache[l.photo]; })[0] || {}).photo
-    });
-    made++;
-  }
+  var made = 0;
+  var short = [];
 
-  state.journal.filter(fresh).sort(function (x, y) { return x.ts - y.ts; }).forEach(function (j) {
-    addPiece({ kind: 'essay', title: j.title, byline: j.author, body: j.body });
-    made++;
+  fresh.forEach(function (l) {
+    var own = l.title || (l.text || '').length > 280;
+    if (own) {
+      addPiece({ kind: 'essay', title: l.title || (l.text || '').slice(0, 40), byline: l.author, body: l.text || '', photo: l.photo });
+      made++;
+    } else {
+      short.push(l);
+    }
   });
-
-  var projects = state.projects.filter(fresh);
-  if (projects.length) {
+  if (short.length) {
     addPiece({
-      kind: 'log', title: 'Projects', byline: 'both',
-      body: projects.map(function (p) { return '★ ' + p.title + '\n' + p.desc; }).join('\n\n')
+      kind: 'log', title: 'SCRAPS', byline: 'both',
+      body: short.filter(function (l) { return l.text; })
+        .map(function (l) { return '\u2022 [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n'),
+      photo: (short.filter(function (l) { return l.photo && photoCache[l.photo]; })[0] || {}).photo
     });
     made++;
   }
 
   renderDesk();
-  toast(made ? 'Drew ' + made + ' piece(s) from the log, journal and projects' :
-    'Nothing new since the last issue. Write something, then draw again.');
+  toast(made ? 'Pulled in ' + made + ' piece(s)' : 'Nothing new since the last issue. Keep something, then pull again.');
 }
 
 // ---------- assembling ----------
@@ -2884,7 +2751,7 @@ function renderDesk() {
   if (!tray) return;
   var all = state.pieces.slice().sort(function (x, y) { return x.ts - y.ts; });
   if (!all.length) {
-    tray.innerHTML = '<p class="sub">The tray is empty. Submit a piece, or draw from the log and journal.</p>';
+    tray.innerHTML = '<p class="sub">Empty. Submit a piece, or pull in the new scraps.</p>';
     return;
   }
   var n = 0;
@@ -4148,7 +4015,7 @@ function photosFor(objs) {
 // Everything the running page put in the DOM comes back out; what ships is the
 // app as built plus a seed. Rendered lists are rebuilt on boot, so carrying
 // them would only add weight and staleness.
-var DYNAMIC = ['loglist', 'journallist', 'projectlist', 'desktray', 'shelflist',
+var DYNAMIC = ['loglist', 'desktray', 'shelflist',
   'shelfreader', 'sheetzone', 'phototray', 'reprintzone', 'toast', 'importstatus'];
 
 function pageWithSeed(seed) {
@@ -4345,8 +4212,6 @@ function exportBackup() {
     exported: new Date().toISOString(),
     people: people,
     logs: state.logs,
-    projects: state.projects,
-    journal: state.journal,
     pieces: state.pieces,
     issues: state.issues,
     cycle: state.cycle,
@@ -4389,8 +4254,6 @@ function importBackup(raw, mode) {
 
   if (mode === 'replace') {
     state.logs = incoming.logs;
-    state.projects = incoming.projects;
-    state.journal = incoming.journal;
     state.pieces = incoming.pieces;
     state.issues = incoming.issues;
     state.cycle = incoming.cycle;
@@ -4399,13 +4262,11 @@ function importBackup(raw, mode) {
     state.press = incoming.press;
   } else {
     var count = function () {
-      return state.logs.length + state.projects.length + state.journal.length +
+      return state.logs.length +
         state.pieces.length + state.issues.length;
     };
     var before = count();
     state.logs = mergeList(state.logs, incoming.logs);
-    state.projects = mergeList(state.projects, incoming.projects);
-    state.journal = mergeList(state.journal, incoming.journal);
     state.pieces = mergeList(state.pieces, incoming.pieces);
     // Issues are keyed by number and never overwritten: a published issue is
     // history, and the copy already on the shelf wins.
@@ -4487,7 +4348,7 @@ function saveNameFields() {
 
 // Start empty is the opposite of reset: no sample pieces, nothing borrowed.
 function startEmpty() {
-  if (!confirm('Clear everything on this device — logs, journal, projects, pieces and every published issue — and start with a blank press?')) return;
+  if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
     address: state.address, zine: state.zine });
   saveState();
@@ -4498,16 +4359,15 @@ function startEmpty() {
 // ---------- router ----------
 // The press is the surface and is always on screen. Every other view is a
 // drawer over it, one at a time, and the landing replaces both when an issue
-// file opens. The old hashes still work: log, journal and projects are tabs
-// of the notebook now, and anything unknown is the press.
+// file opens. The old hashes still work: log, journal, projects and notebook
+// are all the scraps now, and anything unknown is the press.
 var views = document.querySelectorAll('section[data-view]');
 var navs = document.querySelectorAll('[data-nav]');
-var NOTEBOOK_TABS = { log: 1, journal: 1, projects: 1 };
+var SCRAP_HASHES = { log: 1, journal: 1, projects: 1, notebook: 1 };
 
 function showView() {
   var h = (location.hash || '#press').slice(1).split('/')[0];
-  var tab = null;
-  if (NOTEBOOK_TABS[h]) { tab = h; h = 'notebook'; }
+  if (SCRAP_HASHES[h]) h = 'scraps';
   var known = false;
   views.forEach(function (v) { if (v.getAttribute('data-view') === h) known = true; });
   if (!known) h = 'press';
@@ -4521,7 +4381,6 @@ function showView() {
   views.forEach(function (v) { v.classList.toggle('on', v.getAttribute('data-view') === h); });
   navs.forEach(function (a) { a.classList.toggle('here', a.getAttribute('data-nav') === h); });
 
-  if (tab) showNotebookTab(tab);
   if (drawer) ensureClose(document.querySelector('section[data-view="' + drawer + '"]'));
   if (landing) renderLanding(); else renderPress();
   renderBar();
@@ -4529,15 +4388,6 @@ function showView() {
   if (!drawer) window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', showView);
-
-function showNotebookTab(tab) {
-  document.querySelectorAll('[data-ntab]').forEach(function (b) {
-    b.classList.toggle('on', b.getAttribute('data-ntab') === tab);
-  });
-  document.querySelectorAll('[data-npane]').forEach(function (p) {
-    p.classList.toggle('on', p.getAttribute('data-npane') === tab);
-  });
-}
 
 function ensureClose(sec) {
   var head = sec && sec.querySelector('.view-head');
@@ -4563,7 +4413,6 @@ document.addEventListener('click', function (e) {
   // The bar and the drawers.
   if ((el = hit(t, '[data-nav].here'))) { e.preventDefault(); location.hash = '#press'; return; }
   if (hit(t, '[data-closedrawer]') || hit(t, '#scrim')) { location.hash = '#press'; return; }
-  if ((el = hit(t, '[data-ntab]'))) { location.hash = '#' + el.getAttribute('data-ntab'); return; }
   if (hit(t, '#handonbtn')) return handOn();
 
   // One click glues a photograph the scene already has to the page last touched.
@@ -4591,20 +4440,6 @@ document.addEventListener('click', function (e) {
       b.classList.toggle('on', b.getAttribute('data-logfilter') === activeLogFilter);
     });
     return renderLogs();
-  }
-
-  if (hit(t, '#projectaddbtn')) return addProject();
-  if ((el = hit(t, '[data-delproject]'))) {
-    var pid = el.getAttribute('data-delproject');
-    state.projects = state.projects.filter(function (p) { return p.id !== pid; });
-    saveState(); return renderProjects();
-  }
-
-  if (hit(t, '#journaladdbtn')) return addJournal();
-  if ((el = hit(t, '[data-deljournal]'))) {
-    var jid = el.getAttribute('data-deljournal');
-    state.journal = state.journal.filter(function (j) { return j.id !== jid; });
-    saveState(); return renderJournal();
   }
 
   // ---------- the desk ----------
@@ -4693,7 +4528,8 @@ function saveBell() {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && document.body.hasAttribute('data-drawer')) { location.hash = '#press'; return; }
   if (e.key !== 'Enter') return;
-  if (e.target.id === 'loginput') { e.preventDefault(); addLog(); }
+  if (e.target.id === 'loginput' && !e.shiftKey) { e.preventDefault(); addLog(); }
+  else if (e.target.id === 'scraptitle') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }
   else if (e.target.id === 'addressinput' || e.target.id === 'zinename' ||
     e.target.hasAttribute('data-personid')) {

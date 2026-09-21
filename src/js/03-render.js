@@ -17,14 +17,6 @@ function renderNames() {
       }).join('');
   }
 
-  var jAuth = document.getElementById('journalauthor');
-  if (jAuth && document.activeElement !== jAuth) {
-    var want = jAuth.value || currentAuthor;
-    jAuth.innerHTML = authorIds().map(function (id) {
-      return '<option value="' + esc(id) + '">\u270d ' + esc(nameOf(id)) + '</option>';
-    }).join('');
-    jAuth.value = authorIds().indexOf(want) >= 0 ? want : currentAuthor;
-  }
   renderRoster();
 }
 
@@ -33,7 +25,7 @@ function renderNames() {
 // "Someone".
 function personHasWork(id) {
   var by = function (x) { return x.author === id || x.byline === id; };
-  return state.logs.some(by) || state.journal.some(by) || state.pieces.some(by) ||
+  return state.logs.some(by) || state.pieces.some(by) ||
     state.issues.some(function (i) { return i.editor === id || (i.pieces || []).some(by); });
 }
 
@@ -66,7 +58,10 @@ function photoTag(id, cls) {
   return '<img class="' + cls + '" src="' + esc(src) + '" alt="">';
 }
 
-// ---------- log ----------
+// ---------- scraps ----------
+// One stream. A scrap is a line, or a page with a title, or a photograph, by
+// somebody, on a day. The desk draws pieces from it once a cycle. There used
+// to be three of these (log, journal, projects) and they were one idea.
 function renderLogs() {
   var list = document.getElementById('loglist');
   if (!list) return;
@@ -80,8 +75,9 @@ function renderLogs() {
   list.innerHTML = rows.map(function (l) {
     return '<div class="log-card author-' + esc(l.author) + '">' +
       '<div class="log-meta"><span><span class="log-author">' + esc(nameOf(l.author)) +
-      '</span> · <span class="tag cold">' + esc(l.tag) + '</span> · ' + esc(fmtStamp(l.ts)) + '</span>' +
-      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete">✕</button></div>' +
+      '</span> \u00b7 ' + esc(fmtStamp(l.ts)) + '</span>' +
+      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete">\u2715</button></div>' +
+      (l.title ? '<h3 class="log-title">' + esc(l.title) + '</h3>' : '') +
       (l.photo ? photoTag(l.photo, 'log-photo') : '') +
       (l.text ? '<div class="log-body">' + esc(l.text) + '</div>' : '') +
       '</div>';
@@ -90,90 +86,27 @@ function renderLogs() {
 
 function addLog(photoIds) {
   var inp = document.getElementById('loginput');
-  var tag = document.getElementById('logtag');
+  var tt = document.getElementById('scraptitle');
   var ids = photoIds || [];
   var text = inp ? inp.value.trim() : '';
-  if (!text && !ids.length) return;
+  var title = tt ? tt.value.trim() : '';
+  if (!text && !title && !ids.length) return;
 
   if (ids.length) {
     ids.forEach(function (pid, i) {
       state.logs.push({
         id: uid('l'), author: currentAuthor, tag: 'photo',
-        text: i === 0 ? text : '', photo: pid, ts: Date.now() + i
+        title: i === 0 ? title : '', text: i === 0 ? text : '', photo: pid, ts: Date.now() + i
       });
     });
   } else {
-    state.logs.push({
-      id: uid('l'), author: currentAuthor,
-      tag: (tag && tag.value) || 'moment', text: text, ts: Date.now()
-    });
+    state.logs.push({ id: uid('l'), author: currentAuthor, tag: 'scrap', title: title, text: text, ts: Date.now() });
   }
   if (inp) inp.value = '';
+  if (tt) tt.value = '';
   saveState();
   renderLogs();
-  toast(ids.length ? 'Added ' + ids.length + ' photo(s)' : 'Posted to log');
-}
-
-// ---------- projects ----------
-function renderProjects() {
-  var list = document.getElementById('projectlist');
-  if (!list) return;
-  if (!state.projects.length) {
-    list.innerHTML = '<div class="sub" style="padding:1rem;">No active projects. Start one above.</div>';
-    return;
-  }
-  list.innerHTML = state.projects.map(function (p) {
-    return '<div class="project-card"><h3>' + esc(p.title) + '</h3><p>' + esc(p.desc) + '</p>' +
-      '<div class="project-card-foot"><span>Updated ' + esc(fmtDay(p.ts)) + '</span>' +
-      '<button class="log-del" data-delproject="' + esc(p.id) + '">DELETE</button></div></div>';
-  }).join('');
-}
-
-function addProject() {
-  var t = document.getElementById('projecttitle');
-  var d = document.getElementById('projectdesc');
-  if (!t || !t.value.trim()) return;
-  state.projects.unshift({
-    id: uid('p'), title: t.value.trim(), desc: (d && d.value.trim()) || '', ts: Date.now()
-  });
-  t.value = '';
-  if (d) d.value = '';
-  saveState();
-  renderProjects();
-  toast('Created project');
-}
-
-// ---------- journal ----------
-function renderJournal() {
-  var list = document.getElementById('journallist');
-  if (!list) return;
-  if (!state.journal.length) {
-    list.innerHTML = '<div class="paper sub" style="text-align:center;">No journal entries yet.</div>';
-    return;
-  }
-  list.innerHTML = state.journal.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .map(function (j) {
-      return '<div class="journal-card"><div class="journal-card-head"><h2>' + esc(j.title) + '</h2>' +
-        '<span class="sub">' + esc(nameOf(j.author)) + ' · ' + esc(fmtDay(j.ts)) +
-        ' <button class="log-del" data-deljournal="' + esc(j.id) + '">✕</button></span></div>' +
-        '<div class="journal-card-body">' + esc(j.body) + '</div></div>';
-    }).join('');
-}
-
-function addJournal() {
-  var t = document.getElementById('journaltitle');
-  var a = document.getElementById('journalauthor');
-  var b = document.getElementById('journalbody');
-  if (!t || !t.value.trim() || !b || !b.value.trim()) { toast('Needs a title and some words'); return; }
-  state.journal.unshift({
-    id: uid('j'), author: (a && a.value) || currentAuthor,
-    title: t.value.trim(), body: b.value.trim(), ts: Date.now()
-  });
-  t.value = '';
-  b.value = '';
-  saveState();
-  renderJournal();
-  toast('Saved journal entry');
+  toast(ids.length ? 'Kept ' + ids.length + ' photo(s)' : 'Kept');
 }
 
 function renderAll() {
@@ -181,8 +114,6 @@ function renderAll() {
   renderBar();
   if (typeof fillSettings === 'function') fillSettings();
   renderLogs();
-  renderProjects();
-  renderJournal();
   renderDesk();
   renderShelf();
   renderPress();

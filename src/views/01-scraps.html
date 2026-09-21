@@ -1,0 +1,19 @@
+<section data-view="scraps">
+  <div class="view-head">
+    <h1>SCRAPS</h1>
+    <p class="view-sub">Everything you wrote down. The desk pulls from here.</p>
+  </div>
+
+  <div class="paper">
+    <input type="text" id="scraptitle" class="text-input" maxlength="60" placeholder="Title, if it has one">
+    <textarea id="loginput" class="textarea-input" rows="2" placeholder="A line, or a page."></textarea>
+    <div class="form-row">
+      <button class="btn" id="logaddbtn">KEEP IT</button>
+      <input type="file" id="photofile" accept="image/*" multiple hidden>
+      <button class="btn quiet" id="photobtn">+ PHOTOS</button>
+      <span class="sub" id="logfilters"></span>
+    </div>
+  </div>
+
+  <div id="loglist" class="log-stream"></div>
+</section>

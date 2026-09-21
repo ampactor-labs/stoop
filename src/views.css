@@ -20,29 +20,10 @@
 .log-author { font-weight: bold; color: var(--spot); }
 .author-b .log-author { color: var(--grey); }
 .author-both .log-author { color: #5cd685; }
-.log-body { font-family: 'Courier New', monospace; font-size: .88rem; color: var(--fg); line-height: 1.4; word-break: break-word; }
+.log-body { font-family: 'Courier New', monospace; font-size: .88rem; color: var(--fg); line-height: 1.4; word-break: break-word; white-space: pre-wrap; }
+.log-title { margin: .1rem 0 .35rem; font-size: 1.15rem; }
 .log-del { background: none; border: none; color: var(--grey); cursor: pointer; font-size: .8rem; }
 .log-del:hover { color: var(--spot); }
-
-/* Projects */
-.project-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem; }
-.project-card {
-  background: var(--paper);
-  color: var(--ink);
-  border: 2px solid var(--ink);
-  padding: .9rem 1rem;
-  box-shadow: 4px 4px 0 rgba(0,0,0,.5);
-}
-.project-card h3 { margin: 0 0 .4rem; font-size: 1.3rem; }
-.project-card p { font-family: 'Courier New', monospace; font-size: .85rem; margin: 0 0 .7rem; line-height: 1.4; }
-.project-card-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed var(--ink); padding-top: .45rem; font-size: .75rem; font-family: 'Courier New', monospace; }
-
-/* Journal */
-.journal-list { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
-.journal-card { background: var(--paper); border: 2px solid var(--fg); padding: 1rem 1.2rem; }
-.journal-card-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px dashed var(--grey); padding-bottom: .4rem; margin-bottom: .6rem; }
-.journal-card-head h2 { margin: 0; font-size: 1.35rem; color: var(--fg); }
-.journal-card-body { font-family: 'Courier New', monospace; font-size: .9rem; color: var(--fg); line-height: 1.55; white-space: pre-wrap; }
 
 /* The roster */
 .person { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
@@ -93,12 +74,6 @@
 .pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
 .pasteup-strip .sub { margin-left: .3rem; }
 
-/* Notebook tabs */
-.drawer-tabs { display: flex; gap: .3rem; margin: .6rem 0 1rem; border-bottom: 1px solid var(--grey); }
-.drawer-tabs .tab { font-family: 'Courier New', monospace; font-size: .8rem; background: none; border: 1px solid transparent; border-bottom: none; color: var(--link); padding: .35rem .7rem; cursor: pointer; }
-.drawer-tabs .tab.on { color: var(--bg); background: var(--fg); border-color: var(--fg); }
-.ntab { display: none; }
-.ntab.on { display: block; }
 .sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
 .sheetwrap { margin-bottom: 1.2rem; width: max-content; }
 .sheetlabel { font-family: 'Courier New', monospace; font-size: .7rem; color: var(--grey); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }

@@ -42,7 +42,7 @@ function photosFor(objs) {
 // Everything the running page put in the DOM comes back out; what ships is the
 // app as built plus a seed. Rendered lists are rebuilt on boot, so carrying
 // them would only add weight and staleness.
-var DYNAMIC = ['loglist', 'journallist', 'projectlist', 'desktray', 'shelflist',
+var DYNAMIC = ['loglist', 'desktray', 'shelflist',
   'shelfreader', 'sheetzone', 'phototray', 'reprintzone', 'toast', 'importstatus'];
 
 function pageWithSeed(seed) {

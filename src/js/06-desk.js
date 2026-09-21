@@ -75,43 +75,39 @@ function dropPiece(id) {
   renderDesk();
 }
 
-// ---------- minting pieces from what was already written ----------
-// The log, the journal and the projects are sources, not destinations. This
-// draws from them once per cycle: only what was written since the last issue
-// shipped, so issue two never reprints issue one.
+// ---------- minting pieces from scraps ----------
+// Scraps are a source, not a destination. Once a cycle the desk draws what
+// was written since the last issue shipped, so issue two never reprints
+// issue one. A scrap with a title, or a long one, is a piece of its own; the
+// short ones run together as one piece, the way a log column does.
 function draftFromSources() {
   var since = lastIssueTs();
-  var fresh = function (item) { return (item.ts || 0) > since; };
-  var made = 0;
-
-  var logs = state.logs.filter(function (l) { return fresh(l) && l.text; })
+  var fresh = state.logs.filter(function (l) { return (l.ts || 0) > since && (l.text || l.title || l.photo); })
     .sort(function (x, y) { return x.ts - y.ts; });
-  if (logs.length) {
-    addPiece({
-      kind: 'log', title: 'The Week', byline: 'both',
-      body: logs.slice(0, 6).map(function (l) { return '• [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n'),
-      photo: (state.logs.filter(function (l) { return fresh(l) && l.photo && photoCache[l.photo]; })[0] || {}).photo
-    });
-    made++;
-  }
+  var made = 0;
+  var short = [];
 
-  state.journal.filter(fresh).sort(function (x, y) { return x.ts - y.ts; }).forEach(function (j) {
-    addPiece({ kind: 'essay', title: j.title, byline: j.author, body: j.body });
-    made++;
+  fresh.forEach(function (l) {
+    var own = l.title || (l.text || '').length > 280;
+    if (own) {
+      addPiece({ kind: 'essay', title: l.title || (l.text || '').slice(0, 40), byline: l.author, body: l.text || '', photo: l.photo });
+      made++;
+    } else {
+      short.push(l);
+    }
   });
-
-  var projects = state.projects.filter(fresh);
-  if (projects.length) {
+  if (short.length) {
     addPiece({
-      kind: 'log', title: 'Projects', byline: 'both',
-      body: projects.map(function (p) { return '★ ' + p.title + '\n' + p.desc; }).join('\n\n')
+      kind: 'log', title: 'SCRAPS', byline: 'both',
+      body: short.filter(function (l) { return l.text; })
+        .map(function (l) { return '\u2022 [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n'),
+      photo: (short.filter(function (l) { return l.photo && photoCache[l.photo]; })[0] || {}).photo
     });
     made++;
   }
 
   renderDesk();
-  toast(made ? 'Drew ' + made + ' piece(s) from the log, journal and projects' :
-    'Nothing new since the last issue. Write something, then draw again.');
+  toast(made ? 'Pulled in ' + made + ' piece(s)' : 'Nothing new since the last issue. Keep something, then pull again.');
 }
 
 // ---------- assembling ----------
@@ -225,7 +221,7 @@ function renderDesk() {
   if (!tray) return;
   var all = state.pieces.slice().sort(function (x, y) { return x.ts - y.ts; });
   if (!all.length) {
-    tray.innerHTML = '<p class="sub">The tray is empty. Submit a piece, or draw from the log and journal.</p>';
+    tray.innerHTML = '<p class="sub">Empty. Submit a piece, or pull in the new scraps.</p>';
     return;
   }
   var n = 0;
