@@ -42,7 +42,7 @@ function checkFit() {
   if (meter) {
     meter.textContent = total > 0
       ? total + ' word' + (total === 1 ? '' : 's') + ' will not print. Cut, or move them to another page.'
-      : 'Everything fits on the paper.';
+      : '';
     meter.classList.toggle('bad', total > 0);
   }
   return total;

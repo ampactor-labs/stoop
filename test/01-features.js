@@ -32,6 +32,17 @@ module.exports = async function features(browser, ok) {
   ok('rename reaches the filter chips', (await page.locator('[data-logfilter="' + bId + '"]').innerText()).trim() === 'JJ');
   ok('rename reaches the author toggle', (await page.locator('#authorname').innerText()).trim() === 'Ampactor');
 
+  await go('#press');
+  const deskType = await page.evaluate(() => {
+    const run = document.querySelector('#sheetzone .pages');
+    const panel = document.querySelector('[data-page="1"]');
+    const fit = parseFloat(getComputedStyle(run).zoom) || 1;
+    return { body: parseFloat(getComputedStyle(panel.querySelector('.body')).fontSize) * fit, fit: fit };
+  });
+  ok('A PAGE FILLS THE COLUMN RATHER THAN SITTING IN IT',
+     deskType.fit > 1.2 && deskType.body >= 15,
+     'zoom ' + deskType.fit.toFixed(2) + ', body type ' + deskType.body.toFixed(1) + 'px');
+
   // The joint-author filter matches the joint-author entries.
   await go('#log');
   await page.click('[data-logfilter="both"]');

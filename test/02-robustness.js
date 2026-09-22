@@ -153,6 +153,17 @@ module.exports = async function robustness(browser, ok) {
     page.on('pageerror', e => errs.push(e.message));
     await page.goto(APP);
     await page.waitForTimeout(600);
+    const phoneType = await page.evaluate(() => {
+      const run = document.querySelector('#sheetzone .pages');
+      const panel = document.querySelector('[data-page="1"]');
+      const fit = parseFloat(getComputedStyle(run).zoom) || 1;
+      return {
+        body: parseFloat(getComputedStyle(panel.querySelector('.body')).fontSize) * fit,
+        share: panel.getBoundingClientRect().width / window.innerWidth
+      };
+    });
+    ok('A PAGE IS READABLE ON A PHONE', phoneType.body >= 14 && phoneType.share > 0.8,
+       phoneType.body.toFixed(1) + 'px body type across ' + Math.round(phoneType.share * 100) + '% of the screen');
     const pressOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     await go(page, '#notebook');
     const drawerOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);

@@ -21,3 +21,23 @@
     section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none}
     .pages{gap:.7rem}
   }
+
+  /* A spread is two pages wide; a phone is one page wide. Stacking them lets
+     the run scale to the screen instead of cramming a spread into it. */
+  @media (max-width: 640px){
+    .spread{flex-direction:column;width:var(--pw)}
+    .spread.cover,.spread.backcover{justify-content:flex-start}
+    .spread .panel + .panel{border-left:none;border-top:1px dashed #bbb}
+  }
+
+  /* Everything above the page, in one short scrolling row, so the page is
+     the first thing on the screen rather than the fourth. */
+  @media (max-width: 640px){
+    .press-top{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:.3rem}
+    .press-top::-webkit-scrollbar{display:none}
+    .press-top .select-input{width:auto;flex:none;max-width:52vw;font-size:.75rem;padding:.3rem .4rem}
+    .press-top .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
+    .fitmeter{white-space:nowrap}
+    /* The bottom bar floats over the page; leave room to scroll clear of it. */
+    main{scroll-padding-bottom:6rem}
+  }

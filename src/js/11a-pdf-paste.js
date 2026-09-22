@@ -61,6 +61,21 @@ function wrapFace(text, face, size, width) {
   return out;
 }
 
+// A cutting's type size is CSS pixels on the screen and points on paper:
+// four pixels are three points. Drawing 20 there for 20 here made every
+// cutting a third too big, which is why a headline that sat on three lines
+// wanted four.
+var PT = 0.75;
+function ptSize(el) { return (el.size || 12) * PT; }
+
+// The screen's own line breaks, if it recorded any; otherwise wrap here.
+function linesOf(el, face, size, width, upper) {
+  var rec = el.lines;
+  if (rec && rec.length) return upper ? rec.map(function (l) { return l.toUpperCase(); }) : rec.slice();
+  var text = upper ? String(el.text || '').toUpperCase() : el.text;
+  return wrapFace(text, face, size, width);
+}
+
 // An element's box, in PDF points. The paste-up layer covers the whole panel,
 // padding included, because a cutting glued over the margin is the point.
 function elBoxPdf(box, el) {
@@ -105,7 +120,7 @@ function pdfElPhoto(el, g, images) {
 }
 
 function pdfElRansom(el, g) {
-  var size = el.size || 20;
+  var size = ptSize(el);
   var ops = '';
   var x = g.x;
   var y = g.top - size;
@@ -114,7 +129,7 @@ function pdfElRansom(el, g) {
     if (c.ch === '\n') { x = g.x; y -= lead; return; }
     var s = size * c.scale;
     var face = RANSOM_FACES[c.face] || RANSOM_FACES[0];
-    var cw = glyphWidth(face, c.ch, s) + 2;
+    var cw = glyphWidth(face, c.ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
     if (x + cw > g.x + g.w && c.ch !== ' ') { x = g.x; y -= lead; }
     if (y < g.y - size) return;
     if (c.ch !== ' ') {
@@ -138,21 +153,25 @@ function pdfElRansom(el, g) {
 function pdfElMarker(el, g, face, size) {
   var ops = '';
   var lead = size * 1.3;
-  var x = g.x + 2;
   var y = g.top - size;
-  markerSpec(el.text).forEach(function (w) {
-    if (w.space) {
-      if (/\n/.test(w.ch)) { x = g.x + 2; y -= lead; } else { x += glyphWidth(face, ' ', size); }
-      return;
-    }
-    var s = size * w.scale;
-    var ww = runWidth(face, w.ch, s);
-    if (x + ww > g.x + g.w && x > g.x + 2) { x = g.x + 2; y -= lead; }
-    if (y < g.y - g.h * 0.6 - size) return;
-    ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
-      'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
-      ' Tm (' + pdfEsc(w.ch) + ') Tj ET\nQ\n';
-    x += ww;
+  // Each word keeps the angle the screen gave it, found by its position in
+  // the whole text rather than in its line, so the two agree word for word.
+  var spec = markerSpec(el.text).filter(function (w) { return !w.space; });
+  var at = 0;
+  linesOf(el, face, size, g.w - 4, false).forEach(function (line) {
+    var x = g.x + 2;
+    line.split(/\s+/).filter(Boolean).forEach(function (word) {
+      var w = spec[at++] || { tilt: 0, scale: 1 };
+      var s = size * w.scale;
+      var ww = runWidth(face, word, s);
+      if (y >= g.y - g.h * 0.6 - size) {
+        ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
+          'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
+          ' Tm (' + pdfEsc(word) + ') Tj ET\nQ\n';
+      }
+      x += ww + glyphWidth(face, ' ', size);
+    });
+    y -= lead;
   });
   return ops;
 }
@@ -161,20 +180,18 @@ function pdfElText(el, g) {
   var voice = voiceOf(el);
   if (voice === 'ransom') return pdfElRansom(el, g);
   var face = faceOf(el);
-  var size = el.size || 12;
+  var size = ptSize(el);
   var ops = '';
   if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size) + '0 g\n';
   var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
   var y = g.top - size;
-  var text = voice === 'stencil' ? String(el.text || '').toUpperCase() : el.text;
-  // The box was sized to the screen's layout in a condensed face; the paper
-  // face runs wider and may wrap a line longer. A cutting hangs over its box
-  // rather than losing a line, up to a little more than half its height.
-  wrapFace(text, face, size, g.w - 4).forEach(function (line) {
+  // A cutting hangs over its box rather than losing a line, up to a little
+  // more than half its height; a glued cutting overhangs anyway.
+  linesOf(el, face, size, g.w - 4, voice === 'stencil' || voice === 'head').forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      var draw = 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+      var draw = 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(line) + ') Tj ET\n';
       if (voice === 'stencil') {
         // The screen masks bridges through the letters at fixed intervals;

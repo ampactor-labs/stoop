@@ -468,6 +468,26 @@ body.landing main { padding-top: 2.4rem; }
     section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none}
     .pages{gap:.7rem}
   }
+
+  /* A spread is two pages wide; a phone is one page wide. Stacking them lets
+     the run scale to the screen instead of cramming a spread into it. */
+  @media (max-width: 640px){
+    .spread{flex-direction:column;width:var(--pw)}
+    .spread.cover,.spread.backcover{justify-content:flex-start}
+    .spread .panel + .panel{border-left:none;border-top:1px dashed #bbb}
+  }
+
+  /* Everything above the page, in one short scrolling row, so the page is
+     the first thing on the screen rather than the fourth. */
+  @media (max-width: 640px){
+    .press-top{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:.3rem}
+    .press-top::-webkit-scrollbar{display:none}
+    .press-top .select-input{width:auto;flex:none;max-width:52vw;font-size:.75rem;padding:.3rem .4rem}
+    .press-top .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
+    .fitmeter{white-space:nowrap}
+    /* The bottom bar floats over the page; leave room to scroll clear of it. */
+    main{scroll-padding-bottom:6rem}
+  }
 </style>
 
 <header class="chrome">
@@ -586,7 +606,7 @@ body.landing main { padding-top: 2.4rem; }
   <div class="press-top">
     <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
     <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
-    <p class="fitmeter" id="fitmeter">Everything fits on the paper.</p>
+    <p class="fitmeter" id="fitmeter"></p>
     <p class="fitmeter" id="pressstatus"></p>
   </div>
   <div class="pasteup-strip">
@@ -722,7 +742,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 198 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 201 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -1576,18 +1596,22 @@ function layoutPages() {
   return plan;
 }
 
-// A spread is two pages wide and the column it sits in may not be. Scale to
-// fit rather than making somebody scroll sideways to see their own centre
-// spread. zoom rather than transform, because zoom takes part in layout: a
-// scaled run leaves no hole under itself, and the caret lands where aimed.
+// A page is 2.75 inches wide, which at 96dpi is 264 pixels: a postage stamp
+// on any real screen, with 8-point body type. So the run is scaled to fill
+// the column rather than only ever shrinking to fit it, bounded by the height
+// so a page never grows taller than the window it is being read in. zoom
+// rather than transform, because zoom takes part in layout: a scaled run
+// leaves no hole under itself, and the caret lands where it is aimed.
 function fitPages(zone) {
   zone.style.setProperty('--fit', 1);
   var run = zone.querySelector('.pages');
   if (!run) return;
-  var natural = run.getBoundingClientRect().width;
-  if (!natural) return;
-  var room = zone.clientWidth - 2;
-  zone.style.setProperty('--fit', Math.min(1, room / natural));
+  var box = run.getBoundingClientRect();
+  var panel = run.querySelector('.panel');
+  if (!box.width || !panel) return;
+  var byWidth = (zone.clientWidth - 2) / box.width;
+  var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
+  zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
 }
 
 var fitTimer = null;
@@ -2112,6 +2136,33 @@ function pasteupHtml(panel, pics, editable) {
 // exists to prevent for flowed text, and the paste-up owes the same honesty.
 // The height is measured from the layout the browser actually performed and
 // written back, so the model, the screen and the PDF agree on one number.
+// Where the browser actually broke the lines. The paper cannot know what
+// fonts this machine has — Impact on one, a fallback on the next — so it does
+// not guess: it draws the breaks the screen made. Ransom is per character and
+// flows on its own; everything else records words.
+function measureLines(node, voice) {
+  if (!node || node.contains(document.activeElement)) return null;
+  var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;
+  var restore = null;
+  if (!marks || !marks.length) {
+    var text = node.innerText;
+    if (!text.trim()) return [];
+    restore = node.innerHTML;
+    node.innerHTML = text.split(/(\s+)/).map(function (w) {
+      return /^\s*$/.test(w) ? esc(w) : '<span class="lw">' + esc(w) + '</span>';
+    }).join('');
+    marks = node.querySelectorAll('.lw');
+  }
+  var lines = [], top = null;
+  Array.prototype.forEach.call(marks, function (s) {
+    var t = Math.round(s.offsetTop);
+    if (top === null || Math.abs(t - top) > 2) { lines.push([]); top = t; }
+    lines[lines.length - 1].push(s.textContent);
+  });
+  if (restore !== null) node.innerHTML = restore;
+  return lines.map(function (l) { return l.join(' '); });
+}
+
 function growTextEls(panelEl, panel) {
   var ph = panelEl.clientHeight;
   if (!ph) return false;
@@ -2126,6 +2177,13 @@ function growTextEls(panelEl, panel) {
       el.h = Math.min(1.5, need);
       host.style.height = (el.h * 100).toFixed(3) + '%';
       grew = true;
+    }
+    if (voiceOf(el) !== 'ransom') {
+      var lines = measureLines(node, voiceOf(el));
+      if (lines && JSON.stringify(lines) !== JSON.stringify(el.lines || null)) {
+        el.lines = lines;
+        grew = true;
+      }
     }
   });
   return grew;
@@ -2610,7 +2668,7 @@ function checkFit() {
   if (meter) {
     meter.textContent = total > 0
       ? total + ' word' + (total === 1 ? '' : 's') + ' will not print. Cut, or move them to another page.'
-      : 'Everything fits on the paper.';
+      : '';
     meter.classList.toggle('bad', total > 0);
   }
   return total;
@@ -3984,6 +4042,21 @@ function wrapFace(text, face, size, width) {
   return out;
 }
 
+// A cutting's type size is CSS pixels on the screen and points on paper:
+// four pixels are three points. Drawing 20 there for 20 here made every
+// cutting a third too big, which is why a headline that sat on three lines
+// wanted four.
+var PT = 0.75;
+function ptSize(el) { return (el.size || 12) * PT; }
+
+// The screen's own line breaks, if it recorded any; otherwise wrap here.
+function linesOf(el, face, size, width, upper) {
+  var rec = el.lines;
+  if (rec && rec.length) return upper ? rec.map(function (l) { return l.toUpperCase(); }) : rec.slice();
+  var text = upper ? String(el.text || '').toUpperCase() : el.text;
+  return wrapFace(text, face, size, width);
+}
+
 // An element's box, in PDF points. The paste-up layer covers the whole panel,
 // padding included, because a cutting glued over the margin is the point.
 function elBoxPdf(box, el) {
@@ -4028,7 +4101,7 @@ function pdfElPhoto(el, g, images) {
 }
 
 function pdfElRansom(el, g) {
-  var size = el.size || 20;
+  var size = ptSize(el);
   var ops = '';
   var x = g.x;
   var y = g.top - size;
@@ -4037,7 +4110,7 @@ function pdfElRansom(el, g) {
     if (c.ch === '\n') { x = g.x; y -= lead; return; }
     var s = size * c.scale;
     var face = RANSOM_FACES[c.face] || RANSOM_FACES[0];
-    var cw = glyphWidth(face, c.ch, s) + 2;
+    var cw = glyphWidth(face, c.ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
     if (x + cw > g.x + g.w && c.ch !== ' ') { x = g.x; y -= lead; }
     if (y < g.y - size) return;
     if (c.ch !== ' ') {
@@ -4061,21 +4134,25 @@ function pdfElRansom(el, g) {
 function pdfElMarker(el, g, face, size) {
   var ops = '';
   var lead = size * 1.3;
-  var x = g.x + 2;
   var y = g.top - size;
-  markerSpec(el.text).forEach(function (w) {
-    if (w.space) {
-      if (/\n/.test(w.ch)) { x = g.x + 2; y -= lead; } else { x += glyphWidth(face, ' ', size); }
-      return;
-    }
-    var s = size * w.scale;
-    var ww = runWidth(face, w.ch, s);
-    if (x + ww > g.x + g.w && x > g.x + 2) { x = g.x + 2; y -= lead; }
-    if (y < g.y - g.h * 0.6 - size) return;
-    ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
-      'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
-      ' Tm (' + pdfEsc(w.ch) + ') Tj ET\nQ\n';
-    x += ww;
+  // Each word keeps the angle the screen gave it, found by its position in
+  // the whole text rather than in its line, so the two agree word for word.
+  var spec = markerSpec(el.text).filter(function (w) { return !w.space; });
+  var at = 0;
+  linesOf(el, face, size, g.w - 4, false).forEach(function (line) {
+    var x = g.x + 2;
+    line.split(/\s+/).filter(Boolean).forEach(function (word) {
+      var w = spec[at++] || { tilt: 0, scale: 1 };
+      var s = size * w.scale;
+      var ww = runWidth(face, word, s);
+      if (y >= g.y - g.h * 0.6 - size) {
+        ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
+          'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
+          ' Tm (' + pdfEsc(word) + ') Tj ET\nQ\n';
+      }
+      x += ww + glyphWidth(face, ' ', size);
+    });
+    y -= lead;
   });
   return ops;
 }
@@ -4084,20 +4161,18 @@ function pdfElText(el, g) {
   var voice = voiceOf(el);
   if (voice === 'ransom') return pdfElRansom(el, g);
   var face = faceOf(el);
-  var size = el.size || 12;
+  var size = ptSize(el);
   var ops = '';
   if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size) + '0 g\n';
   var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
   var y = g.top - size;
-  var text = voice === 'stencil' ? String(el.text || '').toUpperCase() : el.text;
-  // The box was sized to the screen's layout in a condensed face; the paper
-  // face runs wider and may wrap a line longer. A cutting hangs over its box
-  // rather than losing a line, up to a little more than half its height.
-  wrapFace(text, face, size, g.w - 4).forEach(function (line) {
+  // A cutting hangs over its box rather than losing a line, up to a little
+  // more than half its height; a glued cutting overhangs anyway.
+  linesOf(el, face, size, g.w - 4, voice === 'stencil' || voice === 'head').forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      var draw = 'BT /' + face.f + ' ' + size + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+      var draw = 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(line) + ') Tj ET\n';
       if (voice === 'stencil') {
         // The screen masks bridges through the letters at fixed intervals;

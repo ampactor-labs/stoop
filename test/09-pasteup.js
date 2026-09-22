@@ -207,6 +207,33 @@ module.exports = async function pasteup(browser, ok) {
   await page.waitForTimeout(600);
 
   // ---- and it reaches the paper
+  // A headline long enough to wrap, on a page nothing else has touched, so
+  // the check below always has exactly one to measure.
+  await page.click('[data-page="4"]');
+  await page.click('[data-addel="text"]');
+  await page.waitForTimeout(250);
+  await page.click('[data-elvoice]');            // typewriter -> headline
+  await page.waitForTimeout(200);
+  await page.dblclick('[data-page="4"] .el.sel');
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('the substation hums in F all night long');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(500);
+  // Line boxes, not box height: the cutting grows to hold its words, so
+  // scrollHeight over lineHeight counts the box and not the lines in it.
+  const headline = await page.evaluate(() => {
+    const t = document.querySelector('[data-page="4"] .v-head');
+    const words = t.innerText.trim().split(/\s+/).filter(Boolean);
+    const keep = t.innerHTML;
+    t.innerHTML = words.map(w => '<span class="lw">' + w + '</span>').join(' ');
+    const tops = [...t.querySelectorAll('.lw')].map(s => Math.round(s.offsetTop));
+    t.innerHTML = keep;
+    return {
+      words: words.map(w => w.toUpperCase()),
+      lines: new Set(tops).size
+    };
+  });
+
   await go('#paper');
   const [dl] = await Promise.all([
     page.waitForEvent('download', { timeout: 25000 }),
@@ -216,6 +243,19 @@ module.exports = async function pasteup(browser, ok) {
   await dl.saveAs(pdf);
   const raw = fs.readFileSync(pdf, 'latin1');
   ok('THE PASTE-UP REACHES THE PDF', raw.length > 2000 && /%PDF/.test(raw));
+
+  // A headline wraps where the browser wrapped it. The paper cannot know
+  // which faces this machine has, so it does not guess: it draws the breaks
+  // the screen recorded. Checked by word, so a one-word line still counts.
+  const runs = (raw.match(/\(([^)]*)\) Tj/g) || []).map(s => s.slice(1, -4)).filter(Boolean);
+  const onPaper = runs.filter(t => t.split(' ').every(w => headline.words.includes(w)));
+  const paperWords = onPaper.join(' ').split(/\s+/).filter(Boolean);
+  ok('A HEADLINE BREAKS ON PAPER WHERE IT BROKE ON SCREEN',
+     headline.lines > 1 && onPaper.length === headline.lines,
+     'screen ' + headline.lines + ', paper ' + onPaper.length + ' ' + JSON.stringify(onPaper));
+  ok('and not one word is lost on the way',
+     paperWords.length === headline.words.length,
+     paperWords.length + ' of ' + headline.words.length + ' words');
   ok('and the cut letters bring their own faces with them',
      /Times-Bold/.test(raw) && /Courier-Bold/.test(raw) && /Helvetica-BoldOblique/.test(raw));
   ok('THE STAMP IS ON THE PAPER, AS PATHS AND AS ITS WORDS',

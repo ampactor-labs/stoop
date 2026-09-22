@@ -120,6 +120,33 @@ function pasteupHtml(panel, pics, editable) {
 // exists to prevent for flowed text, and the paste-up owes the same honesty.
 // The height is measured from the layout the browser actually performed and
 // written back, so the model, the screen and the PDF agree on one number.
+// Where the browser actually broke the lines. The paper cannot know what
+// fonts this machine has — Impact on one, a fallback on the next — so it does
+// not guess: it draws the breaks the screen made. Ransom is per character and
+// flows on its own; everything else records words.
+function measureLines(node, voice) {
+  if (!node || node.contains(document.activeElement)) return null;
+  var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;
+  var restore = null;
+  if (!marks || !marks.length) {
+    var text = node.innerText;
+    if (!text.trim()) return [];
+    restore = node.innerHTML;
+    node.innerHTML = text.split(/(\s+)/).map(function (w) {
+      return /^\s*$/.test(w) ? esc(w) : '<span class="lw">' + esc(w) + '</span>';
+    }).join('');
+    marks = node.querySelectorAll('.lw');
+  }
+  var lines = [], top = null;
+  Array.prototype.forEach.call(marks, function (s) {
+    var t = Math.round(s.offsetTop);
+    if (top === null || Math.abs(t - top) > 2) { lines.push([]); top = t; }
+    lines[lines.length - 1].push(s.textContent);
+  });
+  if (restore !== null) node.innerHTML = restore;
+  return lines.map(function (l) { return l.join(' '); });
+}
+
 function growTextEls(panelEl, panel) {
   var ph = panelEl.clientHeight;
   if (!ph) return false;
@@ -134,6 +161,13 @@ function growTextEls(panelEl, panel) {
       el.h = Math.min(1.5, need);
       host.style.height = (el.h * 100).toFixed(3) + '%';
       grew = true;
+    }
+    if (voiceOf(el) !== 'ransom') {
+      var lines = measureLines(node, voiceOf(el));
+      if (lines && JSON.stringify(lines) !== JSON.stringify(el.lines || null)) {
+        el.lines = lines;
+        grew = true;
+      }
     }
   });
   return grew;

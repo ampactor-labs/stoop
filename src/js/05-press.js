@@ -84,18 +84,22 @@ function layoutPages() {
   return plan;
 }
 
-// A spread is two pages wide and the column it sits in may not be. Scale to
-// fit rather than making somebody scroll sideways to see their own centre
-// spread. zoom rather than transform, because zoom takes part in layout: a
-// scaled run leaves no hole under itself, and the caret lands where aimed.
+// A page is 2.75 inches wide, which at 96dpi is 264 pixels: a postage stamp
+// on any real screen, with 8-point body type. So the run is scaled to fill
+// the column rather than only ever shrinking to fit it, bounded by the height
+// so a page never grows taller than the window it is being read in. zoom
+// rather than transform, because zoom takes part in layout: a scaled run
+// leaves no hole under itself, and the caret lands where it is aimed.
 function fitPages(zone) {
   zone.style.setProperty('--fit', 1);
   var run = zone.querySelector('.pages');
   if (!run) return;
-  var natural = run.getBoundingClientRect().width;
-  if (!natural) return;
-  var room = zone.clientWidth - 2;
-  zone.style.setProperty('--fit', Math.min(1, room / natural));
+  var box = run.getBoundingClientRect();
+  var panel = run.querySelector('.panel');
+  if (!box.width || !panel) return;
+  var byWidth = (zone.clientWidth - 2) / box.width;
+  var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
+  zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
 }
 
 var fitTimer = null;
