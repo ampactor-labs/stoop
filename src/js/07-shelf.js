@@ -150,6 +150,7 @@ function printSheet(panels, format, hand, url, testing, note, gen) {
   document.body.classList.add('reprinting');
   if (note) toast(note);
   window.print();
+  setTimeout(endPrinting, 800);
 }
 
 function reprintIssue(no) {
@@ -161,20 +162,29 @@ function reprintIssue(no) {
 
 // The keyboard shortcut prints the sheet too. Somebody who presses print on
 // the pages view gets the imposed sheet, not a grid of upright pages.
+// Ctrl-P from anywhere prints the sheet. Printing is about paper and paper
+// is the imposed sheet, wherever somebody happened to be standing when the
+// thought struck them; the alternative, which this used to do, was to hand
+// the browser a blank page unless they were on the press.
 window.addEventListener('beforeprint', function () {
   if (document.body.classList.contains('reprinting')) return;
-  if (!document.querySelector('section[data-view="press"].on')) return;
   var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps));
+  capturePanels();
+  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps), ps.issue);
   document.body.classList.add('reprinting');
 });
 
-window.addEventListener('afterprint', function () {
+// Not every browser fires afterprint, and a cancelled dialog may not either.
+// A print zone left populated keeps body.reprinting set, and the guard above
+// would then print that stale sheet for ever, so clearing it is on a timer as
+// well as on the event.
+function endPrinting() {
   document.body.classList.remove('reprinting');
   var zone = document.getElementById('reprintzone');
   if (zone) { zone.innerHTML = ''; zone.classList.remove('testing'); }
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paperOf(pressState().format).css + '; margin: 0; }';
-});
+}
+window.addEventListener('afterprint', endPrinting);

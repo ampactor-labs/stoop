@@ -5,7 +5,7 @@
   @media (max-width: 640px){
     header.chrome{gap:.3rem .6rem;padding:.4rem .6rem}
     .wordmark{font-size:1.25rem}
-    nav.chrome-nav{flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;margin-left:0;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    nav.chrome-nav{flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow-x:auto;margin-left:.2rem;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
     nav.chrome-nav::-webkit-scrollbar{display:none}
     nav.chrome-nav a,nav.chrome-nav button{white-space:nowrap;padding:.3rem .55rem}
     main{padding:.6rem .5rem 5.5rem}
@@ -40,4 +40,11 @@
     .fitmeter{white-space:nowrap}
     /* The bottom bar floats over the page; leave room to scroll clear of it. */
     main{scroll-padding-bottom:6rem}
+  }
+
+  /* A phone knows which app it is in; the zine's own name is the identity
+     that matters. Dropping the wordmark keeps the bar to one row. */
+  @media (max-width: 640px){
+    .wordmark{display:none}
+    .barzine{font-size:1.15rem}
   }

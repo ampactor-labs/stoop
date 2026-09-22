@@ -371,6 +371,13 @@ body.landing main { padding-top: 2.4rem; }
 .flash.go { animation: lamp .55s ease-in-out 1; }
 @keyframes lamp { 0% { opacity: 1; background-position: 100% 0; } 100% { opacity: 1; background-position: 0% 0; } }
 .barzine[contenteditable]:focus { outline: none; background: var(--spot); padding: 0 .3rem; }
+
+/* Keyboard focus has to be somewhere you can see, or half the app is
+   unreachable without a mouse. The name in the bar is edited in place, so it
+   takes the spot colour rather than a ring around a word. */
+:focus-visible { outline: 3px solid var(--spot); outline-offset: 2px; }
+.panel :focus-visible, .el :focus-visible { outline: 2px dashed var(--red); outline-offset: 1px; }
+.barzine[contenteditable]:focus-visible { outline: 3px solid var(--fg); outline-offset: 1px; }
 /* ---------- the paste-up ---------- */
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
@@ -460,7 +467,7 @@ body.landing main { padding-top: 2.4rem; }
   @media (max-width: 640px){
     header.chrome{gap:.3rem .6rem;padding:.4rem .6rem}
     .wordmark{font-size:1.25rem}
-    nav.chrome-nav{flex-basis:100%;flex-wrap:nowrap;overflow-x:auto;margin-left:0;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    nav.chrome-nav{flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow-x:auto;margin-left:.2rem;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
     nav.chrome-nav::-webkit-scrollbar{display:none}
     nav.chrome-nav a,nav.chrome-nav button{white-space:nowrap;padding:.3rem .55rem}
     main{padding:.6rem .5rem 5.5rem}
@@ -495,6 +502,13 @@ body.landing main { padding-top: 2.4rem; }
     .fitmeter{white-space:nowrap}
     /* The bottom bar floats over the page; leave room to scroll clear of it. */
     main{scroll-padding-bottom:6rem}
+  }
+
+  /* A phone knows which app it is in; the zine's own name is the identity
+     that matters. Dropping the wordmark keeps the bar to one row. */
+  @media (max-width: 640px){
+    .wordmark{display:none}
+    .barzine{font-size:1.15rem}
   }
 </style>
 
@@ -750,7 +764,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 201 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 203 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -3211,6 +3225,7 @@ function printSheet(panels, format, hand, url, testing, note, gen) {
   document.body.classList.add('reprinting');
   if (note) toast(note);
   window.print();
+  setTimeout(endPrinting, 800);
 }
 
 function reprintIssue(no) {
@@ -3222,23 +3237,32 @@ function reprintIssue(no) {
 
 // The keyboard shortcut prints the sheet too. Somebody who presses print on
 // the pages view gets the imposed sheet, not a grid of upright pages.
+// Ctrl-P from anywhere prints the sheet. Printing is about paper and paper
+// is the imposed sheet, wherever somebody happened to be standing when the
+// thought struck them; the alternative, which this used to do, was to hand
+// the browser a blank page unless they were on the press.
 window.addEventListener('beforeprint', function () {
   if (document.body.classList.contains('reprinting')) return;
-  if (!document.querySelector('section[data-view="press"].on')) return;
   var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps));
+  capturePanels();
+  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps), ps.issue);
   document.body.classList.add('reprinting');
 });
 
-window.addEventListener('afterprint', function () {
+// Not every browser fires afterprint, and a cancelled dialog may not either.
+// A print zone left populated keeps body.reprinting set, and the guard above
+// would then print that stale sheet for ever, so clearing it is on a timer as
+// well as on the event.
+function endPrinting() {
   document.body.classList.remove('reprinting');
   var zone = document.getElementById('reprintzone');
   if (zone) { zone.innerHTML = ''; zone.classList.remove('testing'); }
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paperOf(pressState().format).css + '; margin: 0; }';
-});
+}
+window.addEventListener('afterprint', endPrinting);
 // ---------- landing ----------
 // Somebody scanned the back of a zine, or was handed the file. What they were
 // holding was paper, so what they get is the issue and nothing else: no

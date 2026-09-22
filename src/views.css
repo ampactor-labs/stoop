@@ -173,3 +173,10 @@ body.landing main { padding-top: 2.4rem; }
 .flash.go { animation: lamp .55s ease-in-out 1; }
 @keyframes lamp { 0% { opacity: 1; background-position: 100% 0; } 100% { opacity: 1; background-position: 0% 0; } }
 .barzine[contenteditable]:focus { outline: none; background: var(--spot); padding: 0 .3rem; }
+
+/* Keyboard focus has to be somewhere you can see, or half the app is
+   unreachable without a mouse. The name in the bar is edited in place, so it
+   takes the spot colour rather than a ring around a word. */
+:focus-visible { outline: 3px solid var(--spot); outline-offset: 2px; }
+.panel :focus-visible, .el :focus-visible { outline: 2px dashed var(--red); outline-offset: 1px; }
+.barzine[contenteditable]:focus-visible { outline: 3px solid var(--fg); outline-offset: 1px; }

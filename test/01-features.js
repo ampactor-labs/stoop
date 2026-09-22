@@ -136,6 +136,38 @@ module.exports = async function features(browser, ok) {
       actions: vis(document.querySelector('.press-actions'))
     };
   });
+  // Back to screen media: the block above left the page emulating print,
+  // where main is hidden by design and nothing is clickable.
+  await page.emulateMedia({ media: 'screen' });
+
+  // Ctrl-P from the shelf used to hand the browser a blank page: the print
+  // stylesheet hides main, and nothing populated the print zone unless you
+  // were standing on the press.
+  await page.evaluate(() => { document.getElementById('reprintzone').innerHTML = ''; document.body.classList.remove('reprinting'); });
+  await go('#shelf');
+  await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+  await page.waitForTimeout(300);
+  ok('CTRL-P FROM ANYWHERE PRINTS THE SHEET, NOT A BLANK PAGE',
+     (await page.locator('#reprintzone .sheet .panel').count()) === 8,
+     'panels in the print zone: ' + await page.locator('#reprintzone .sheet .panel').count());
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await page.waitForTimeout(200);
+
+  // Not every browser fires afterprint. A print zone left populated keeps
+  // body.reprinting set, and every later print would reuse that stale sheet.
+  await page.evaluate(() => { window.__printed = false; window.print = () => { window.__printed = true; }; });
+  await page.click('[data-reprintissue="01"]').catch(() => {});
+  await page.waitForTimeout(1400);
+  ok('AND THE PRINT ZONE CLEARS ITSELF EVEN IF AFTERPRINT NEVER FIRES',
+     (await page.evaluate(() => document.getElementById('reprintzone').innerHTML.length)) === 0 &&
+     !(await page.evaluate(() => document.body.classList.contains('reprinting'))));
+
+  await go('#paper');
+  await page.evaluate(() => { window.print = () => { window.__printed = true; }; });
+  await page.click('#printzinebtn');
+  await page.waitForTimeout(300);
+  await page.emulateMedia({ media: 'print' });
+  await page.waitForTimeout(200);
   ok('PRINT SHOWS THE IMPOSED SHEET ALONE, NEVER THE PAGES',
      printed.sheet && !printed.pages && !printed.chrome && !printed.tray && !printed.actions,
      JSON.stringify(printed));
