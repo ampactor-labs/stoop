@@ -80,6 +80,9 @@ function buildFlyerPdf(title, issue, url, photoId) {
       return pdfAddImage(doc, qrDataUrl(url, 4)).then(function (r) { if (r) images['__qr'] = r; });
     });
   }
+  var face = pressFaceLoaded();
+  var faceNum = 0;
+  if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
   return chain.then(function () {
     var xo = Object.keys(images).map(function (k) {
       return '/Im' + images[k].num + ' ' + images[k].num + ' 0 R';
@@ -90,7 +93,8 @@ function buildFlyerPdf(title, issue, url, photoId) {
     var content = doc.stream('', pdfBytes(pdfFlyerContent(title, issue, url, photoId, images)));
     var pageNum = doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R/MediaBox[0 0 ' +
       FLYER.w + ' ' + FLYER.h + ']/Resources<</Font<</F1 ' + courier + ' 0 R/F2 ' + helv +
-      ' 0 R>>' + (xo ? '/XObject<<' + xo + '>>' : '') + '>>/Contents ' + content + ' 0 R>>']);
+      ' 0 R' + (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + '>>' +
+      (xo ? '/XObject<<' + xo + '>>' : '') + '>>/Contents ' + content + ' 0 R>>']);
     doc.replace(pagesNum, ['<</Type/Pages/Count 1/Kids[' + pageNum + ' 0 R]>>']);
     return doc.build(doc.obj(['<</Type/Catalog/Pages ' + pagesNum + ' 0 R>>']));
   });

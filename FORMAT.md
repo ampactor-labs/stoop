@@ -162,7 +162,7 @@ Letter is 11 × 8.5 inches, A4 is 297 × 210 mm, both landscape. An implementati
 
 ### On PDF
 
-An implementation MAY write the imposed sheet as a PDF, and the reference one does, because a print dialog negotiates margins and scale somewhere the press cannot see and a zine that comes out at 94% does not fold. Nothing in this specification requires it: the imposition above is the contract, and a sheet is a sheet however it reaches the paper.
+An implementation MAY write the imposed sheet as a PDF, and the reference one does, because a print dialog negotiates margins and scale somewhere the press cannot see and a zine that comes out at 94% does not fold. Nothing in this specification requires it: the imposition above is the contract, and a sheet is a sheet however it reaches the paper. An implementation that does write PDF SHOULD embed the typeface its screen showed, as the reference one embeds its subset of Anton; a substituted face reflows a headline, and a headline that reflows is a different zine.
 
 ### The budget
 

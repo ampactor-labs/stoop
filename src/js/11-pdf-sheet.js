@@ -33,12 +33,22 @@ function pdfLine(text, font, size, x, y) {
     ' Tm (' + pdfEsc(text) + ') Tj ET\n';
 }
 
-// Headings shrink to fit rather than spilling off the panel, which is what the
-// screen does by clipping and what a reader would rather have.
-function pdfHeading(text, x, y, width, size) {
+// A heading breaks where the screen broke it, since both measure the same
+// face at the same width; the issue number shrinks to its line instead, the
+// way a number would. Returns the ink and how far the next thing moves down.
+function pdfHeading(text, x, y, width, size, lh, oneLine) {
+  var face = displayFace();
   var s = size;
-  while (s > 7 && helvBoldWidth(text, s) > width) s -= 0.5;
-  return { op: pdfLine(text, 'F2', s, x, y - s), drop: s * 1.15 };
+  if (oneLine) while (s > 7 && runWidth(face, text, s) > width) s -= 0.5;
+  var lead = s * (lh || 1.05);
+  var base = y - (face.face ? faceBaseline(face.face, s, lead) : s);
+  var lines = oneLine ? [text] : wrapFace(text, face, s, width);
+  var op = '';
+  lines.forEach(function (line) {
+    if (line) op += pdfLine(faceText(face, line), face.f, s, x, base);
+    base -= lead;
+  });
+  return { op: op, drop: lines.length * lead };
 }
 
 function pdfPanel(panel, page, pages, box, images, url) {
@@ -47,17 +57,20 @@ function pdfPanel(panel, page, pages, box, images, url) {
   var isCover = page === 1;
   var isBack = page === pages;
 
+  // The vertical rhythm is views.css in points: the h3 and its 6px below,
+  // the number at line-height .9 with 2px either side, the 3px rule with 6px
+  // either side, the photograph with 5px under it.
   var head = pdfHeading(String(panel.h || '').toUpperCase(), box.x, y, box.cw, isCover ? 18 : 15);
   ops += head.op;
-  y -= head.drop;
+  y -= head.drop + 4.5;
 
   if (isCover) {
-    var no = pdfHeading('No.' + (panel.issue || ''), box.x, y - 4, box.cw, 51);
+    var no = pdfHeading('\u2116' + (panel.issue || ''), box.x, y - 1.5, box.cw, 51, 0.9, true);
     ops += no.op;
-    y -= no.drop + 4;
-    ops += 'q 2 w 0 G ' + box.x.toFixed(2) + ' ' + (y - 2).toFixed(2) + ' m ' +
-      (box.x + box.cw).toFixed(2) + ' ' + (y - 2).toFixed(2) + ' l S Q\n';
-    y -= 10;
+    y -= no.drop + 3;
+    ops += 'q 2.25 w 0 G ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
+      (box.x + box.cw).toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' l S Q\n';
+    y -= 11.25;
   }
 
   var pic = panel.photo && images[panel.photo];
@@ -68,16 +81,18 @@ function pdfPanel(panel, page, pages, box, images, url) {
     if (ih > cap) { ih = cap; iw = ih * (pic.w / pic.h); }
     ops += 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + box.x.toFixed(2) + ' ' +
       (y - ih).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
-    y -= ih + 4;
+    y -= ih + 3.75;
   }
 
+  // Courier New at line-height 1.45 puts its first baseline .99em down.
   var size = isBack ? 7.875 : 8.625;
   var leading = size * 1.45;
   var floorY = box.top - box.h + PAD_Y + (isBack && url ? 52 : 0);
+  y -= size * 0.99;
   wrapMono(panel.body || '', size, box.cw).forEach(function (line) {
-    if (y - leading < floorY) return;
-    y -= leading;
+    if (y < floorY) return;
     if (line.length) ops += pdfLine(line, 'F1', size, box.x, y);
+    y -= leading;
   });
 
   if (isBack && url) {
@@ -146,6 +161,12 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
     });
   }
 
+  // The page's own typeface travels with the sheet, so the headline on paper
+  // is the headline on screen, glyph for glyph.
+  var face = pressFaceLoaded();
+  var faceNum = 0;
+  if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
+
   return chain.then(function () {
     var xobjects = Object.keys(images).map(function (k) {
       return '/Im' + images[k].num + ' ' + images[k].num + ' 0 R';
@@ -157,7 +178,8 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
     var helv = std('Helvetica-Bold');
     var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
-      '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R>>' +
+      '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
+      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
 
     var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first

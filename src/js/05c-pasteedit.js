@@ -155,7 +155,15 @@ document.addEventListener('dblclick', function (ev) {
   var node = ev.target.closest && ev.target.closest('.el');
   if (!node) return;
   var hit = findEl(node.getAttribute('data-el'));
-  if (!hit || hit.el.kind !== 'text' || voiceOf(hit.el) === 'ransom' || voiceOf(hit.el) === 'marker') return;
+  if (!hit || hit.el.kind !== 'text') return;
+  if (voiceOf(hit.el) === 'ransom' || voiceOf(hit.el) === 'marker') {
+    // These are typed in the inspector; the double-click still has to land
+    // somewhere, so it lands there.
+    selectEl(hit.el.id);
+    var area = document.getElementById('ransomtext');
+    if (area) { area.focus(); area.select(); }
+    return;
+  }
   pasteEditing = hit.el.id;
   selectEl(hit.el.id);
   var live = liveEl(hit.el.id);
@@ -195,6 +203,10 @@ document.addEventListener('keydown', function (ev) {
     pasteEditing = null;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     selectEl(pasteSel);
+    return;
+  }
+  if (key === 'Escape' && document.activeElement && document.activeElement.id === 'ransomtext') {
+    document.activeElement.blur();   // out of the field, cutting still chosen
     return;
   }
   if (!pasteSel) return;

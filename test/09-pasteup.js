@@ -244,10 +244,13 @@ module.exports = async function pasteup(browser, ok) {
   const raw = fs.readFileSync(pdf, 'latin1');
   ok('THE PASTE-UP REACHES THE PDF', raw.length > 2000 && /%PDF/.test(raw));
 
-  // A headline wraps where the browser wrapped it. The paper cannot know
-  // which faces this machine has, so it does not guess: it draws the breaks
-  // the screen recorded. Checked by word, so a one-word line still counts.
-  const runs = (raw.match(/\(([^)]*)\) Tj/g) || []).map(s => s.slice(1, -4)).filter(Boolean);
+  // A headline wraps where the browser wrapped it: the paper draws the breaks
+  // the screen recorded, in the same face. Checked by word, so a one-word
+  // line still counts. Only the content streams are read, because the
+  // embedded typeface is binary and full of parentheses.
+  const content = (raw.match(/\/Length \d+>>\s*stream\r?\n[\s\S]*?endstream/g) || [])
+    .filter(c => /\bBT\b/.test(c)).join('\n');
+  const runs = (content.match(/\(([^)]*)\) Tj/g) || []).map(s => s.slice(1, -4)).filter(Boolean);
   const onPaper = runs.filter(t => t.split(' ').every(w => headline.words.includes(w)));
   const paperWords = onPaper.join(' ').split(/\s+/).filter(Boolean);
   ok('A HEADLINE BREAKS ON PAPER WHERE IT BROKE ON SCREEN',

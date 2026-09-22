@@ -19,12 +19,16 @@ function pdfElStamp(el, g) {
     } else if (op.l) {
       ops += 'q ' + (op.l[4] * g.h).toFixed(2) + ' w ' + X(op.l[0]) + ' ' + Y(op.l[1]) + ' m ' + X(op.l[2]) + ' ' + Y(op.l[3]) + ' l S Q\n';
     } else if (op.t) {
-      var face = FACES.head;
-      var size = g.h * 0.72;
+      // The screen sets the lettering at 62% of the box and centres its line
+      // box, which puts the baseline this far below the middle for any face.
+      var face = displayFace();
+      var f = face.face;
+      var size = g.h * 0.62;
       while (size > 4 && runWidth(face, op.t, size) > g.w * 0.86) size -= 0.5;
       var tw = runWidth(face, op.t, size);
+      var below = f ? f.ascent / f.upm - (f.ascent - f.descent) / f.upm / 2 : 0.36;
       ops += 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.cx - tw / 2).toFixed(2) + ' ' +
-        (g.cy - size * 0.36).toFixed(2) + ' Tm (' + pdfEsc(op.t) + ') Tj ET\n';
+        (g.cy - size * below).toFixed(2) + ' Tm (' + pdfEsc(faceText(face, op.t)) + ') Tj ET\n';
     }
   });
   return ops;

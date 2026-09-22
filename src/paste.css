@@ -19,19 +19,21 @@
 /* The voices. A zine mixes what was to hand: the typewriter it was drafted on,
    a headline cut off a newspaper, letters off a magazine, and a pen. */
 .v-type { font-family: 'Courier New', monospace; line-height: 1.45; }
-.v-head { font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif; line-height: .95; letter-spacing: .02em; text-transform: uppercase; }
-.v-marker { font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif; line-height: 1.3; letter-spacing: .03em; }
+.v-head { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase; }
+.v-marker { font-family: Anton, Impact, sans-serif; line-height: 1.3; }
 .rm { display: inline-block; }
 /* Stencil: Impact with bridges cut through it, the way a sprayed letter has
    to be held together. A mask, so it needs no font nobody has. */
-.v-stencil { font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif; line-height: 1; letter-spacing: .08em; text-transform: uppercase;
+.v-stencil { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase;
   -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); }
 .v-ransom { line-height: 1.5; }
 
 /* Stamps */
-.elstamp { width: 100%; height: 100%; position: relative; color: var(--ink); }
+/* The stamp's box is the query container, so its lettering is sized by the
+   box it sits in and not, as cqh falls back to, by the window. */
+.elstamp { width: 100%; height: 100%; position: relative; color: var(--ink); container-type: size; }
 .stampsvg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.stamptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif; text-transform: uppercase; letter-spacing: .06em; font-size: 1px; white-space: nowrap; container-type: size; }
+.stamptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Anton, Impact, sans-serif; text-transform: uppercase; font-size: 1px; white-space: nowrap; }
 .el-stamp .stamptext { font-size: 62cqh; }
 .stamps { display: none; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .2rem 0 .6rem; }
 .stamps.on { display: flex; }
@@ -42,10 +44,10 @@
 /* Ransom note: every character cut from somewhere else. The four families are
    whatever any machine already has, because a webfont would mean a request. */
 .rn { display: inline-block; padding: 0 1px; }
-.rn.f0 { font-family: Impact, Haettenschweiler, sans-serif; }
-.rn.f1 { font-family: Georgia, 'Times New Roman', serif; font-weight: bold; }
-.rn.f2 { font-family: 'Courier New', monospace; font-weight: bold; }
-.rn.f3 { font-family: 'Arial Black', Arial, sans-serif; font-style: italic; }
+.rn.f0 { font-family: Anton, Impact, sans-serif; }
+.rn.f1 { font-family: 'Times New Roman', Times, serif; font-weight: bold; }
+.rn.f2 { font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+.rn.f3 { font-family: Arial, Helvetica, sans-serif; font-weight: bold; font-style: italic; }
 .rn.inv { background: var(--ink); color: #fff; padding: 0 3px; }
 
 /* Handles. Sized in absolute pixels so they stay grabbable when the sheet is
@@ -60,7 +62,7 @@
 .inspector:empty { display: none; }
 .inspector.on { color: var(--fg); border: 1px dashed var(--fg); background: var(--paper); padding: .5rem .7rem; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
-.insp-head b { font-family: Impact, Haettenschweiler, sans-serif; letter-spacing: .06em; font-size: 1rem; }
+.insp-head b { font-family: Anton, Impact, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
 
 /* Nothing that only exists to be grabbed may reach the paper. */

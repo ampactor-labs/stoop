@@ -86,9 +86,17 @@ if grep -qE '(src|href)="https?:' artifact/index.html artifact/press.html; then
   fail=1
 fi
 
-# 7. Licenses present (charter III.4).
-if [ ! -f LICENSE ] || [ ! -f LICENSE-docs ]; then
-  echo "FAIL: LICENSE or LICENSE-docs missing"
+# 7. Licenses present (charter III.4), including the font's: the OFL permits
+# bundling on condition that it travels with the face.
+if [ ! -f LICENSE ] || [ ! -f LICENSE-docs ] || [ ! -f src/fonts/OFL.txt ]; then
+  echo "FAIL: LICENSE, LICENSE-docs or src/fonts/OFL.txt missing"
+  fail=1
+fi
+
+# 9. The page carries its own face. An issue file that set its headlines in
+# whatever the reader's machine had would reflow the moment it was handed on.
+if ! grep -q '@font-face{font-family:Anton' artifact/index.html; then
+  echo "FAIL: the built page does not carry its typeface"
   fail=1
 fi
 

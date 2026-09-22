@@ -14,10 +14,10 @@ var PT_PER_IN = 72;
 // The standard fonts speak WinAnsi. Anything outside it becomes a character
 // that prints rather than a mystery box.
 var PDF_SUBS = {
-  '—': '-', '–': '-', '‘': "'", '’': "'",
-  '“': '"', '”': '"', '№': 'No.', '·': '-',
-  '•': '*', '★': '*', '✕': 'x', '…': '...',
-  ' ': ' ', '✓': 'v'
+  '\u2014': '\x97', '\u2013': '\x96', '\u2018': '\x91', '\u2019': '\x92',
+  '\u201c': '\x93', '\u201d': '\x94', '\u2022': '\x95', '\u2026': '\x85',
+  '\u2116': 'No.', '\u00b7': '-', '\u2605': '*', '\u2715': 'x',
+  '\u00a0': ' ', '\u2713': 'v'
 };
 
 function pdfSafe(s) {
@@ -27,10 +27,16 @@ function pdfSafe(s) {
     if (PDF_SUBS[ch]) { out += PDF_SUBS[ch]; continue; }
     var code = s.charCodeAt(i);
     if (code === 9) { out += '    '; continue; }
-    if (code < 32 || (code > 126 && code < 161) || code > 255) { out += code < 32 ? ' ' : '?'; continue; }
+    if (code < 32 || code === 127 || (code > 128 && code < 161) || code > 255) { out += code < 32 ? ' ' : '?'; continue; }
     out += ch;
   }
   return out;
+}
+
+// The page's own face carries № at 128, where WinAnsi keeps a euro the
+// subset does not; a standard face spells it out through PDF_SUBS.
+function faceText(face, text) {
+  return face && face.face ? String(text).replace(/\u2116/g, '\x80') : String(text);
 }
 
 function pdfEsc(s) {
@@ -54,16 +60,6 @@ var HELV_BOLD_W = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 2
   722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611,
   556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
   333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
-
-function helvBoldWidth(text, size) {
-  var total = 0;
-  var s = pdfSafe(text);
-  for (var i = 0; i < s.length; i++) {
-    var c = s.charCodeAt(i);
-    total += (c >= 32 && c <= 126) ? HELV_BOLD_W[c - 32] : 556;
-  }
-  return total * size / 1000;
-}
 
 // Monospace wrapping, newlines respected: the body is typed, not flowed.
 function wrapMono(text, size, width) {

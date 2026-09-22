@@ -20,6 +20,11 @@ OUT_ROOT="${OUT_ROOT:-.}"
 emit_app_fragment() {
   cat src/meta.html
   printf '<style>\n'
+  # The press's one typeface, base64 into a @font-face rule: a font inside a
+  # stylesheet inside a page, so the page asks nobody for it. The PDF writer
+  # reads these same bytes back out of the stylesheet to embed them.
+  printf '@font-face{font-family:Anton;font-display:block;src:url(data:font/ttf;base64,%s) format("truetype")}\n' \
+    "$(base64 -w0 src/fonts/anton-press.ttf)"
   cat src/base.css src/forms.css src/views.css src/paste.css src/phone.css
   printf '</style>\n\n'
   cat src/chrome.html

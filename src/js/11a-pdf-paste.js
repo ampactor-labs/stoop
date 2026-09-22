@@ -26,20 +26,44 @@ var RANSOM_FACES = [
   { f: 'F5', w: HELV_BOLD_W }
 ];
 
+// The display voices are set in the page's own typeface when the page carries
+// one, so a headline breaks where the screen broke it. An issue file written
+// before the press had a face falls back to Helvetica-Bold.
+function displayFace() {
+  var f = pressFaceLoaded();
+  return f ? { f: 'F7', w: f.widths, face: f } : FACES.head;
+}
+
+function isDisplayVoice(voice) {
+  return voice === 'head' || voice === 'marker' || voice === 'stencil';
+}
+
 function faceOf(el) {
-  return FACES[voiceOf(el)] || FACES.type;
+  var voice = voiceOf(el);
+  if (isDisplayVoice(voice)) return displayFace();
+  return FACES[voice] || FACES.type;
+}
+
+// Where the first baseline sits below the top of the box: for the page's own
+// face, exactly where the browser puts it; for a standard face, an em down.
+function firstBaseline(voice, size, lead) {
+  var f = pressFaceLoaded();
+  return f && isDisplayVoice(voice) ? faceBaseline(f, size, lead) : size;
 }
 
 function glyphWidth(face, ch, size) {
   if (!face.w) return size * COURIER_W;
   var c = ch.charCodeAt(0);
-  if (c < 32 || c > 126) c = 63;
+  if (c < 32 || c - 32 >= face.w.length) c = 63;
   return face.w[c - 32] / 1000 * size;
 }
 
+// Measured on the bytes that will be written, so a dash or a curly quote is
+// as wide on the ruler as it is on the paper.
 function runWidth(face, text, size) {
+  var safe = pdfSafe(faceText(face, text));
   var total = 0;
-  for (var i = 0; i < text.length; i++) total += glyphWidth(face, text.charAt(i), size);
+  for (var i = 0; i < safe.length; i++) total += glyphWidth(face, safe.charAt(i), size);
   return total;
 }
 
@@ -128,7 +152,7 @@ function pdfElRansom(el, g) {
   ransomSpec(el.text).forEach(function (c) {
     if (c.ch === '\n') { x = g.x; y -= lead; return; }
     var s = size * c.scale;
-    var face = RANSOM_FACES[c.face] || RANSOM_FACES[0];
+    var face = c.face === 0 ? displayFace() : RANSOM_FACES[c.face] || RANSOM_FACES[0];
     var cw = glyphWidth(face, c.ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
     if (x + cw > g.x + g.w && c.ch !== ' ') { x = g.x; y -= lead; }
     if (y < g.y - size) return;
@@ -141,7 +165,7 @@ function pdfElRansom(el, g) {
           (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n1 g\n';
       }
       ops += 'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
-        y.toFixed(2) + ' Tm (' + pdfEsc(c.ch) + ') Tj ET\n0 g\nQ\n';
+        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, c.ch)) + ') Tj ET\n0 g\nQ\n';
     }
     x += cw;
   });
@@ -153,7 +177,10 @@ function pdfElRansom(el, g) {
 function pdfElMarker(el, g, face, size) {
   var ops = '';
   var lead = size * 1.3;
-  var y = g.top - size;
+  var y = g.top - firstBaseline('marker', size, lead);
+  // A word turns about the centre of its own line box, which sits this far
+  // above the baseline for every size the word might be scaled to.
+  var mid = firstBaseline('marker', size, lead) / size - 0.65;
   // Each word keeps the angle the screen gave it, found by its position in
   // the whole text rather than in its line, so the two agree word for word.
   var spec = markerSpec(el.text).filter(function (w) { return !w.space; });
@@ -165,9 +192,9 @@ function pdfElMarker(el, g, face, size) {
       var s = size * w.scale;
       var ww = runWidth(face, word, s);
       if (y >= g.y - g.h * 0.6 - size) {
-        ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * 0.35) +
+        ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * mid) +
           'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
-          ' Tm (' + pdfEsc(word) + ') Tj ET\nQ\n';
+          ' Tm (' + pdfEsc(faceText(face, word)) + ') Tj ET\nQ\n';
       }
       x += ww + glyphWidth(face, ' ', size);
     });
@@ -185,29 +212,30 @@ function pdfElText(el, g) {
   if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size) + '0 g\n';
   var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
-  var y = g.top - size;
+  var y = g.top - firstBaseline(voice, size, lead);
+  var draw = '';
   // A cutting hangs over its box rather than losing a line, up to a little
   // more than half its height; a glued cutting overhangs anyway.
   linesOf(el, face, size, g.w - 4, voice === 'stencil' || voice === 'head').forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      var draw = 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
-        y.toFixed(2) + ' Tm (' + pdfEsc(line) + ') Tj ET\n';
-      if (voice === 'stencil') {
-        // The screen masks bridges through the letters at fixed intervals;
-        // on paper the line is drawn once per band of ink, clipped to it.
-        var band = size * 0.42, gap = size * 0.08, top = y + size * 0.9;
-        for (var b = top; b > y - size * 0.3; b -= band + gap) {
-          ops += 'q ' + g.x.toFixed(2) + ' ' + (b - band).toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
-            band.toFixed(2) + ' re W n\n' + draw + 'Q\n';
-        }
-      } else {
-        ops += draw;
-      }
+      draw += 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, line)) + ') Tj ET\n';
     }
     y -= lead;
   });
-  return ops + '0 g\n';
+  if (voice === 'stencil') {
+    // The screen masks bridges through the letters at fixed intervals from the
+    // top of the box: ink for .42em, a gap to .5em, and nothing past the box.
+    // On paper the same text is drawn once per band of ink, clipped to it.
+    for (var b = g.top; b > g.y; b -= size * 0.5) {
+      var band = Math.min(size * 0.42, b - g.y);
+      ops += 'q ' + g.x.toFixed(2) + ' ' + (b - band).toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
+        band.toFixed(2) + ' re W n\n' + draw + 'Q\n';
+    }
+    return ops + '0 g\n';
+  }
+  return ops + draw + '0 g\n';
 }
 
 function pdfEl(el, box, images) {
