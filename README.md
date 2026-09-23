@@ -1,5 +1,9 @@
 # stoop
 
+Stoop is a press for a periodical: a zine for the few people who already write to each other. They submit pieces, whoever has the desk this cycle assembles an issue, and the press lays it out and imposes it for paper, as a folded sheet, a stapled signature, or an exact PDF for a copy shop. Every issue stays on the shelf, and the file it hands on is the issue and a working press in one. It is one HTML file with no server, no accounts and no feed.
+
+**Status: Shipping.** Live at [ampactor.dev/stoop](https://ampactor.dev/stoop/), and everything `PLAN.md` calls for is built. What is missing is the one measure this project keeps: a scene it did not found shipping its Issue #2.
+
 Folk media. The third form: mass media was made by industries for audiences; social media promised to invert that and instead industrialized us, one tiny broadcaster each, optimized by somebody else's engagement machine. Folk media is made by the people in it, for the people in it, owned like a commons, small like a scene, periodic like a zine, and pointed at the physical world. Folk music stood in the same relation to the record industry.
 
 Stoop is a working name for a system with that shape. Where you sit with your people, facing the street. The wedge is one sentence: **your group chat deserves a zine.**
@@ -27,15 +31,15 @@ A working press, and the documents that argue for it.
 
 [`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. One surface — **the press**, showing the issue as pages — with four drawers off it (**the desk**, **the shelf**, **the scraps** you wrote down, and **the scene** for who writes and how it travels) and two verbs: **paper** and **hand it on**.
 
-The first three are sources. You write in them, and they mint pieces; a piece is a title, a byline, a kind and a body. A scene is however many people it is — the roster in settings takes as many as write for you, and a byline arriving in a piece file from somebody else's copy keeps their name.
+Writing goes in at two of them. **The scraps** keep anything worth keeping, a line, a page or a photograph, and once a cycle the desk pulls in whatever is new since the last issue: a scrap with a title, or a long one, becomes a piece of its own, and the short ones run together as one log column. The desk also takes a piece submitted straight to it. A piece is a title, a byline, a kind and a body. A scene is however many people it is — the roster in the scene drawer takes as many as write for you, and a byline arriving in a piece file from somebody else's copy keeps their name.
 
-At **the desk**, whoever holds the chair this cycle reads the tray, cuts what will not run, writes the editor's note, and rings the bell. A cut is not a deletion: the piece stays with its maker and can run next cycle. Publishing archives the issue whole and passes the chair to the other pair of hands, odd issues to one and even to the other.
+At **the desk**, whoever has it this cycle reads the tray, cuts what will not run, writes the editor's note, and rings the bell. A cut is not a deletion: the piece stays with its maker and can run next cycle. The bell puts the issue on the shelf whole and hands the desk to the next person on the roster: alone it is always yours, at two it alternates, at four it comes back every fourth issue.
 
 **The press** shows the issue as pages — cover, facing spreads, back cover — right way up, the way it will read and not the way the printer needs it. Paper gets the imposition: one sheet of eight panels with a single cut, at Letter or A4, or a saddle-stitch signature at eight, twelve or sixteen pages, computed rather than hardcoded, so changing format re-flows the same pieces without a word being retyped. A panel clips what will not fit, because a printer will too, and the fit meter says how many words that is rather than letting them vanish.
 
-On top of that sits **the paste-up**, because a zine is not a document — it is a board somebody glued things onto and then photocopied. Drop a cutting on any panel and drag it anywhere, at any angle, over anything: text in five voices (typewriter, headline, marker, stencil with the bridges cut through it, and a ransom note cut letter by letter from four faces), photographs, rules, blocks, and stamps — FREE, TAKE ONE, PHOTOCOPY THIS, an arrow, a star, tape, a staple, a barcode that scans nothing — black on white or knocked out. GENERATION says how many times the issue has been through the copier, from master to laundromat, and the wear it draws is seeded so it prints the same everywhere. Everything is held as a fraction of its panel rather than as a measurement, so a collage survives a change of format the same way a paragraph does. Drag to move, double-click to type, arrow keys to nudge, and undo the whole way back. All of it prints, and it prints where you put it: a cutting records the lines its own browser broke it into, and the PDF sets them in the same face, because the press carries its one typeface inside itself — Anton, under the Open Font License, cut down to Latin and embedded in every issue file and every PDF it writes — so a headline on paper is the headline on screen, glyph for glyph, on a machine that has never had the font.
+On top of that sits **the paste-up**, because a zine is not a document — it is a board somebody glued things onto and then photocopied. Drop a cutting on any panel and drag it anywhere, at any angle, over anything: text in five voices (typewriter, headline, marker, stencil with the bridges cut through it, and a ransom note cut letter by letter from four faces), photographs, rules, blocks, and stamps — FREE, TAKE ONE, PHOTOCOPY THIS, a №, an arrow, a star, tape, a staple, a barcode that scans nothing — black on white or knocked out. GENERATION says how many times the issue has been through the copier, from master to laundromat, and the wear it draws is seeded so it prints the same everywhere. Everything is held as a fraction of its panel rather than as a measurement, so a collage survives a change of format the same way a paragraph does. Drag to move, double-click to type, arrow keys to nudge, and undo the whole way back. All of it prints, and it prints where you put it: a cutting records the lines its own browser broke it into, and the PDF sets them in the same face, because the press carries its one typeface inside itself — Anton, under the Open Font License, cut down to Latin and embedded in every issue file and every PDF it writes — so a headline on paper is the headline on screen, glyph for glyph, on a machine that has never had the font.
 
-**The shelf** keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly however the current draft happens to be set. The compile window is bounded by the last issue's timestamp, so issue two cannot reprint issue one.
+**The shelf** keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly however the current draft happens to be set. The desk only pulls in scraps written since the last issue shipped, so issue two cannot reprint issue one.
 
 Paper comes out four ways: a browser print, a hand-written PDF at exact paper size with nothing for a print dialog to negotiate, a flyer with tear-off tabs, or a single HTML file that is the issue, the archive behind it, and a working press for the next one. That last file is the point: open it on a machine that has never seen this app and you can read the issue, make the next one, and hand it on.
 
@@ -46,10 +50,10 @@ Photos dither to 1-bit on intake, so a page-sized photo costs tens of kilobytes 
 ```
 the scraps                 lines, pages, photos — everything you wrote down
      |
-the desk                   SUBMIT a piece, or DRAW FROM LOG, JOURNAL & PROJECTS
+the desk                   SUBMIT a piece, or PULL IN THE NEW SCRAPS
      |                     CUT what does not run, write the editor's note
-     |                     COMPILE ONTO THE PAGES
-     |                     RING THE BELL - PUBLISH
+     |                     FLOW ONTO THE PAGES
+     |                     RING THE BELL: onto the shelf, and the desk moves on
      |
 the press                  paste it up, then PAPER: test sheet, swap fold, SAVE PDF, fold
      |
@@ -61,7 +65,7 @@ Then again next cycle. The second issue is the whole project.
 ### The documents
 
 - [`FORMAT.md`](FORMAT.md): the specification. The issue file, the imposition, the address, written so somebody can implement a stoop press without reading our source.
-- [`PLAN.md`](PLAN.md): the route, in seven phases with gates the build can check. Phases 0 through 6 are built; the last gate is not ours to close.
+- [`PLAN.md`](PLAN.md): the route, in seven phases with gates the build can check. Phases 0 through 5 are built and phase 6 is written; its gate is not ours to close.
 - [`DESIGN.md`](DESIGN.md): the machine as it was imagined before anything shipped. Its objects and loops still describe the app; its staging is superseded by `PLAN.md`.
 - [`CHARTER.md`](CHARTER.md): a constitution in the box. Written as the law of a federation that was never built, kept as a template a scene may adopt if it ever needs one. Article III still binds, through the license and through `check.sh`.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md): how to work on it, and why each law in `check.sh` exists.
@@ -80,6 +84,14 @@ Storage is per-origin, which is worth knowing before writing anything you want t
 
 Hosting the page publicly does not publish what you write in it. The page is public; the words and photos are in your browser, and the zero-external-requests law is what makes that a fact about the software rather than a promise about its operators.
 
+## Weak spots
+
+Everything lives in the browser that made it. There is no server to fall back on and storage is per-origin, so a backup file is the only copy that outlives a cleared cache, and moving between a phone and a laptop means exporting and merging by hand.
+
+- **The PDF speaks Latin-1.** The typeface is cut down to Latin and the PDF writer encodes text as WinAnsi, so a letter outside Latin-1 (ł, ş, Greek, Cyrillic, any emoji) comes out of SAVE PDF as a question mark.
+- **Sync is a file, not a connection.** Two people on two devices see each other's work only when one hands the other a file (a backup, a piece or an issue) and it is taken in.
+- **Printers and hands differ.** The page asks for a test sheet before a print run, and offers the other fold when the page numbers come out shuffled.
+
 ## Status
 
 The app is a working press. Two people can submit pieces, assemble an issue, publish it, print it as a folded sheet or a stapled signature, keep every back issue, and hand the whole thing on as one file that is also a press. It is local-first and account-free by construction, which is the honest version of a privacy policy.
@@ -90,7 +102,7 @@ The federation is not being built. `PLAN.md` struck it: no rooms, no vouching, n
 
 The gate is unchanged, and it is not signups or retention: it is whether the first scene ships **Issue #2**. Publication continuity is the only measure this project keeps.
 
-Two people are a scene. There is no minimum size anywhere in this design: the editor's chair alternates instead of rotating, and a scene with no costs owes no dues. The first scene is expected to be two people and a copier, because two people ship on a deadline and eight people with no habit miss the first bell.
+Two people are a scene. There is no minimum size anywhere in this design: the desk goes round whoever is on the roster, so at two it simply alternates, and a scene with no costs owes no dues. The first scene is expected to be two people and a copier, because two people ship on a deadline and eight people with no habit miss the first bell.
 
 The name is provisional. Naming it is an argument to have with the people who will live in it.
 
