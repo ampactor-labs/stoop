@@ -45,12 +45,14 @@ function savePeople() {
   try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {}
 }
 function personIds() { return people.map(function (p) { return p.id; }); }
-function authorIds() { return personIds().concat('both'); }
+// 'both' means made together: "Both" for a pair, "Together" otherwise, and
+// not offered to a scene of one.
+function authorIds() { return people.length > 1 ? personIds().concat('both') : personIds(); }
 function personById(id) {
   return people.filter(function (p) { return p.id === id; })[0] || null;
 }
 function nameOf(id) {
-  if (id === 'both') return 'Both';
+  if (id === 'both') return people.length === 2 ? 'Both' : 'Together';
   var p = personById(id);
   return p ? p.name : 'Someone';
 }
@@ -61,7 +63,13 @@ function addPerson(name) {
   return p;
 }
 
-var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
+// Storage can throw (private windows, blocked site data).
+var currentAuthor = (function () {
+  try { return localStorage.getItem(AUTHOR_KEY) || 'a'; } catch (e) { return 'a'; }
+})();
+function rememberAuthor() {
+  try { localStorage.setItem(AUTHOR_KEY, currentAuthor); } catch (e) {}
+}
 
 // Every byline in the store must belong to somebody on the roster, or a name
 // is lost the moment a piece arrives from another copy of the app.
@@ -179,20 +187,30 @@ function migrate(data) {
   });
   data.journal = [];
   data.projects = [];
-  (data.pieces || []).forEach(function (pc) { pc.byline = fixAuthor(pc.byline); fixTs(pc); });
+  (data.pieces || []).forEach(function (pc) {
+    pc.byline = fixAuthor(pc.byline);
+    pc.title = typeof pc.title === 'string' && pc.title ? pc.title : 'Untitled';
+    pc.body = typeof pc.body === 'string' ? pc.body : '';
+    fixTs(pc);
+  });
   (data.issues || []).forEach(fixTs);
   return data;
 }
 
 // Accept anything shaped like a backup; fill in what is missing rather than
 // rejecting the file, so a partial import cannot leave the app unrenderable.
+// A null record must not sink the store.
+function records(list) {
+  return Array.isArray(list) ? list.filter(function (x) { return x && typeof x === 'object'; }) : [];
+}
+
 function normalize(raw) {
   var out = {
-    logs: Array.isArray(raw && raw.logs) ? raw.logs : [],
-    projects: Array.isArray(raw && raw.projects) ? raw.projects : [],
-    journal: Array.isArray(raw && raw.journal) ? raw.journal : [],
-    pieces: Array.isArray(raw && raw.pieces) ? raw.pieces : [],
-    issues: Array.isArray(raw && raw.issues) ? raw.issues : [],
+    logs: records(raw && raw.logs),
+    projects: records(raw && raw.projects),
+    journal: records(raw && raw.journal),
+    pieces: records(raw && raw.pieces),
+    issues: records(raw && raw.issues),
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
@@ -201,6 +219,8 @@ function normalize(raw) {
   return migrate(out);
 }
 
+// True when this device's work came out of the file it was opened from.
+var stateFromSeed = false;
 var state = (function () {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
@@ -215,6 +235,7 @@ var state = (function () {
   // work, the seed merges later rather than replacing anything.
   var seed = readSeed();
   if (seed) {
+    stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
       cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE'

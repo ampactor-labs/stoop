@@ -2,7 +2,8 @@
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
 .pasteup { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.el { position: absolute; pointer-events: auto; box-sizing: border-box; cursor: grab; }
+/* A finger on a cutting drags it rather than scrolling the page. */
+.el { position: absolute; pointer-events: auto; box-sizing: border-box; cursor: grab; touch-action: none; }
 .el:active { cursor: grabbing; }
 .el.sel { outline: 1px dashed var(--red); outline-offset: 2px; }
 
@@ -22,8 +23,8 @@
 .v-head { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase; }
 .v-marker { font-family: Anton, Impact, sans-serif; line-height: 1.3; }
 .rm { display: inline-block; }
-/* Stencil: Impact with bridges cut through it, the way a sprayed letter has
-   to be held together. A mask, so it needs no font nobody has. */
+/* Stencil: the display face with bridges cut through it, the way a sprayed
+   letter has to be held together. A mask, so it needs no stencil font. */
 .v-stencil { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase;
   -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); }
 .v-ransom { line-height: 1.5; }

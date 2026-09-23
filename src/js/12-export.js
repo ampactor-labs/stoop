@@ -1,8 +1,8 @@
 // ---------- the self-carrying issue ----------
 // An exported issue is the reading view, the imposed sheet, the shelf, and a
 // working press for the next issue, in one file: the app's own HTML plus a
-// seed it boots from. The press is a flat cost of about 143 KB, which is two
-// photographs' worth; test/08-weight.js is where that is measured and held.
+// seed it boots from. The press is a flat cost of about 230 KB, typeface
+// included; test/08-weight.js is where that is measured and held.
 // SEED_ID lives in 01-store.js, where the store can see it.
 
 function sceneSlug() {
@@ -57,7 +57,9 @@ function pageWithSeed(seed) {
     if (el) { el.innerHTML = ''; el.removeAttribute('style'); }
   });
   var cloneBody = doc.querySelector('body');
-  if (cloneBody) cloneBody.removeAttribute('class');
+  if (cloneBody) { cloneBody.removeAttribute('class'); cloneBody.removeAttribute('data-drawer'); }
+  var lamp = doc.querySelector('#flash');
+  if (lamp) lamp.classList.remove('go');
   var old = doc.querySelector('#' + SEED_ID);
   if (old) old.parentNode.removeChild(old);
 
@@ -140,8 +142,8 @@ function exportPieceBundle(id) {
     people: people, address: state.address || '', zine: state.zine || '',
     pieces: [piece], photos: photosFor([piece]), open: '#desk'
   });
-  download('piece-' + nameOf(piece.byline).toLowerCase().replace(/[^a-z0-9]+/g, '-') +
-    '-' + piece.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24) + '.html', html);
+  var slug = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+  download(['piece', slug(nameOf(piece.byline)), slug(piece.title).slice(0, 24)].filter(Boolean).join('-') + '.html', html);
   toast('Piece exported — send it to whoever holds the desk');
 }
 
@@ -162,17 +164,17 @@ function importSeed(seed) {
   });
 
   var addedPieces = 0, addedIssues = 0;
-  (seed.pieces || []).forEach(function (p) {
-    if (!p || !p.id) return;
-    if (state.pieces.some(function (x) { return x.id === p.id; })) return;
-    state.pieces.push(p);
-    addedPieces++;
-  });
-  (seed.issues || []).forEach(function (i) {
+  var incoming = normalize({ pieces: seed.pieces || [], issues: seed.issues || [] });
+  incoming.issues.forEach(function (i) {
     if (!i || !i.no) return;
     if (state.issues.some(function (x) { return x.no === i.no; })) return;
     state.issues.push(i);
     addedIssues++;
+  });
+  incoming.pieces.forEach(function (p) {
+    if (!p.id || state.pieces.some(function (x) { return x.id === p.id; }) || wasPublished(p.id)) return;
+    state.pieces.push(p);
+    addedPieces++;
   });
   if (seed.address && !state.address) state.address = seed.address;
   if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
@@ -204,18 +206,34 @@ function readSeed() {
   try { return JSON.parse(el.textContent); } catch (e) { return null; }
 }
 
+// The file's photos always load so its issue can be shown. Its people and
+// issues join this device only if the file is this scene's own; a stranger's
+// zine is shown, not merged (settings takes it in on purpose).
+function seedIsOurs(seed) {
+  return stateFromSeed || (seed.issues || []).some(function (i) {
+    return i && state.issues.some(function (x) { return x.no === i.no && x.ts === i.ts; });
+  });
+}
+
 function hydrateFromSeed(seed) {
   if (!seed) return;
   var photos = seed.photos || {};
   var ids = Object.keys(photos).filter(function (id) { return !photoCache[id]; });
   ids.forEach(function (id) { photoPut(id, photos[id]); });
 
-  // The roster rides along so a byline in the file still has a name on it.
-  mergePeople(seed.people);
-  if (seed.names && seed.names.a && seed.names.b) {
-    mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
+  if (seedIsOurs(seed)) {
+    // The roster rides along so a byline in the file still has a name on it.
+    mergePeople(seed.people);
+    if (seed.names && seed.names.a && seed.names.b) {
+      mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
+    }
+    var took = 0;
+    normalize({ issues: seed.issues || [] }).issues.forEach(function (i) {
+      if (i.no && !issueByNo(i.no)) { state.issues.push(i); took++; }
+    });
+    if (took) saveState();
+    ensurePeople();
   }
-  ensurePeople();
   if (seed.read) openIssueNo = seed.read;
   if (!location.hash) {
     if (seed.stoop === 'issue' && seed.read) location.hash = '#issue';

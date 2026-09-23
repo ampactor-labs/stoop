@@ -23,6 +23,7 @@ function startGrab(ev, mode, elNode) {
   var hit = findEl(elNode.getAttribute('data-el'));
   if (!panelEl || !hit) return;
   var p = panelLocal(panelEl, ev.clientX, ev.clientY);
+  var redoWas = pasteRedo.slice();
   pasteMark();
   grab = {
     mode: mode,
@@ -30,7 +31,8 @@ function startGrab(ev, mode, elNode) {
     panelEl: panelEl,
     start: p,
     from: { x: hit.el.x, y: hit.el.y, w: hit.el.w, h: hit.el.h, rot: hit.el.rot || 0 },
-    moved: false
+    moved: false,
+    redoWas: redoWas
   };
   if (mode === 'rot') {
     var cx = (hit.el.x + hit.el.w / 2) * p.w;
@@ -53,7 +55,7 @@ function moveGrab(ev) {
     updateEl(grab.id, {
       x: clamp01(snap(f.x + dx, !fine), f.w),
       y: clamp01(snap(f.y + dy, !fine), f.h)
-    });
+    }, false, true);
   } else if (grab.mode === 'size') {
     // The delta is turned back through the element's own rotation, so dragging
     // the corner of a crooked cutting grows it along its own edges.
@@ -65,7 +67,7 @@ function moveGrab(ev) {
     updateEl(grab.id, {
       w: Math.max(0.04, snap(f.w + rx / p.w, !fine)),
       h: Math.max(0.015, snap(f.h + ry / p.h, !fine))
-    });
+    }, false, true);
   } else if (grab.mode === 'rot') {
     var ccx = (f.x + f.w / 2) * p.w;
     var ccy = (f.y + f.h / 2) * p.h;
@@ -73,15 +75,21 @@ function moveGrab(ev) {
     var rot = f.rot + (now - grab.angle0);
     if (ev.shiftKey) rot = Math.round(rot / 15) * 15;
     else if (Math.abs(rot) < 1.5) rot = 0;          // straight is findable by hand
-    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 });
+    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 }, false, true);
   }
   paintOnePanel(grab.panelEl);
 }
 
+// A drag saves once, when it ends.
 function endGrab() {
   if (!grab) return;
-  // A gesture that never moved is a click; it should not cost an undo step.
-  if (!grab.moved) pasteUndo.pop();
+  // A click costs neither an undo step nor the redo history.
+  if (!grab.moved) {
+    pasteUndo.pop();
+    Array.prototype.push.apply(pasteRedo, grab.redoWas);
+  } else {
+    savePress();
+  }
   grab = null;
   renderPress();
 }
@@ -190,11 +198,17 @@ document.addEventListener('input', function (ev) {
   updateEl(t.getAttribute('data-eltext'), { text: t.innerText });
 });
 
+// Cutting keys stand down while somebody is typing in a field.
+function typingInField() {
+  var a = document.activeElement;
+  return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+}
+
 document.addEventListener('keydown', function (ev) {
   var key = ev.key;
   var meta = ev.metaKey || ev.ctrlKey;
   if (meta && (key === 'z' || key === 'Z')) {
-    if (document.activeElement && document.activeElement.isContentEditable) return;
+    if (typingInField()) return;
     ev.preventDefault();
     if (ev.shiftKey) pasteRedoStep(); else pasteUndoStep();
     return;
@@ -210,7 +224,7 @@ document.addEventListener('keydown', function (ev) {
     return;
   }
   if (!pasteSel) return;
-  if (document.activeElement && document.activeElement.isContentEditable) return;
+  if (typingInField() || document.body.hasAttribute('data-drawer') || meta || ev.altKey) return;
   var el = selectedEl();
   if (!el) return;
   var step = ev.shiftKey ? 0.02 : 0.004;

@@ -69,6 +69,11 @@ function collectPhotoRefs() {
   state.logs.forEach(keep);
   state.pieces.forEach(keep);
   if (state.press && state.press.panels) state.press.panels.forEach(keep);
+  // Set-aside pages and undo history can still come back.
+  if (state.press && state.press.spare) state.press.spare.forEach(keep);
+  (pasteUndo || []).concat(pasteRedo || []).forEach(function (snap) {
+    String(snap).replace(/"photo":"([^"]+)"/g, function (m, id) { live[id] = 1; return m; });
+  });
   // A back issue is the archive. Sweeping a photo out from under a published
   // issue would rewrite history, so every shelved panel pins its photo.
   state.issues.forEach(function (iss) {
@@ -116,6 +121,9 @@ function ditherToBitmap(img) {
   canvas.width = w;
   canvas.height = h;
   var ctx = canvas.getContext('2d');
+  // Paper under it: transparent pixels would otherwise dither to black.
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
 
   var imageData = ctx.getImageData(0, 0, w, h);

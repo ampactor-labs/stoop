@@ -7,7 +7,7 @@
 // is what goes to the printer, whether for the draft, a numbered test sheet,
 // or a back issue off the shelf. Test numbers are always in the markup and
 // shown only when the print zone carries the testing class.
-function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
+function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
   var pages = plan.format.pages;
@@ -23,6 +23,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
         var cover = slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '');
         return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '">' +
           '<h3>' + esc(p.h || '') + '</h3>' +
+          (slot.page === 1 ? '<div class="no">\u2116' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
           (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
           '<div class="body">' + esc(p.body || '') + '</div>' +
           pasteupHtml(p, pics, false) +
@@ -35,28 +36,41 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
 
 // The other substrate. Same source, no imposition and no paste-up: a collage
 // is a property of a page at a fixed size, and this view has neither. What was
-// written still reads; where it was glued does not survive, by design. This is
-// the issue you open on a phone at the bus stop, and nothing in it needs a
-// network to mean something.
-function readingHtml(issue, photos) {
+// written still reads, cuttings included; where it was glued does not. This
+// is the issue you open on a phone at the bus stop.
+function cuttingWords(p) {
+  return (p && Array.isArray(p.els) ? p.els : []).filter(function (e) {
+    return e && e.kind === 'text' && String(e.text || '').trim();
+  }).sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).map(function (e) {
+    return '<p class="reading-cut">' + esc(e.text) + '</p>';
+  }).join('');
+}
+
+function readingHtml(issue, photos, nameFn) {
   var pics = photos || photoCache;
+  var who = nameFn || nameOf;
   var panels = issue.panels || [];
   var cover = panels[0] || { h: 'STOOP ZINE' };
   var out = '<article class="reading">' +
     '<header class="reading-head"><h1>' + esc(cover.h || 'STOOP ZINE') + '</h1>' +
     '<p class="reading-meta">№' + esc(issue.no) + ' · ' + esc(fmtDay(issue.ts)) +
-    ' · edited by ' + esc(nameOf(issue.editor)) + '</p>' +
+    ' · edited by ' + esc(who(issue.editor)) + '</p>' +
     (cover.photo && pics[cover.photo] ? '<img src="' + esc(pics[cover.photo]) + '" alt="">' : '') +
+    (cover.body ? '<p>' + esc(cover.body) + '</p>' : '') + cuttingWords(cover) +
     '</header>';
   if (issue.note) out += '<section class="reading-note"><h2>Editor\'s note</h2><p>' + esc(issue.note) + '</p></section>';
   panels.slice(1, -1).forEach(function (p, i) {
-    if (!p || (!p.body && !p.photo)) return;
+    var cut = cuttingWords(p);
+    if (!p || (!p.body && !p.photo && !cut)) return;
     out += '<section class="reading-piece"><h2>' + esc(p.h || ('Page ' + (i + 2))) + '</h2>' +
       (p.photo && pics[p.photo] ? '<img src="' + esc(pics[p.photo]) + '" alt="">' : '') +
-      '<p>' + esc(p.body || '') + '</p></section>';
+      (p.body ? '<p>' + esc(p.body) + '</p>' : '') + cut + '</section>';
   });
   var back = panels[panels.length - 1];
-  if (back && back.body) out += '<footer class="reading-foot"><p>' + esc(back.body) + '</p></footer>';
+  var backCut = panels.length > 1 ? cuttingWords(back) : '';
+  if (back && (back.body || backCut)) {
+    out += '<footer class="reading-foot">' + (back.body ? '<p>' + esc(back.body) + '</p>' : '') + backCut + '</footer>';
+  }
   return out + '</article>';
 }
 
@@ -140,10 +154,10 @@ function readIssue(no) {
 // browser, and the zone is emptied again when the dialog closes. Opening a
 // back issue this way never costs the draft, because the draft is not what
 // is being printed.
-function printSheet(panels, format, hand, url, testing, note, gen) {
+function printSheet(panels, format, hand, url, testing, note, gen, issue) {
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url, gen);
+  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url, gen, issue);
   zone.classList.toggle('testing', !!testing);
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paperOf(format).css + '; margin: 0; }';
@@ -157,7 +171,7 @@ function reprintIssue(no) {
   var iss = issueByNo(no);
   if (!iss) return;
   printSheet(iss.panels, iss.format, iss.hand, issueUrl(iss.no), false,
-    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen);
+    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen, iss.no);
 }
 
 // The keyboard shortcut prints the sheet too. Somebody who presses print on
@@ -166,13 +180,21 @@ function reprintIssue(no) {
 // is the imposed sheet, wherever somebody happened to be standing when the
 // thought struck them; the alternative, which this used to do, was to hand
 // the browser a blank page unless they were on the press.
+// On the landing, the issue in the file is what prints.
 window.addEventListener('beforeprint', function () {
   if (document.body.classList.contains('reprinting')) return;
-  var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  capturePanels();
-  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps), ps.issue);
+  var held = document.body.classList.contains('landing') ? landingIssue() : null;
+  if (held) {
+    zone.innerHTML = staticSheetHtml(held.panels || [], held.format, held.hand, null, landingUrl(held), held.gen, held.no);
+    var rule = document.getElementById('pagerule');
+    if (rule) rule.textContent = '@page { size: ' + paperOf(held.format).css + '; margin: 0; }';
+  } else {
+    var ps = pressState();
+    capturePanels();
+    zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps), ps.issue);
+  }
   document.body.classList.add('reprinting');
 });
 

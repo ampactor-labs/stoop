@@ -17,7 +17,9 @@ function pressState() {
   if (!ps.issue) ps.issue = '01';
   var pages = formatOf(ps.format).pages;
   if (!Array.isArray(ps.panels) || ps.panels.length !== pages) {
-    ps.panels = fitPanels(ps.panels, pages);
+    var fit = fitPanels(ps.panels, pages, ps.spare);
+    ps.panels = fit.panels;
+    ps.spare = fit.spare;
   }
   return ps;
 }
@@ -185,31 +187,6 @@ function renderPress() {
   renderGen();
 }
 
-// Ringing the bell archives the issue and starts the next one, so the sheet on
-// screen is never the issue that just went to the shelf. Say so, because the
-// obvious order — write it, publish it, print it — otherwise hands somebody
-// fifty blank copies.
-function sheetIsBlank() {
-  return pressState().panels.every(function (p) {
-    return !String(p.body || '').trim() && !p.photo;
-  });
-}
-
-// Speaks only once there is a published issue to be confused with. A blank
-// press on first open is not a warning, it is a blank press.
-function pressStatus() {
-  var el = document.getElementById('pressstatus');
-  if (!el) return;
-  var last = lastPublished();
-  var blank = sheetIsBlank();
-  if (!last) { el.textContent = ''; el.classList.remove('bad'); return; }
-  el.textContent = (blank ? 'This sheet is empty. ' : '') +
-    'You are looking at the draft for issue \u2116' + pressState().issue + '.' +
-    ' Issue \u2116' + last.no + ' is published \u2014 print that one from the shelf.';
-  el.classList.toggle('bad', blank);
-}
-
-
 // ---------- editing ----------
 // Reads the sheet back into the model. Only while the press is on screen:
 // innerText on an element nobody can see falls back to textContent, where a
@@ -238,12 +215,18 @@ function capturePanels() {
 
 function setFormat(id) {
   var ps = pressState();
-  if (!FORMATS[id]) return;
+  if (!FORMATS[id] || id === ps.format) return;
+  pasteMark();
   ps.format = id;
-  ps.panels = fitPanels(ps.panels, formatOf(id).pages);
+  var fit = fitPanels(ps.panels, formatOf(id).pages, ps.spare);
+  ps.panels = fit.panels;
+  ps.spare = fit.spare;
   savePress();
   renderPress();
-  toast(formatOf(id).label + ' — print a test sheet before committing paper');
+  var aside = fit.spare.filter(panelHasWork).length;
+  toast(aside
+    ? formatOf(id).label + ' \u2014 ' + aside + ' page(s) set aside until there is room'
+    : formatOf(id).label + ' \u2014 print a test sheet before committing paper');
 }
 
 function swapLayout() {
@@ -262,13 +245,13 @@ function printDraft() {
   capturePanels();
   if (!confirmSheet('Print')) return;
   var ps = pressState();
-  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null, genOf(ps));
+  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null, genOf(ps), ps.issue);
 }
 
 function printTestSheet() {
   var ps = pressState();
   printSheet(ps.panels, ps.format, ps.hand, null, true,
-    'Fold the test sheet and read the numbers in order. Shuffled? SWAP FOLD and test again.');
+    'Fold the test sheet and read the numbers in order. Shuffled? SWAP FOLD and test again.', 0, ps.issue);
 }
 
 function clearSheet() {

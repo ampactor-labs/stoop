@@ -11,16 +11,20 @@
 function measureOverflow(body) {
   if (body.scrollHeight <= body.clientHeight + 1) return 0;
   var original = body.innerText;
-  var words = original.split(/\s+/).filter(Boolean);
-  if (!words.length) return 0;
-  var lo = 0, hi = words.length;
+  // Trials keep the typed line breaks, or paragraphs go uncounted.
+  var ends = [];
+  var re = /\S+/g;
+  var m;
+  while ((m = re.exec(original))) ends.push(m.index + m[0].length);
+  if (!ends.length) return 0;
+  var lo = 0, hi = ends.length;
   while (lo < hi) {
     var mid = Math.ceil((lo + hi) / 2);
-    body.innerText = words.slice(0, mid).join(' ');
+    body.innerText = original.slice(0, ends[mid - 1]);
     if (body.scrollHeight <= body.clientHeight + 1) lo = mid; else hi = mid - 1;
   }
   body.innerText = original;
-  return words.length - lo;
+  return ends.length - lo;
 }
 
 function checkFit() {
@@ -46,4 +50,35 @@ function checkFit() {
     meter.classList.toggle('bad', total > 0);
   }
   return total;
+}
+
+// ---------- what the sheet is ----------
+// Ringing the bell leaves a fresh draft, so say so before paper is spent on
+// it. Cuttings count as content; the cover's heading is just the zine's name.
+function sheetIsBlank() {
+  return pressState().panels.every(function (p, i) {
+    return i === 0 ? !String(p.body || '').trim() && !p.photo && !(p.els || []).length : !panelHasWork(p);
+  });
+}
+
+function pressStatus() {
+  var el = document.getElementById('pressstatus');
+  if (!el) return;
+  var ps = pressState();
+  var last = lastPublished();
+  var blank = sheetIsBlank();
+  var spare = (ps.spare || []).filter(panelHasWork).length;
+  var said = [];
+  if (spare) {
+    said.push(spare + ' page' + (spare === 1 ? '' : 's') + ' did not fit this format and ' +
+      (spare === 1 ? 'is' : 'are') + ' set aside, not lost \u2014 pick a bigger format to bring ' +
+      (spare === 1 ? 'it' : 'them') + ' back.');
+  }
+  if (last) {
+    said.push((blank ? 'This sheet is empty. ' : '') +
+      'You are looking at the draft for issue \u2116' + ps.issue + '.' +
+      ' Issue \u2116' + last.no + ' is published \u2014 print that one from the shelf.');
+  }
+  el.textContent = said.join(' ');
+  el.classList.toggle('bad', !!spare || (!!last && blank));
 }

@@ -131,11 +131,7 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();
   if (hit(t, '#mergebtn')) { document.getElementById('importfile').dataset.mode = 'merge'; return document.getElementById('importfile').click(); }
   if (hit(t, '#replacebtn')) { document.getElementById('importfile').dataset.mode = 'replace'; return document.getElementById('importfile').click(); }
-  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) {
-    var zn = document.getElementById('zinename');
-    if (zn && zn.value.trim()) state.zine = zn.value.trim();
-    return saveNameFields();
-  }
+  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) return saveNameFields();
   if (hit(t, '#addpersonbtn')) {
     var np = document.getElementById('newperson');
     if (!np || !np.value.trim()) { toast('Give them a name first'); return; }

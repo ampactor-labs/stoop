@@ -120,10 +120,8 @@ function pasteupHtml(panel, pics, editable) {
 // exists to prevent for flowed text, and the paste-up owes the same honesty.
 // The height is measured from the layout the browser actually performed and
 // written back, so the model, the screen and the PDF agree on one number.
-// Where the browser actually broke the lines. The paper cannot know what
-// fonts this machine has — Impact on one, a fallback on the next — so it does
-// not guess: it draws the breaks the screen made. Ransom is per character and
-// flows on its own; everything else records words.
+// Where the browser actually broke the lines, recorded so any reader of the
+// file breaks where the maker saw it break. Ransom flows per character.
 function measureLines(node, voice) {
   if (!node || node.contains(document.activeElement)) return null;
   var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;

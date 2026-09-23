@@ -25,7 +25,8 @@ const suites = [
   ['a scene of four', require('./07-scene.js')],
   ['weight', require('./08-weight.js')],
   ['paste-up', require('./09-pasteup.js')],
-  ['typeface', require('./10-typeface.js')]
+  ['typeface', require('./10-typeface.js')],
+  ['edges', require('./11-edges.js')]
 ];
 
 (async () => {

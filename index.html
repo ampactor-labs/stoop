@@ -383,7 +383,8 @@ body.landing main { padding-top: 2.4rem; }
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
 .pasteup { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.el { position: absolute; pointer-events: auto; box-sizing: border-box; cursor: grab; }
+/* A finger on a cutting drags it rather than scrolling the page. */
+.el { position: absolute; pointer-events: auto; box-sizing: border-box; cursor: grab; touch-action: none; }
 .el:active { cursor: grabbing; }
 .el.sel { outline: 1px dashed var(--red); outline-offset: 2px; }
 
@@ -403,8 +404,8 @@ body.landing main { padding-top: 2.4rem; }
 .v-head { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase; }
 .v-marker { font-family: Anton, Impact, sans-serif; line-height: 1.3; }
 .rm { display: inline-block; }
-/* Stencil: Impact with bridges cut through it, the way a sprayed letter has
-   to be held together. A mask, so it needs no font nobody has. */
+/* Stencil: the display face with bridges cut through it, the way a sprayed
+   letter has to be held together. A mask, so it needs no stencil font. */
 .v-stencil { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase;
   -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); }
 .v-ransom { line-height: 1.5; }
@@ -513,6 +514,14 @@ body.landing main { padding-top: 2.4rem; }
     .wordmark{display:none}
     .barzine{font-size:1.15rem}
   }
+
+/* Handles a fingertip can hit. */
+@media (pointer: coarse) {
+  .h { width: 22px; height: 22px; }
+  .h-size { right: -12px; bottom: -12px; }
+  .h-rot { top: -30px; margin-left: -11px; }
+  .h-rot::after { top: 20px; }
+}
 </style>
 
 <header class="chrome">
@@ -767,7 +776,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 230 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 243 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 // ---------- identity ----------
@@ -817,12 +826,14 @@ function savePeople() {
   try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {}
 }
 function personIds() { return people.map(function (p) { return p.id; }); }
-function authorIds() { return personIds().concat('both'); }
+// 'both' means made together: "Both" for a pair, "Together" otherwise, and
+// not offered to a scene of one.
+function authorIds() { return people.length > 1 ? personIds().concat('both') : personIds(); }
 function personById(id) {
   return people.filter(function (p) { return p.id === id; })[0] || null;
 }
 function nameOf(id) {
-  if (id === 'both') return 'Both';
+  if (id === 'both') return people.length === 2 ? 'Both' : 'Together';
   var p = personById(id);
   return p ? p.name : 'Someone';
 }
@@ -833,7 +844,13 @@ function addPerson(name) {
   return p;
 }
 
-var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
+// Storage can throw (private windows, blocked site data).
+var currentAuthor = (function () {
+  try { return localStorage.getItem(AUTHOR_KEY) || 'a'; } catch (e) { return 'a'; }
+})();
+function rememberAuthor() {
+  try { localStorage.setItem(AUTHOR_KEY, currentAuthor); } catch (e) {}
+}
 
 // Every byline in the store must belong to somebody on the roster, or a name
 // is lost the moment a piece arrives from another copy of the app.
@@ -951,20 +968,30 @@ function migrate(data) {
   });
   data.journal = [];
   data.projects = [];
-  (data.pieces || []).forEach(function (pc) { pc.byline = fixAuthor(pc.byline); fixTs(pc); });
+  (data.pieces || []).forEach(function (pc) {
+    pc.byline = fixAuthor(pc.byline);
+    pc.title = typeof pc.title === 'string' && pc.title ? pc.title : 'Untitled';
+    pc.body = typeof pc.body === 'string' ? pc.body : '';
+    fixTs(pc);
+  });
   (data.issues || []).forEach(fixTs);
   return data;
 }
 
 // Accept anything shaped like a backup; fill in what is missing rather than
 // rejecting the file, so a partial import cannot leave the app unrenderable.
+// A null record must not sink the store.
+function records(list) {
+  return Array.isArray(list) ? list.filter(function (x) { return x && typeof x === 'object'; }) : [];
+}
+
 function normalize(raw) {
   var out = {
-    logs: Array.isArray(raw && raw.logs) ? raw.logs : [],
-    projects: Array.isArray(raw && raw.projects) ? raw.projects : [],
-    journal: Array.isArray(raw && raw.journal) ? raw.journal : [],
-    pieces: Array.isArray(raw && raw.pieces) ? raw.pieces : [],
-    issues: Array.isArray(raw && raw.issues) ? raw.issues : [],
+    logs: records(raw && raw.logs),
+    projects: records(raw && raw.projects),
+    journal: records(raw && raw.journal),
+    pieces: records(raw && raw.pieces),
+    issues: records(raw && raw.issues),
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
@@ -973,6 +1000,8 @@ function normalize(raw) {
   return migrate(out);
 }
 
+// True when this device's work came out of the file it was opened from.
+var stateFromSeed = false;
 var state = (function () {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
@@ -987,6 +1016,7 @@ var state = (function () {
   // work, the seed merges later rather than replacing anything.
   var seed = readSeed();
   if (seed) {
+    stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
       cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE'
@@ -1075,6 +1105,11 @@ function collectPhotoRefs() {
   state.logs.forEach(keep);
   state.pieces.forEach(keep);
   if (state.press && state.press.panels) state.press.panels.forEach(keep);
+  // Set-aside pages and undo history can still come back.
+  if (state.press && state.press.spare) state.press.spare.forEach(keep);
+  (pasteUndo || []).concat(pasteRedo || []).forEach(function (snap) {
+    String(snap).replace(/"photo":"([^"]+)"/g, function (m, id) { live[id] = 1; return m; });
+  });
   // A back issue is the archive. Sweeping a photo out from under a published
   // issue would rewrite history, so every shelved panel pins its photo.
   state.issues.forEach(function (iss) {
@@ -1122,6 +1157,9 @@ function ditherToBitmap(img) {
   canvas.width = w;
   canvas.height = h;
   var ctx = canvas.getContext('2d');
+  // Paper under it: transparent pixels would otherwise dither to black.
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
 
   var imageData = ctx.getImageData(0, 0, w, h);
@@ -1289,7 +1327,15 @@ var activeLogFilter = 'all';
 // The roster is drawn, not written into the HTML: a scene of four needs four
 // chips and four options, and nobody should have to edit a view file to get
 // them.
+// Work signed together keeps a chip to find it by, even on a roster of one.
+function filterIds() {
+  var ids = authorIds();
+  if (ids.indexOf('both') < 0 && state.logs.some(function (l) { return l.author === 'both'; })) ids.push('both');
+  return ids;
+}
+
 function renderNames() {
+  if (activeLogFilter !== 'all' && filterIds().indexOf(activeLogFilter) < 0) activeLogFilter = 'all';
   var el = document.getElementById('authorname');
   if (el) el.textContent = nameOf(currentAuthor);
 
@@ -1297,7 +1343,7 @@ function renderNames() {
   if (chips) {
     chips.innerHTML = '<button class="chip' + (activeLogFilter === 'all' ? ' on' : '') +
       '" data-logfilter="all">all</button>' +
-      authorIds().map(function (id) {
+      filterIds().map(function (id) {
         return '<button class="chip' + (activeLogFilter === id ? ' on' : '') +
           '" data-logfilter="' + esc(id) + '">' + esc(nameOf(id)) + '</button>';
       }).join('');
@@ -1333,7 +1379,7 @@ function renderRoster() {
 function toggleAuthor() {
   var ids = authorIds();
   currentAuthor = ids[(ids.indexOf(currentAuthor) + 1) % ids.length];
-  localStorage.setItem(AUTHOR_KEY, currentAuthor);
+  rememberAuthor();
   renderNames();
   toast('Now writing as ' + nameOf(currentAuthor));
 }
@@ -1507,15 +1553,25 @@ function seedPanel(i) {
   return { h: i === 0 ? (state && state.zine) || 'STOOP ZINE' : '', body: '', photo: null };
 }
 
-// Resize a panel array to a format without losing what was written. Growing
-// pads with seeds; shrinking keeps the low pages, because the cover and the
-// early spreads are the ones somebody actually filled in.
-function fitPanels(panels, pages) {
-  var out = [];
-  for (var i = 0; i < pages; i++) {
-    out.push(panels && panels[i] ? panels[i] : seedPanel(i));
-  }
-  return out;
+// Resize to a format without losing anything: the cover stays first, the back
+// cover last, inner pages in order, and pages that no longer fit are set aside
+// in `spare`, blanks between them kept so each comes back where it was.
+function panelHasWork(p) {
+  return !!p && !!(String(p.body || '').trim() || String(p.h || '').trim() || p.photo ||
+    (Array.isArray(p.els) && p.els.length));
+}
+
+function fitPanels(panels, pages, spare) {
+  var src = Array.isArray(panels) ? panels.filter(Boolean) : [];
+  var cover = src[0] || seedPanel(0);
+  var back = src.length > 1 ? src[src.length - 1] : seedPanel(pages - 1);
+  var inner = src.slice(1, Math.max(1, src.length - 1)).concat(spare || []);
+  var room = Math.max(0, pages - 2);
+  var kept = inner.slice(0, room);
+  var left = inner.slice(room);
+  while (left.length && !panelHasWork(left[left.length - 1])) left.pop();
+  while (kept.length < room) kept.push(seedPanel(kept.length + 1));
+  return { panels: [cover].concat(kept, [back]), spare: left };
 }
 
 // The sheet a new cycle starts on: the section headings survive as prompts,
@@ -1554,7 +1610,9 @@ function pressState() {
   if (!ps.issue) ps.issue = '01';
   var pages = formatOf(ps.format).pages;
   if (!Array.isArray(ps.panels) || ps.panels.length !== pages) {
-    ps.panels = fitPanels(ps.panels, pages);
+    var fit = fitPanels(ps.panels, pages, ps.spare);
+    ps.panels = fit.panels;
+    ps.spare = fit.spare;
   }
   return ps;
 }
@@ -1722,31 +1780,6 @@ function renderPress() {
   renderGen();
 }
 
-// Ringing the bell archives the issue and starts the next one, so the sheet on
-// screen is never the issue that just went to the shelf. Say so, because the
-// obvious order — write it, publish it, print it — otherwise hands somebody
-// fifty blank copies.
-function sheetIsBlank() {
-  return pressState().panels.every(function (p) {
-    return !String(p.body || '').trim() && !p.photo;
-  });
-}
-
-// Speaks only once there is a published issue to be confused with. A blank
-// press on first open is not a warning, it is a blank press.
-function pressStatus() {
-  var el = document.getElementById('pressstatus');
-  if (!el) return;
-  var last = lastPublished();
-  var blank = sheetIsBlank();
-  if (!last) { el.textContent = ''; el.classList.remove('bad'); return; }
-  el.textContent = (blank ? 'This sheet is empty. ' : '') +
-    'You are looking at the draft for issue \u2116' + pressState().issue + '.' +
-    ' Issue \u2116' + last.no + ' is published \u2014 print that one from the shelf.';
-  el.classList.toggle('bad', blank);
-}
-
-
 // ---------- editing ----------
 // Reads the sheet back into the model. Only while the press is on screen:
 // innerText on an element nobody can see falls back to textContent, where a
@@ -1775,12 +1808,18 @@ function capturePanels() {
 
 function setFormat(id) {
   var ps = pressState();
-  if (!FORMATS[id]) return;
+  if (!FORMATS[id] || id === ps.format) return;
+  pasteMark();
   ps.format = id;
-  ps.panels = fitPanels(ps.panels, formatOf(id).pages);
+  var fit = fitPanels(ps.panels, formatOf(id).pages, ps.spare);
+  ps.panels = fit.panels;
+  ps.spare = fit.spare;
   savePress();
   renderPress();
-  toast(formatOf(id).label + ' — print a test sheet before committing paper');
+  var aside = fit.spare.filter(panelHasWork).length;
+  toast(aside
+    ? formatOf(id).label + ' \u2014 ' + aside + ' page(s) set aside until there is room'
+    : formatOf(id).label + ' \u2014 print a test sheet before committing paper');
 }
 
 function swapLayout() {
@@ -1799,13 +1838,13 @@ function printDraft() {
   capturePanels();
   if (!confirmSheet('Print')) return;
   var ps = pressState();
-  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null, genOf(ps));
+  printSheet(ps.panels, ps.format, ps.hand, issueUrl(ps.issue), false, null, genOf(ps), ps.issue);
 }
 
 function printTestSheet() {
   var ps = pressState();
   printSheet(ps.panels, ps.format, ps.hand, null, true,
-    'Fold the test sheet and read the numbers in order. Shuffled? SWAP FOLD and test again.');
+    'Fold the test sheet and read the numbers in order. Shuffled? SWAP FOLD and test again.', 0, ps.issue);
 }
 
 function clearSheet() {
@@ -1876,7 +1915,8 @@ var pasteRedo = [];
 var UNDO_DEPTH = 50;
 
 function snapshot() {
-  return JSON.stringify(pressState().panels);
+  var ps = pressState();
+  return JSON.stringify({ format: ps.format, panels: ps.panels, spare: ps.spare || [] });
 }
 
 function pasteMark() {
@@ -1887,11 +1927,24 @@ function pasteMark() {
 
 function pasteRestore(json) {
   var ps = pressState();
-  ps.panels = JSON.parse(json);
+  var snap = JSON.parse(json);
+  if (Array.isArray(snap)) snap = { format: ps.format, panels: snap, spare: ps.spare };
+  if (FORMATS[snap.format]) ps.format = snap.format;
+  ps.panels = snap.panels;
+  ps.spare = snap.spare || [];
   savePress();
   if (pasteSel && !findEl(pasteSel)) pasteSel = null;
   pageSig = '';
   renderPress();
+}
+
+// A new draft or a replaced store starts its own history.
+function forgetUndo() {
+  pasteUndo.length = 0;
+  pasteRedo.length = 0;
+  flowSnap = null;
+  pasteSel = null;
+  pasteEditing = null;
 }
 
 function pasteUndoStep() {
@@ -1907,6 +1960,23 @@ function pasteRedoStep() {
   pasteRestore(pasteRedo.pop());
   toast('Redo');
 }
+
+// Typing into a page or a cutting's text box is a step too: the state is
+// taken on the way into the field and kept once something is typed.
+var flowSnap = null;
+function isFlowField(t) {
+  return !!t && (t.id === 'ransomtext' || t.id === 'issueno' ||
+    (!!t.closest && !!t.closest('#sheetzone') && /^(H3)$/.test(t.tagName)) ||
+    (!!t.classList && t.classList.contains('body') && !!t.closest && !!t.closest('#sheetzone')));
+}
+document.addEventListener('focusin', function (ev) { if (isFlowField(ev.target)) flowSnap = snapshot(); });
+document.addEventListener('input', function (ev) {
+  if (!flowSnap || !isFlowField(ev.target)) return;
+  pasteUndo.push(flowSnap);
+  if (pasteUndo.length > UNDO_DEPTH) pasteUndo.shift();
+  pasteRedo.length = 0;
+  flowSnap = null;
+}, true);
 
 // ---------- adding ----------
 var PASTE_DEFAULTS = {
@@ -1982,12 +2052,12 @@ function removeEl(id) {
 }
 
 // ---------- changing one ----------
-function updateEl(id, fields, mark) {
+function updateEl(id, fields, mark, quiet) {
   var hit = findEl(id);
   if (!hit) return;
   if (mark) pasteMark();
   Object.keys(fields).forEach(function (k) { hit.el[k] = fields[k]; });
-  savePress();
+  if (!quiet) savePress();
 }
 
 function raiseEl(id, toFront) {
@@ -2161,10 +2231,8 @@ function pasteupHtml(panel, pics, editable) {
 // exists to prevent for flowed text, and the paste-up owes the same honesty.
 // The height is measured from the layout the browser actually performed and
 // written back, so the model, the screen and the PDF agree on one number.
-// Where the browser actually broke the lines. The paper cannot know what
-// fonts this machine has — Impact on one, a fallback on the next — so it does
-// not guess: it draws the breaks the screen made. Ransom is per character and
-// flows on its own; everything else records words.
+// Where the browser actually broke the lines, recorded so any reader of the
+// file breaks where the maker saw it break. Ransom flows per character.
 function measureLines(node, voice) {
   if (!node || node.contains(document.activeElement)) return null;
   var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;
@@ -2262,6 +2330,7 @@ function startGrab(ev, mode, elNode) {
   var hit = findEl(elNode.getAttribute('data-el'));
   if (!panelEl || !hit) return;
   var p = panelLocal(panelEl, ev.clientX, ev.clientY);
+  var redoWas = pasteRedo.slice();
   pasteMark();
   grab = {
     mode: mode,
@@ -2269,7 +2338,8 @@ function startGrab(ev, mode, elNode) {
     panelEl: panelEl,
     start: p,
     from: { x: hit.el.x, y: hit.el.y, w: hit.el.w, h: hit.el.h, rot: hit.el.rot || 0 },
-    moved: false
+    moved: false,
+    redoWas: redoWas
   };
   if (mode === 'rot') {
     var cx = (hit.el.x + hit.el.w / 2) * p.w;
@@ -2292,7 +2362,7 @@ function moveGrab(ev) {
     updateEl(grab.id, {
       x: clamp01(snap(f.x + dx, !fine), f.w),
       y: clamp01(snap(f.y + dy, !fine), f.h)
-    });
+    }, false, true);
   } else if (grab.mode === 'size') {
     // The delta is turned back through the element's own rotation, so dragging
     // the corner of a crooked cutting grows it along its own edges.
@@ -2304,7 +2374,7 @@ function moveGrab(ev) {
     updateEl(grab.id, {
       w: Math.max(0.04, snap(f.w + rx / p.w, !fine)),
       h: Math.max(0.015, snap(f.h + ry / p.h, !fine))
-    });
+    }, false, true);
   } else if (grab.mode === 'rot') {
     var ccx = (f.x + f.w / 2) * p.w;
     var ccy = (f.y + f.h / 2) * p.h;
@@ -2312,15 +2382,21 @@ function moveGrab(ev) {
     var rot = f.rot + (now - grab.angle0);
     if (ev.shiftKey) rot = Math.round(rot / 15) * 15;
     else if (Math.abs(rot) < 1.5) rot = 0;          // straight is findable by hand
-    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 });
+    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 }, false, true);
   }
   paintOnePanel(grab.panelEl);
 }
 
+// A drag saves once, when it ends.
 function endGrab() {
   if (!grab) return;
-  // A gesture that never moved is a click; it should not cost an undo step.
-  if (!grab.moved) pasteUndo.pop();
+  // A click costs neither an undo step nor the redo history.
+  if (!grab.moved) {
+    pasteUndo.pop();
+    Array.prototype.push.apply(pasteRedo, grab.redoWas);
+  } else {
+    savePress();
+  }
   grab = null;
   renderPress();
 }
@@ -2429,11 +2505,17 @@ document.addEventListener('input', function (ev) {
   updateEl(t.getAttribute('data-eltext'), { text: t.innerText });
 });
 
+// Cutting keys stand down while somebody is typing in a field.
+function typingInField() {
+  var a = document.activeElement;
+  return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+}
+
 document.addEventListener('keydown', function (ev) {
   var key = ev.key;
   var meta = ev.metaKey || ev.ctrlKey;
   if (meta && (key === 'z' || key === 'Z')) {
-    if (document.activeElement && document.activeElement.isContentEditable) return;
+    if (typingInField()) return;
     ev.preventDefault();
     if (ev.shiftKey) pasteRedoStep(); else pasteUndoStep();
     return;
@@ -2449,7 +2531,7 @@ document.addEventListener('keydown', function (ev) {
     return;
   }
   if (!pasteSel) return;
-  if (document.activeElement && document.activeElement.isContentEditable) return;
+  if (typingInField() || document.body.hasAttribute('data-drawer') || meta || ev.altKey) return;
   var el = selectedEl();
   if (!el) return;
   var step = ev.shiftKey ? 0.02 : 0.004;
@@ -2561,13 +2643,15 @@ document.addEventListener('click', function (ev) {
   if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
 });
 
+// Repaint as it is typed, so the cutting grows and records its breaks.
 document.addEventListener('input', function (ev) {
   if (ev.target.id !== 'ransomtext' || !pasteSel) return;
   updateEl(pasteSel, { text: ev.target.value });
-  var zone = document.getElementById('sheetzone');
-  var node = zone && zone.querySelector('[data-el="' + pasteSel + '"] .eltext');
-  var el = selectedEl();
-  if (node && el) node.innerHTML = voiceOf(el) === 'marker' ? markerHtml(ev.target.value) : ransomHtml(ev.target.value);
+  // The panel only: rebuilding the inspector would destroy this very field.
+  var node = liveEl(pasteSel);
+  var panelEl = node && node.closest('.panel');
+  var panel = panelEl && panelOfPage(Number(panelEl.getAttribute('data-page')));
+  if (panel) paintPasteup(panelEl, panel);
 });
 
 // Which panel a new cutting lands on is simply the last one touched.
@@ -2609,9 +2693,18 @@ function acceptText(page, text, at) {
   toast('Cutting glued down');
 }
 
+// A file dropped off a page would replace the press in the browser.
+function draggingFiles(ev) {
+  var types = ev.dataTransfer && ev.dataTransfer.types;
+  return !!types && Array.prototype.indexOf.call(types, 'Files') >= 0;
+}
+
 document.addEventListener('dragover', function (ev) {
-  var panel = ev.target.closest && ev.target.closest('.panel');
-  if (!panel) return;
+  var panel = ev.target.closest && ev.target.closest('#sheetzone .panel');
+  if (!panel) {
+    if (draggingFiles(ev)) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'none'; }
+    return;
+  }
   ev.preventDefault();
   panel.classList.add('dropping');
 });
@@ -2622,8 +2715,11 @@ document.addEventListener('dragleave', function (ev) {
 });
 
 document.addEventListener('drop', function (ev) {
-  var panel = ev.target.closest && ev.target.closest('.panel');
-  if (!panel) return;
+  var panel = ev.target.closest && ev.target.closest('#sheetzone .panel');
+  if (!panel) {
+    if (draggingFiles(ev)) { ev.preventDefault(); toast('Drop it on a page'); }
+    return;
+  }
   ev.preventDefault();
   panel.classList.remove('dropping');
   var page = Number(panel.getAttribute('data-page'));
@@ -2637,6 +2733,7 @@ document.addEventListener('drop', function (ev) {
 
 // Paste lands on the panel last touched, unless a caret has somewhere better
 // to put it.
+// Behind a drawer nothing lands unseen; over the scraps a photo is a scrap.
 document.addEventListener('paste', function (ev) {
   var a = document.activeElement;
   if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
@@ -2647,6 +2744,14 @@ document.addEventListener('paste', function (ev) {
   var files = [];
   for (var i = 0; cd.items && i < cd.items.length; i++) {
     if (cd.items[i].kind === 'file') files.push(cd.items[i].getAsFile());
+  }
+  var drawer = document.body.getAttribute('data-drawer');
+  if (drawer) {
+    if (drawer === 'scraps' && files.length) {
+      ev.preventDefault();
+      intakePhotos(files).then(function (ids) { if (ids.length) addLog(ids); renderTray(); });
+    }
+    return;
   }
   if (files.length) { ev.preventDefault(); acceptFiles(pastePage, files, null); return; }
   var text = cd.getData('text/plain');
@@ -2674,16 +2779,20 @@ if (pasteInput) {
 function measureOverflow(body) {
   if (body.scrollHeight <= body.clientHeight + 1) return 0;
   var original = body.innerText;
-  var words = original.split(/\s+/).filter(Boolean);
-  if (!words.length) return 0;
-  var lo = 0, hi = words.length;
+  // Trials keep the typed line breaks, or paragraphs go uncounted.
+  var ends = [];
+  var re = /\S+/g;
+  var m;
+  while ((m = re.exec(original))) ends.push(m.index + m[0].length);
+  if (!ends.length) return 0;
+  var lo = 0, hi = ends.length;
   while (lo < hi) {
     var mid = Math.ceil((lo + hi) / 2);
-    body.innerText = words.slice(0, mid).join(' ');
+    body.innerText = original.slice(0, ends[mid - 1]);
     if (body.scrollHeight <= body.clientHeight + 1) lo = mid; else hi = mid - 1;
   }
   body.innerText = original;
-  return words.length - lo;
+  return ends.length - lo;
 }
 
 function checkFit() {
@@ -2709,6 +2818,37 @@ function checkFit() {
     meter.classList.toggle('bad', total > 0);
   }
   return total;
+}
+
+// ---------- what the sheet is ----------
+// Ringing the bell leaves a fresh draft, so say so before paper is spent on
+// it. Cuttings count as content; the cover's heading is just the zine's name.
+function sheetIsBlank() {
+  return pressState().panels.every(function (p, i) {
+    return i === 0 ? !String(p.body || '').trim() && !p.photo && !(p.els || []).length : !panelHasWork(p);
+  });
+}
+
+function pressStatus() {
+  var el = document.getElementById('pressstatus');
+  if (!el) return;
+  var ps = pressState();
+  var last = lastPublished();
+  var blank = sheetIsBlank();
+  var spare = (ps.spare || []).filter(panelHasWork).length;
+  var said = [];
+  if (spare) {
+    said.push(spare + ' page' + (spare === 1 ? '' : 's') + ' did not fit this format and ' +
+      (spare === 1 ? 'is' : 'are') + ' set aside, not lost \u2014 pick a bigger format to bring ' +
+      (spare === 1 ? 'it' : 'them') + ' back.');
+  }
+  if (last) {
+    said.push((blank ? 'This sheet is empty. ' : '') +
+      'You are looking at the draft for issue \u2116' + ps.issue + '.' +
+      ' Issue \u2116' + last.no + ' is published \u2014 print that one from the shelf.');
+  }
+  el.textContent = said.join(' ');
+  el.classList.toggle('bad', !!spare || (!!last && blank));
 }
 // ---------- stamps ----------
 // The grammar of the form, ready cut: FREE, TAKE ONE, an arrow, a star, a
@@ -2890,6 +3030,8 @@ function addPiece(fields) {
     cut: false,
     ts: Date.now()
   };
+  if (fields.from) piece.from = fields.from;
+  if (fields.scraps) piece.scraps = true;
   state.pieces.push(piece);
   saveState();
   return piece;
@@ -2930,34 +3072,59 @@ function dropPiece(id) {
 // was written since the last issue shipped, so issue two never reprints
 // issue one. A scrap with a title, or a long one, is a piece of its own; the
 // short ones run together as one piece, the way a log column does.
+// A piece remembers its scraps (`from`), so pulling twice draws nothing twice,
+// and new short scraps join the waiting SCRAPS column. The column is signed by
+// whoever wrote it, or as made together when several did.
 function draftFromSources() {
   var since = lastIssueTs();
-  var fresh = state.logs.filter(function (l) { return (l.ts || 0) > since && (l.text || l.title || l.photo); })
-    .sort(function (x, y) { return x.ts - y.ts; });
+  var drawn = {};
+  state.pieces.forEach(function (p) { (p.from || []).forEach(function (id) { drawn[id] = 1; }); });
+  var fresh = state.logs.filter(function (l) {
+    return (l.ts || 0) > since && !drawn[l.id] && (l.text || l.title || l.photo);
+  }).sort(function (x, y) { return x.ts - y.ts; });
   var made = 0;
   var short = [];
 
   fresh.forEach(function (l) {
     var own = l.title || (l.text || '').length > 280;
     if (own) {
-      addPiece({ kind: 'essay', title: l.title || (l.text || '').slice(0, 40), byline: l.author, body: l.text || '', photo: l.photo });
+      addPiece({ kind: 'essay', title: l.title || (l.text || '').slice(0, 40), byline: l.author,
+        body: l.text || '', photo: l.photo, from: [l.id] });
       made++;
     } else {
       short.push(l);
     }
   });
+  var joined = 0;
   if (short.length) {
-    addPiece({
-      kind: 'log', title: 'SCRAPS', byline: 'both',
-      body: short.filter(function (l) { return l.text; })
-        .map(function (l) { return '\u2022 [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n'),
-      photo: (short.filter(function (l) { return l.photo && photoCache[l.photo]; })[0] || {}).photo
-    });
-    made++;
+    var column = state.pieces.filter(function (p) { return p.scraps && !p.cut; })[0];
+    var who = {};
+    short.forEach(function (l) { who[l.author] = 1; });
+    if (column) who[column.byline] = 1;
+    var hands = Object.keys(who);
+    var byline = hands.length === 1 ? hands[0] : 'both';
+    var bullets = short.filter(function (l) { return l.text; })
+      .map(function (l) { return '\u2022 [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n');
+    var pic = (short.filter(function (l) { return l.photo && photoCache[l.photo]; })[0] || {}).photo;
+    var ids = short.map(function (l) { return l.id; });
+    if (column) {
+      column.body = [column.body, bullets].filter(Boolean).join('\n\n');
+      column.byline = byline;
+      column.from = (column.from || []).concat(ids);
+      if (!column.photo && pic) column.photo = pic;
+      saveState();
+      joined = short.length;
+    } else {
+      addPiece({ kind: 'log', title: 'SCRAPS', byline: byline, body: bullets, photo: pic, from: ids, scraps: true });
+      made++;
+    }
   }
 
   renderDesk();
-  toast(made ? 'Pulled in ' + made + ' piece(s)' : 'Nothing new since the last issue. Keep something, then pull again.');
+  toast(made || joined
+    ? [made ? 'Pulled in ' + made + ' piece(s)' : '', joined ? joined + ' scrap(s) joined SCRAPS' : '']
+      .filter(Boolean).join(', ')
+    : 'Nothing new since the last issue. Keep something, then pull again.');
 }
 
 // ---------- assembling ----------
@@ -2971,19 +3138,28 @@ function compileIssue() {
   var pages = formatOf(ps.format).pages;
   var inner = pages - 2;
 
+  pasteMark();
   ps.issue = c.no;
   ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
 
-  pieces.slice(0, inner).forEach(function (piece, i) {
+  // A page takes its piece whole. Pages the last compile filled and this one
+  // does not are emptied; handwork and cuttings are left alone.
+  var ran = pieces.slice(0, inner);
+  ran.forEach(function (piece, i) {
     var panel = ps.panels[i + 1];
     if (!panel) return;
     panel.h = piece.title.toUpperCase();
     panel.body = piece.body;
-    if (piece.photo) panel.photo = piece.photo;
+    panel.photo = piece.photo || null;
   });
-  for (var j = pieces.length; j < inner; j++) {
-    if (ps.panels[j + 1]) ps.panels[j + 1].body = '';
-  }
+  (ps.ran || []).forEach(function (r) {
+    var panel = ps.panels[r.page - 1];
+    if (!panel || r.page - 2 < ran.length || r.page >= pages) return;
+    panel.h = '';
+    panel.body = '';
+    panel.photo = null;
+  });
+  ps.ran = ran.map(function (piece, i) { return { page: i + 2, id: piece.id }; });
 
   var note = document.getElementById('editornote');
   ps.panels[pages - 1].h = 'BACK COVER';
@@ -3015,6 +3191,12 @@ function buildIssue() {
     state.issues = state.issues.filter(function (i) { return i.no !== ps.issue; });
   }
 
+  // What shipped is what was compiled; pieces that did not fit stay.
+  var live = livePieces();
+  var ranIds = Array.isArray(ps.ran) ? ps.ran.map(function (r) { return r.id; }) : null;
+  var shipped = ranIds ? live.filter(function (p) { return ranIds.indexOf(p.id) >= 0; }) : live;
+  var held = live.length - shipped.length;
+
   var note = document.getElementById('editornote');
   state.issues.push({
     no: ps.issue,
@@ -3025,13 +3207,12 @@ function buildIssue() {
     editor: c.editor,
     note: note ? note.value.trim() : '',
     panels: JSON.parse(JSON.stringify(ps.panels)),
-    pieces: JSON.parse(JSON.stringify(livePieces())),
+    pieces: JSON.parse(JSON.stringify(shipped)),
     ts: Date.now()
   });
 
-  // The tray empties; cut pieces stay for next cycle, which is the promise a
-  // cut makes. Published pieces are in the issue now and leave the desk.
-  state.pieces = state.pieces.filter(function (p) { return p.cut; });
+  // Cut pieces stay for next cycle, which is the promise a cut makes.
+  state.pieces = state.pieces.filter(function (p) { return shipped.indexOf(p) < 0; });
 
   var next = String((parseInt(ps.issue, 10) || 1) + 1);
   c.no = next.length < 2 ? '0' + next : next;
@@ -3042,11 +3223,15 @@ function buildIssue() {
   ps.issue = c.no;
   ps.panels = blankPanels(formatOf(ps.format).pages);
   ps.panels[0].h = state.zine || 'STOOP ZINE';
+  ps.spare = [];
+  ps.ran = null;
+  forgetUndo();
   savePress();
   renderAll();
   location.hash = '#shelf';
   toast('Issue №' + state.issues[state.issues.length - 1].no + ' is on the shelf. ' +
-    nameOf(c.editor) + ' has the desk for №' + c.no + '.');
+    nameOf(c.editor) + ' has the desk for №' + c.no + '.' +
+    (held ? ' ' + held + ' piece(s) that did not fit wait in the tray.' : ''));
 }
 
 // ---------- the view ----------
@@ -3081,9 +3266,10 @@ function renderDesk() {
     return '<div class="sub-row' + (p.cut ? ' cut' : '') + '">' +
       '<span class="ord">' + ord + '</span>' +
       '<span class="meta"><b>' + esc(p.title) + '</b> — ' + esc(nameOf(p.byline)) +
-      '<small>' + esc(p.kind) + ' · ' + p.body.split(/\s+/).filter(Boolean).length + ' words</small></span>' +
+      '<small>' + esc(p.kind) + ' · ' + String(p.body || '').split(/\s+/).filter(Boolean).length + ' words</small></span>' +
       '<button class="subbtn" data-' + (p.cut ? 'restore' : 'cut') + 'piece="' + esc(p.id) + '">' +
       (p.cut ? 'RESTORE' : 'CUT') + '</button>' +
+      '<button class="subbtn" data-piecebundle="' + esc(p.id) + '" title="Save it as a file to send to whoever holds the desk">SEND</button>' +
       '<button class="log-del" data-droppiece="' + esc(p.id) + '" title="Remove entirely">✕</button>' +
       '</div>';
   }).join('');
@@ -3097,7 +3283,7 @@ function renderDesk() {
 // is what goes to the printer, whether for the draft, a numbered test sheet,
 // or a back issue off the shelf. Test numbers are always in the markup and
 // shown only when the print zone carries the testing class.
-function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
+function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
   var pages = plan.format.pages;
@@ -3113,6 +3299,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
         var cover = slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '');
         return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '">' +
           '<h3>' + esc(p.h || '') + '</h3>' +
+          (slot.page === 1 ? '<div class="no">\u2116' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
           (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
           '<div class="body">' + esc(p.body || '') + '</div>' +
           pasteupHtml(p, pics, false) +
@@ -3125,28 +3312,41 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen) {
 
 // The other substrate. Same source, no imposition and no paste-up: a collage
 // is a property of a page at a fixed size, and this view has neither. What was
-// written still reads; where it was glued does not survive, by design. This is
-// the issue you open on a phone at the bus stop, and nothing in it needs a
-// network to mean something.
-function readingHtml(issue, photos) {
+// written still reads, cuttings included; where it was glued does not. This
+// is the issue you open on a phone at the bus stop.
+function cuttingWords(p) {
+  return (p && Array.isArray(p.els) ? p.els : []).filter(function (e) {
+    return e && e.kind === 'text' && String(e.text || '').trim();
+  }).sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).map(function (e) {
+    return '<p class="reading-cut">' + esc(e.text) + '</p>';
+  }).join('');
+}
+
+function readingHtml(issue, photos, nameFn) {
   var pics = photos || photoCache;
+  var who = nameFn || nameOf;
   var panels = issue.panels || [];
   var cover = panels[0] || { h: 'STOOP ZINE' };
   var out = '<article class="reading">' +
     '<header class="reading-head"><h1>' + esc(cover.h || 'STOOP ZINE') + '</h1>' +
     '<p class="reading-meta">№' + esc(issue.no) + ' · ' + esc(fmtDay(issue.ts)) +
-    ' · edited by ' + esc(nameOf(issue.editor)) + '</p>' +
+    ' · edited by ' + esc(who(issue.editor)) + '</p>' +
     (cover.photo && pics[cover.photo] ? '<img src="' + esc(pics[cover.photo]) + '" alt="">' : '') +
+    (cover.body ? '<p>' + esc(cover.body) + '</p>' : '') + cuttingWords(cover) +
     '</header>';
   if (issue.note) out += '<section class="reading-note"><h2>Editor\'s note</h2><p>' + esc(issue.note) + '</p></section>';
   panels.slice(1, -1).forEach(function (p, i) {
-    if (!p || (!p.body && !p.photo)) return;
+    var cut = cuttingWords(p);
+    if (!p || (!p.body && !p.photo && !cut)) return;
     out += '<section class="reading-piece"><h2>' + esc(p.h || ('Page ' + (i + 2))) + '</h2>' +
       (p.photo && pics[p.photo] ? '<img src="' + esc(pics[p.photo]) + '" alt="">' : '') +
-      '<p>' + esc(p.body || '') + '</p></section>';
+      (p.body ? '<p>' + esc(p.body) + '</p>' : '') + cut + '</section>';
   });
   var back = panels[panels.length - 1];
-  if (back && back.body) out += '<footer class="reading-foot"><p>' + esc(back.body) + '</p></footer>';
+  var backCut = panels.length > 1 ? cuttingWords(back) : '';
+  if (back && (back.body || backCut)) {
+    out += '<footer class="reading-foot">' + (back.body ? '<p>' + esc(back.body) + '</p>' : '') + backCut + '</footer>';
+  }
   return out + '</article>';
 }
 
@@ -3230,10 +3430,10 @@ function readIssue(no) {
 // browser, and the zone is emptied again when the dialog closes. Opening a
 // back issue this way never costs the draft, because the draft is not what
 // is being printed.
-function printSheet(panels, format, hand, url, testing, note, gen) {
+function printSheet(panels, format, hand, url, testing, note, gen, issue) {
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url, gen);
+  zone.innerHTML = staticSheetHtml(panels, format, hand, null, url, gen, issue);
   zone.classList.toggle('testing', !!testing);
   var style = document.getElementById('pagerule');
   if (style) style.textContent = '@page { size: ' + paperOf(format).css + '; margin: 0; }';
@@ -3247,7 +3447,7 @@ function reprintIssue(no) {
   var iss = issueByNo(no);
   if (!iss) return;
   printSheet(iss.panels, iss.format, iss.hand, issueUrl(iss.no), false,
-    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen);
+    'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen, iss.no);
 }
 
 // The keyboard shortcut prints the sheet too. Somebody who presses print on
@@ -3256,13 +3456,21 @@ function reprintIssue(no) {
 // is the imposed sheet, wherever somebody happened to be standing when the
 // thought struck them; the alternative, which this used to do, was to hand
 // the browser a blank page unless they were on the press.
+// On the landing, the issue in the file is what prints.
 window.addEventListener('beforeprint', function () {
   if (document.body.classList.contains('reprinting')) return;
-  var ps = pressState();
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
-  capturePanels();
-  zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps), ps.issue);
+  var held = document.body.classList.contains('landing') ? landingIssue() : null;
+  if (held) {
+    zone.innerHTML = staticSheetHtml(held.panels || [], held.format, held.hand, null, landingUrl(held), held.gen, held.no);
+    var rule = document.getElementById('pagerule');
+    if (rule) rule.textContent = '@page { size: ' + paperOf(held.format).css + '; margin: 0; }';
+  } else {
+    var ps = pressState();
+    capturePanels();
+    zone.innerHTML = staticSheetHtml(ps.panels, ps.format, ps.hand, null, issueUrl(ps.issue), genOf(ps), ps.issue);
+  }
   document.body.classList.add('reprinting');
 });
 
@@ -3283,9 +3491,36 @@ window.addEventListener('afterprint', endPrinting);
 // holding was paper, so what they get is the issue and nothing else: no
 // header, no tabs, no shelf, no settings. At the end of it the press they are
 // already holding offers itself, because that is the whole point of the file.
+// The issue being held is the one in the file, named from the file's roster,
+// whatever this device's own shelf keeps.
+var landingSeed;
+function fileIssue() {
+  if (landingSeed === undefined) landingSeed = readSeed();
+  var seed = landingSeed;
+  if (!seed || seed.stoop !== 'issue') return null;
+  var no = seed.read || seed.no;
+  return (seed.issues || []).filter(function (i) { return i && i.no === no; })[0] || null;
+}
+
+function fileNameOf(id) {
+  var roster = (landingSeed && landingSeed.people) || [];
+  var p = roster.filter(function (x) { return x && x.id === id; })[0];
+  return p ? String(p.name) : nameOf(id);
+}
+
 function landingIssue() {
+  var held = fileIssue();
+  if (held && (!openIssueNo || openIssueNo === held.no)) return held;
   var no = openIssueNo || (state.issues.length ? state.issues[state.issues.length - 1].no : null);
   return no ? issueByNo(no) : null;
+}
+
+function landingUrl(iss) {
+  var held = fileIssue();
+  var addr = held === iss && landingSeed.address;
+  if (!addr) return issueUrl(iss.no);
+  addr = String(addr).replace(/\/+$/, '');
+  return (/^https?:\/\//.test(addr) ? addr : 'https://' + addr) + '/' + iss.no + '/';
 }
 
 function renderLanding() {
@@ -3294,7 +3529,7 @@ function renderLanding() {
   var iss = landingIssue();
   if (!iss) { box.innerHTML = ''; return; }
   var next = cycleState().no;
-  box.innerHTML = readingHtml(iss) +
+  box.innerHTML = readingHtml(iss, null, iss === fileIssue() ? fileNameOf : null) +
     '<div class="landing-tail">' +
     '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
     'No server, no account. You are holding the whole thing.</p>' +
@@ -3314,10 +3549,14 @@ function leaveLanding(hash) {
 // cleared rather than kept, so your first file carries only your own work and
 // not somebody else's №01 in its archive.
 function startOwn() {
-  if (!confirm('Start your own zine on this device? The issue you were handed is cleared, ' +
-    'so the first file you hand on carries only your own work.')) return;
+  var own = stateFromSeed ? 0 : state.logs.length + state.pieces.length + state.issues.length;
+  if (!confirm('Start your own zine on this device? Everything stored here is cleared' +
+    (own ? ', including the ' + state.issues.length + ' issue(s), ' + state.pieces.length +
+      ' piece(s) and ' + state.logs.length + ' scrap(s) this device already had' : '') +
+    ', so the first file you hand on carries only your own work.')) return;
   people = defaultPeople().slice(0, 1);
   savePeople();
+  forgetUndo();
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id } });
   saveState();
   sweepPhotos();
@@ -4540,8 +4779,7 @@ function saveFlyer(title, issue, url, photoId, name) {
 }
 // ---------- stamps, on paper ----------
 // The same unit-box descriptions in 05g-stamps.js, as path operators. A
-// stamp's text is fitted to its box in Helvetica-Bold, which is the nearest
-// standard face to the Impact the screen uses.
+// stamp's text is fitted to its box in the page's own face, as on screen.
 function pdfElStamp(el, g) {
   var st = STAMPS[el.stamp];
   if (!st) return '';
@@ -4584,8 +4822,8 @@ function pdfSpeckle(gen, box, seed) {
 // ---------- the self-carrying issue ----------
 // An exported issue is the reading view, the imposed sheet, the shelf, and a
 // working press for the next issue, in one file: the app's own HTML plus a
-// seed it boots from. The press is a flat cost of about 143 KB, which is two
-// photographs' worth; test/08-weight.js is where that is measured and held.
+// seed it boots from. The press is a flat cost of about 230 KB, typeface
+// included; test/08-weight.js is where that is measured and held.
 // SEED_ID lives in 01-store.js, where the store can see it.
 
 function sceneSlug() {
@@ -4640,7 +4878,9 @@ function pageWithSeed(seed) {
     if (el) { el.innerHTML = ''; el.removeAttribute('style'); }
   });
   var cloneBody = doc.querySelector('body');
-  if (cloneBody) cloneBody.removeAttribute('class');
+  if (cloneBody) { cloneBody.removeAttribute('class'); cloneBody.removeAttribute('data-drawer'); }
+  var lamp = doc.querySelector('#flash');
+  if (lamp) lamp.classList.remove('go');
   var old = doc.querySelector('#' + SEED_ID);
   if (old) old.parentNode.removeChild(old);
 
@@ -4723,8 +4963,8 @@ function exportPieceBundle(id) {
     people: people, address: state.address || '', zine: state.zine || '',
     pieces: [piece], photos: photosFor([piece]), open: '#desk'
   });
-  download('piece-' + nameOf(piece.byline).toLowerCase().replace(/[^a-z0-9]+/g, '-') +
-    '-' + piece.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24) + '.html', html);
+  var slug = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
+  download(['piece', slug(nameOf(piece.byline)), slug(piece.title).slice(0, 24)].filter(Boolean).join('-') + '.html', html);
   toast('Piece exported — send it to whoever holds the desk');
 }
 
@@ -4745,17 +4985,17 @@ function importSeed(seed) {
   });
 
   var addedPieces = 0, addedIssues = 0;
-  (seed.pieces || []).forEach(function (p) {
-    if (!p || !p.id) return;
-    if (state.pieces.some(function (x) { return x.id === p.id; })) return;
-    state.pieces.push(p);
-    addedPieces++;
-  });
-  (seed.issues || []).forEach(function (i) {
+  var incoming = normalize({ pieces: seed.pieces || [], issues: seed.issues || [] });
+  incoming.issues.forEach(function (i) {
     if (!i || !i.no) return;
     if (state.issues.some(function (x) { return x.no === i.no; })) return;
     state.issues.push(i);
     addedIssues++;
+  });
+  incoming.pieces.forEach(function (p) {
+    if (!p.id || state.pieces.some(function (x) { return x.id === p.id; }) || wasPublished(p.id)) return;
+    state.pieces.push(p);
+    addedPieces++;
   });
   if (seed.address && !state.address) state.address = seed.address;
   if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
@@ -4787,18 +5027,34 @@ function readSeed() {
   try { return JSON.parse(el.textContent); } catch (e) { return null; }
 }
 
+// The file's photos always load so its issue can be shown. Its people and
+// issues join this device only if the file is this scene's own; a stranger's
+// zine is shown, not merged (settings takes it in on purpose).
+function seedIsOurs(seed) {
+  return stateFromSeed || (seed.issues || []).some(function (i) {
+    return i && state.issues.some(function (x) { return x.no === i.no && x.ts === i.ts; });
+  });
+}
+
 function hydrateFromSeed(seed) {
   if (!seed) return;
   var photos = seed.photos || {};
   var ids = Object.keys(photos).filter(function (id) { return !photoCache[id]; });
   ids.forEach(function (id) { photoPut(id, photos[id]); });
 
-  // The roster rides along so a byline in the file still has a name on it.
-  mergePeople(seed.people);
-  if (seed.names && seed.names.a && seed.names.b) {
-    mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
+  if (seedIsOurs(seed)) {
+    // The roster rides along so a byline in the file still has a name on it.
+    mergePeople(seed.people);
+    if (seed.names && seed.names.a && seed.names.b) {
+      mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
+    }
+    var took = 0;
+    normalize({ issues: seed.issues || [] }).issues.forEach(function (i) {
+      if (i.no && !issueByNo(i.no)) { state.issues.push(i); took++; }
+    });
+    if (took) saveState();
+    ensurePeople();
   }
-  ensurePeople();
   if (seed.read) openIssueNo = seed.read;
   if (!location.hash) {
     if (seed.stoop === 'issue' && seed.read) location.hash = '#issue';
@@ -4842,6 +5098,12 @@ function exportBackup() {
   toast('Backup downloaded — photos included');
 }
 
+function wasPublished(id) {
+  return state.issues.some(function (i) {
+    return (i.pieces || []).some(function (p) { return p && p.id === id; });
+  });
+}
+
 function mergeList(mine, theirs) {
   var byId = {};
   mine.forEach(function (item) { byId[item.id] = item; });
@@ -4863,6 +5125,7 @@ function importBackup(raw, mode) {
   });
 
   if (mode === 'replace') {
+    forgetUndo();
     state.logs = incoming.logs;
     state.pieces = incoming.pieces;
     state.issues = incoming.issues;
@@ -4877,12 +5140,14 @@ function importBackup(raw, mode) {
     };
     var before = count();
     state.logs = mergeList(state.logs, incoming.logs);
-    state.pieces = mergeList(state.pieces, incoming.pieces);
     // Issues are keyed by number and never overwritten: a published issue is
     // history, and the copy already on the shelf wins.
     incoming.issues.forEach(function (iss) {
       if (!state.issues.some(function (x) { return x.no === iss.no; })) state.issues.push(iss);
     });
+    // A piece already published elsewhere must not return to the tray.
+    state.pieces = mergeList(state.pieces, incoming.pieces)
+      .filter(function (p) { return !wasPublished(p.id); });
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
     mergePeople(raw && raw.people);
@@ -4893,8 +5158,10 @@ function importBackup(raw, mode) {
     added = Math.max(0, after - before) + added;
   }
 
-  if (mode === 'replace' && Array.isArray(raw && raw.people) && raw.people.length) {
-    people = raw.people.filter(function (p) { return p && p.id && p.name; });
+  var roster = Array.isArray(raw && raw.people)
+    ? raw.people.filter(function (p) { return p && p.id && p.name; }) : [];
+  if (mode === 'replace' && roster.length) {
+    people = roster;
     savePeople();
   } else {
     mergePeople(raw && raw.people);
@@ -4936,14 +5203,23 @@ function handleImportFile(file, mode) {
 
 function resetData() {
   if (!confirm('Reset to sample data? Everything on this device will be replaced.')) return;
+  forgetUndo();
   state = JSON.parse(JSON.stringify(defaultData));
+  state.pieces.forEach(function (p) { p.byline = people[0].id; });
+  state.cycle = { no: '01', bell: Date.now() + 6048e5, editor: people[0].id };
   saveState();
   sweepPhotos();
   renderAll();
   toast('Reset to defaults');
 }
 
+// Enter in any settings field saves them all, the zine's name included.
 function saveNameFields() {
+  var zn = document.getElementById('zinename');
+  var was = state.zine;
+  if (zn && zn.value.trim()) state.zine = zn.value.trim().slice(0, 40);
+  var cover = pressState().panels[0];
+  if (state.zine !== was && cover && (!cover.h || cover.h === was)) cover.h = state.zine;
   document.querySelectorAll('[data-personid]').forEach(function (input) {
     var p = personById(input.getAttribute('data-personid'));
     if (p) p.name = input.value.trim() || p.name;
@@ -4959,6 +5235,7 @@ function saveNameFields() {
 // Start empty is the opposite of reset: no sample pieces, nothing borrowed.
 function startEmpty() {
   if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
+  forgetUndo();
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
     address: state.address, zine: state.zine });
   saveState();
@@ -5099,11 +5376,7 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();
   if (hit(t, '#mergebtn')) { document.getElementById('importfile').dataset.mode = 'merge'; return document.getElementById('importfile').click(); }
   if (hit(t, '#replacebtn')) { document.getElementById('importfile').dataset.mode = 'replace'; return document.getElementById('importfile').click(); }
-  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) {
-    var zn = document.getElementById('zinename');
-    if (zn && zn.value.trim()) state.zine = zn.value.trim();
-    return saveNameFields();
-  }
+  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) return saveNameFields();
   if (hit(t, '#addpersonbtn')) {
     var np = document.getElementById('newperson');
     if (!np || !np.value.trim()) { toast('Give them a name first'); return; }

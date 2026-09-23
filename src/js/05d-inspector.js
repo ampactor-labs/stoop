@@ -93,13 +93,15 @@ document.addEventListener('click', function (ev) {
   if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
 });
 
+// Repaint as it is typed, so the cutting grows and records its breaks.
 document.addEventListener('input', function (ev) {
   if (ev.target.id !== 'ransomtext' || !pasteSel) return;
   updateEl(pasteSel, { text: ev.target.value });
-  var zone = document.getElementById('sheetzone');
-  var node = zone && zone.querySelector('[data-el="' + pasteSel + '"] .eltext');
-  var el = selectedEl();
-  if (node && el) node.innerHTML = voiceOf(el) === 'marker' ? markerHtml(ev.target.value) : ransomHtml(ev.target.value);
+  // The panel only: rebuilding the inspector would destroy this very field.
+  var node = liveEl(pasteSel);
+  var panelEl = node && node.closest('.panel');
+  var panel = panelEl && panelOfPage(Number(panelEl.getAttribute('data-page')));
+  if (panel) paintPasteup(panelEl, panel);
 });
 
 // Which panel a new cutting lands on is simply the last one touched.

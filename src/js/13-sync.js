@@ -35,6 +35,12 @@ function exportBackup() {
   toast('Backup downloaded — photos included');
 }
 
+function wasPublished(id) {
+  return state.issues.some(function (i) {
+    return (i.pieces || []).some(function (p) { return p && p.id === id; });
+  });
+}
+
 function mergeList(mine, theirs) {
   var byId = {};
   mine.forEach(function (item) { byId[item.id] = item; });
@@ -56,6 +62,7 @@ function importBackup(raw, mode) {
   });
 
   if (mode === 'replace') {
+    forgetUndo();
     state.logs = incoming.logs;
     state.pieces = incoming.pieces;
     state.issues = incoming.issues;
@@ -70,12 +77,14 @@ function importBackup(raw, mode) {
     };
     var before = count();
     state.logs = mergeList(state.logs, incoming.logs);
-    state.pieces = mergeList(state.pieces, incoming.pieces);
     // Issues are keyed by number and never overwritten: a published issue is
     // history, and the copy already on the shelf wins.
     incoming.issues.forEach(function (iss) {
       if (!state.issues.some(function (x) { return x.no === iss.no; })) state.issues.push(iss);
     });
+    // A piece already published elsewhere must not return to the tray.
+    state.pieces = mergeList(state.pieces, incoming.pieces)
+      .filter(function (p) { return !wasPublished(p.id); });
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
     mergePeople(raw && raw.people);
@@ -86,8 +95,10 @@ function importBackup(raw, mode) {
     added = Math.max(0, after - before) + added;
   }
 
-  if (mode === 'replace' && Array.isArray(raw && raw.people) && raw.people.length) {
-    people = raw.people.filter(function (p) { return p && p.id && p.name; });
+  var roster = Array.isArray(raw && raw.people)
+    ? raw.people.filter(function (p) { return p && p.id && p.name; }) : [];
+  if (mode === 'replace' && roster.length) {
+    people = roster;
     savePeople();
   } else {
     mergePeople(raw && raw.people);
@@ -129,14 +140,23 @@ function handleImportFile(file, mode) {
 
 function resetData() {
   if (!confirm('Reset to sample data? Everything on this device will be replaced.')) return;
+  forgetUndo();
   state = JSON.parse(JSON.stringify(defaultData));
+  state.pieces.forEach(function (p) { p.byline = people[0].id; });
+  state.cycle = { no: '01', bell: Date.now() + 6048e5, editor: people[0].id };
   saveState();
   sweepPhotos();
   renderAll();
   toast('Reset to defaults');
 }
 
+// Enter in any settings field saves them all, the zine's name included.
 function saveNameFields() {
+  var zn = document.getElementById('zinename');
+  var was = state.zine;
+  if (zn && zn.value.trim()) state.zine = zn.value.trim().slice(0, 40);
+  var cover = pressState().panels[0];
+  if (state.zine !== was && cover && (!cover.h || cover.h === was)) cover.h = state.zine;
   document.querySelectorAll('[data-personid]').forEach(function (input) {
     var p = personById(input.getAttribute('data-personid'));
     if (p) p.name = input.value.trim() || p.name;
@@ -152,6 +172,7 @@ function saveNameFields() {
 // Start empty is the opposite of reset: no sample pieces, nothing borrowed.
 function startEmpty() {
   if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
+  forgetUndo();
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
     address: state.address, zine: state.zine });
   saveState();

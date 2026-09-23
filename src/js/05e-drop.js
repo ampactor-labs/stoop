@@ -30,9 +30,18 @@ function acceptText(page, text, at) {
   toast('Cutting glued down');
 }
 
+// A file dropped off a page would replace the press in the browser.
+function draggingFiles(ev) {
+  var types = ev.dataTransfer && ev.dataTransfer.types;
+  return !!types && Array.prototype.indexOf.call(types, 'Files') >= 0;
+}
+
 document.addEventListener('dragover', function (ev) {
-  var panel = ev.target.closest && ev.target.closest('.panel');
-  if (!panel) return;
+  var panel = ev.target.closest && ev.target.closest('#sheetzone .panel');
+  if (!panel) {
+    if (draggingFiles(ev)) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'none'; }
+    return;
+  }
   ev.preventDefault();
   panel.classList.add('dropping');
 });
@@ -43,8 +52,11 @@ document.addEventListener('dragleave', function (ev) {
 });
 
 document.addEventListener('drop', function (ev) {
-  var panel = ev.target.closest && ev.target.closest('.panel');
-  if (!panel) return;
+  var panel = ev.target.closest && ev.target.closest('#sheetzone .panel');
+  if (!panel) {
+    if (draggingFiles(ev)) { ev.preventDefault(); toast('Drop it on a page'); }
+    return;
+  }
   ev.preventDefault();
   panel.classList.remove('dropping');
   var page = Number(panel.getAttribute('data-page'));
@@ -58,6 +70,7 @@ document.addEventListener('drop', function (ev) {
 
 // Paste lands on the panel last touched, unless a caret has somewhere better
 // to put it.
+// Behind a drawer nothing lands unseen; over the scraps a photo is a scrap.
 document.addEventListener('paste', function (ev) {
   var a = document.activeElement;
   if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
@@ -68,6 +81,14 @@ document.addEventListener('paste', function (ev) {
   var files = [];
   for (var i = 0; cd.items && i < cd.items.length; i++) {
     if (cd.items[i].kind === 'file') files.push(cd.items[i].getAsFile());
+  }
+  var drawer = document.body.getAttribute('data-drawer');
+  if (drawer) {
+    if (drawer === 'scraps' && files.length) {
+      ev.preventDefault();
+      intakePhotos(files).then(function (ids) { if (ids.length) addLog(ids); renderTray(); });
+    }
+    return;
   }
   if (files.length) { ev.preventDefault(); acceptFiles(pastePage, files, null); return; }
   var text = cd.getData('text/plain');
