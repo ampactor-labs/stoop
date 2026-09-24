@@ -154,4 +154,41 @@ module.exports = async function loop(browser, ok) {
      await E.toastText());
   ok('no script errors around the loop', E.errs.length === 0, E.errs.slice(0, 3).join(' | '));
   await E.ctx.close();
+
+  // ---- a scene looks after itself.
+  const K = await open(browser);
+  await K.page.goto(APP);
+  await K.page.waitForTimeout(700);
+  while ((await K.page.locator('#authorname').innerText()) !== 'Anonymous') {
+    await K.page.click('#authortoggle');
+    await K.page.waitForTimeout(100);
+  }
+  await K.go('#scraps');
+  await K.page.fill('#loginput', 'somebody left this under the door');
+  await K.page.click('#logaddbtn');
+  await K.page.waitForTimeout(150);
+  await K.go('#desk');
+  await K.page.click('#drawsourcesbtn');
+  await K.page.waitForTimeout(250);
+  ok('A SCRAP CAN GO IN UNSIGNED', /SCRAPS\s*— Anonymous/.test(await K.page.locator('#desktray').innerText()));
+
+  const [cdl] = await Promise.all([K.page.waitForEvent('download'), K.page.click('#icsbtn')]);
+  const ics = fs.readFileSync(await cdl.path(), 'utf8');
+  ok('THE BELL GOES IN A CALENDAR, WITH A REMINDER THE DAY BEFORE',
+     /^BEGIN:VCALENDAR\r\n/.test(ics) && /DTSTART:\d{8}T\d{6}Z/.test(ics) && /TRIGGER:-P1D/.test(ics) &&
+     /SUMMARY:.*№01: the bell/.test(ics) && /\.ics$/.test(cdl.suggestedFilename()), cdl.suggestedFilename());
+
+  await K.page.click('#compileissuebtn');
+  await K.page.waitForTimeout(300);
+  await K.page.click('#buildissuebtn');
+  await K.page.waitForTimeout(600);
+  ok('THE SHELF SAYS WHEN THIS BROWSER WAS LAST BACKED UP',
+     /Last backup: never/.test(await K.page.locator('#shelfnudge').innerText()));
+  const [bdl] = await Promise.all([K.page.waitForEvent('download'), K.page.click('#nudgebackup')]);
+  ok('and backs it up from there', /\.json$/.test(bdl.suggestedFilename()) &&
+     (await K.page.locator('#shelfnudge').innerText()) === '');
+  await K.go('#backup');
+  ok('the scene says it was today', /Last backup: today/.test(await K.page.locator('#backupstatus').innerText()));
+  ok('no script errors looking after the scene', K.errs.length === 0, K.errs.slice(0, 3).join(' | '));
+  await K.ctx.close();
 };

@@ -50,13 +50,14 @@ function savePeople() {
 }
 function personIds() { return people.map(function (p) { return p.id; }); }
 // 'both' means made together: "Both" for a pair, "Together" otherwise, and
-// not offered to a scene of one.
-function authorIds() { return people.length > 1 ? personIds().concat('both') : personIds(); }
+// not offered to a scene of one. 'anon' is unsigned, which zines always were.
+function authorIds() { return (people.length > 1 ? personIds().concat('both') : personIds()).concat('anon'); }
 function personById(id) {
   return people.filter(function (p) { return p.id === id; })[0] || null;
 }
 function nameOf(id) {
   if (id === 'both') return people.length === 2 ? 'Both' : 'Together';
+  if (id === 'anon') return 'Anonymous';
   var p = personById(id);
   return p ? p.name : 'Someone';
 }
@@ -84,7 +85,7 @@ function ensurePeople() {
   var seen = {};
   personIds().forEach(function (id) { seen[id] = 1; });
   var found = {};
-  function note(id) { if (id && id !== 'both' && !seen[id]) found[id] = 1; }
+  function note(id) { if (id && id !== 'both' && id !== 'anon' && !seen[id]) found[id] = 1; }
   (state.logs || []).forEach(function (l) { note(l.author); });
   (state.pieces || []).forEach(function (p) { note(p.byline); });
   (state.issues || []).forEach(function (i) {

@@ -192,12 +192,34 @@ function buildIssue() {
   ps.ran = null;
   forgetUndo();
   savePress();
+  keepStorage();
   renderAll();
   location.hash = '#shelf';
   toast('Issue №' + state.issues[state.issues.length - 1].no + ' is on the shelf. ' +
     nameOf(c.editor) + ' has the desk for №' + c.no + '.' +
     (held ? ' ' + held + ' piece(s) that did not fit wait in the tray.' : ''));
 }
+
+// The bell where people already keep their days: a calendar file with a
+// reminder the day before. No server is told anything; the file is handed
+// round like the zine.
+function bellIcs() {
+  var c = cycleState();
+  var stamp = function (t) { return new Date(t).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''); };
+  var text = function (s) { return String(s).replace(/([\\;,])/g, '\\$1').replace(/\n/g, '\\n'); };
+  var zine = state.zine || 'STOOP ZINE';
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//stoop//press//EN', 'BEGIN:VEVENT',
+    'UID:' + sceneSlug() + '-' + c.no + '@stoop', 'DTSTAMP:' + stamp(Date.now()), 'DTSTART:' + stamp(c.bell),
+    'DURATION:PT1H', 'SUMMARY:' + text(zine + ' \u2116' + c.no + ': the bell'),
+    'DESCRIPTION:' + text('Pieces to ' + nameOf(c.editor) + ' by now. The issue goes to the shelf when the bell rings.'),
+    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:' + text('The bell rings tomorrow'), 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n') + '\r\n';
+}
+document.addEventListener('click', function (ev) {
+  if (!ev.target.closest || !ev.target.closest('#icsbtn')) return;
+  downloadBlob(sceneSlug() + '-' + cycleState().no + '-bell.ics', new Blob([bellIcs()], { type: 'text/calendar' }));
+  toast('The bell, as a calendar event, with a reminder the day before');
+});
 
 // ---------- the view ----------
 function fmtBell(ts) {

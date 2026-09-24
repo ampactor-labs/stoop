@@ -31,11 +31,14 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
 // is a property of a page at a fixed size, and this view has neither. What was
 // written still reads, cuttings included; where it was glued does not. This
 // is the issue you open on a phone at the bus stop.
-function cuttingWords(p) {
+function cuttingWords(p, pics) {
   return (p && Array.isArray(p.els) ? p.els : []).filter(function (e) {
-    return e && e.kind === 'text' && String(e.text || '').trim();
+    return e && ((e.kind === 'text' && String(e.text || '').trim()) || (e.kind === 'photo' && e.alt));
   }).sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).map(function (e) {
-    return '<p class="reading-cut">' + esc(e.text) + '</p>';
+    if (e.kind === 'text') return '<p class="reading-cut">' + esc(e.text) + '</p>';
+    var src = pics && pics[e.photo];
+    return '<figure class="reading-fig">' + (src ? '<img src="' + esc(src) + '" alt="' + esc(e.alt) + '">' : '') +
+      '<figcaption>' + esc(e.alt) + '</figcaption></figure>';
   }).join('');
 }
 
@@ -49,18 +52,18 @@ function readingHtml(issue, photos, nameFn) {
     '<p class="reading-meta">№' + esc(issue.no) + ' · ' + esc(fmtDay(issue.ts)) +
     ' · edited by ' + esc(who(issue.editor)) + '</p>' +
     (cover.photo && pics[cover.photo] ? '<img src="' + esc(pics[cover.photo]) + '" alt="">' : '') +
-    (cover.body ? '<p>' + esc(cover.body) + '</p>' : '') + cuttingWords(cover) +
+    (cover.body ? '<p>' + esc(cover.body) + '</p>' : '') + cuttingWords(cover, pics) +
     '</header>';
   if (issue.note) out += '<section class="reading-note"><h2>Editor\'s note</h2><p>' + esc(issue.note) + '</p></section>';
   panels.slice(1, -1).forEach(function (p, i) {
-    var cut = cuttingWords(p);
+    var cut = cuttingWords(p, pics);
     if (!p || (!p.body && !p.photo && !cut)) return;
     out += '<section class="reading-piece"><h2>' + esc(p.h || ('Page ' + (i + 2))) + '</h2>' +
       (p.photo && pics[p.photo] ? '<img src="' + esc(pics[p.photo]) + '" alt="">' : '') +
       (p.body ? '<p>' + esc(p.body) + '</p>' : '') + cut + '</section>';
   });
   var back = panels[panels.length - 1];
-  var backCut = panels.length > 1 ? cuttingWords(back) : '';
+  var backCut = panels.length > 1 ? cuttingWords(back, pics) : '';
   if (back && (back.body || backCut)) {
     out += '<footer class="reading-foot">' + (back.body ? '<p>' + esc(back.body) + '</p>' : '') + backCut + '</footer>';
   }
@@ -121,6 +124,7 @@ function renderShelf() {
       : issues.length + ' issue' + (issues.length === 1 ? '' : 's') + ' on the shelf';
   }
   if (openIssueNo && !issueByNo(openIssueNo)) openIssueNo = null;
+  renderBackupStatus();
   renderReader();
 }
 

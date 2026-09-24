@@ -36,7 +36,7 @@ function pdfSafe(s) {
 // The page's own face carries № at 128, where WinAnsi keeps a euro the
 // subset does not; a standard face spells it out through PDF_SUBS.
 function faceText(face, text) {
-  return face && face.face ? String(text).replace(/\u2116/g, '\x80') : String(text);
+  return face && face.face && face.face.glyphOf(0x2116) ? String(text).replace(/\u2116/g, '\x80') : String(text);
 }
 
 function pdfEsc(s) {

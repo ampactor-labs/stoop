@@ -108,7 +108,7 @@ function pasteRedoStep() {
 // taken on the way into the field and kept once something is typed.
 var flowSnap = null;
 function isFlowField(t) {
-  return !!t && (t.id === 'ransomtext' || t.id === 'issueno' ||
+  return !!t && (t.id === 'ransomtext' || t.id === 'alttext' || t.id === 'issueno' ||
     (!!t.closest && !!t.closest('#sheetzone') && /^(H3)$/.test(t.tagName)) ||
     (!!t.classList && t.classList.contains('body') && !!t.closest && !!t.closest('#sheetzone')));
 }

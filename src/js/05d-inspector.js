@@ -73,6 +73,10 @@ function renderInspector() {
       ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
         '">' + esc(el.text || '') + '</textarea>'
+      : '') +
+    (el.kind === 'photo'
+      ? '<input class="text-input" id="alttext" maxlength="200" placeholder="What is in it, for anyone who cannot see it" value="' +
+        esc(el.alt || '') + '">'
       : '');
 }
 
@@ -177,6 +181,16 @@ function rescreenFrom(btn) {
 }
 
 // Repaint as it is typed, so the cutting grows and records its breaks.
+// A photograph's description: read aloud by screen readers, and printed
+// under it in the text view.
+document.addEventListener('input', function (ev) {
+  if (ev.target.id !== 'alttext' || !pasteSel) return;
+  updateEl(pasteSel, { alt: ev.target.value.trim() });
+  var node = liveEl(pasteSel);
+  var img = node && node.querySelector('img');
+  if (img) img.alt = ev.target.value.trim();
+});
+
 document.addEventListener('input', function (ev) {
   if (ev.target.id !== 'ransomtext' || !pasteSel) return;
   updateEl(pasteSel, { text: ev.target.value });

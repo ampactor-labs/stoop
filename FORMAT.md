@@ -100,7 +100,7 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
 - `voice` applies to `text` and is `type`, `head`, `marker`, `stencil` or `ransom`. `ransom` renders each character separately in a mixed face, size and tilt, and `marker` turns each word by its own small angle; both MUST be derived from the text and the position rather than drawn at random, so the same issue cuts the same letters on every machine and on paper. `stencil` is a heavy capital face with horizontal bridges cut through it at a fixed interval of the type size. Older files carry `hand`; readers SHOULD treat it as `marker`. `size` is the type size in CSS pixels — ninety-sixths of an inch — at the panel's true printed size, so a writer working in points multiplies it by 0.75.
 - `lines` is optional: the lines of `text` as the writer's own layout broke them, in order. A reader that can lay the text out itself MAY ignore it, but a writer rendering to a fixed medium — paper, a PDF — SHOULD draw these breaks rather than re-wrapping, because it cannot know which faces the machine that made the issue had. `text` remains the source of truth; `lines` is a record of one rendering of it.
 - `ink` is `black` or `white`. On `text` it knocks the type out of a filled block; on `box` it fills the box instead of outlining it.
-- `photo` on a `photo` element names an id in `photos`. `crop` true fills the box and clips the overflow; absent or false fits the whole frame inside it.
+- `photo` on a `photo` element names an id in `photos`. `crop` true fills the box and clips the overflow; absent or false fits the whole frame inside it. `alt`, when present, says what is in the photograph, for anyone who cannot see it; a reader SHOULD give it to assistive technology and MAY print it under the photograph in a text view.
 
 An issue is **immutable once published**. `panels` is what shipped, and a reader reprinting issue three MUST use issue three's own `format` and `hand`, not whatever the reader is currently set to. Implementations that merge archives MUST keep the copy already held and discard the incoming one when both carry the same `no`.
 
@@ -119,7 +119,7 @@ An issue is **immutable once published**. `panels` is what shipped, and a reader
 }
 ```
 
-`byline` is a person's `id`, or `"both"` for work made together. A reader SHOULD show `"both"` as "Both" when the roster is a pair and as "Together" otherwise, and SHOULD NOT offer it as a byline to a scene of one. `from`, when present, lists the ids of the scraps a piece was drawn from; a writer uses it to avoid drawing the same scrap into a second piece, and readers MAY ignore it.
+`byline` is a person's `id`, `"both"` for work made together, or `"anon"` for work nobody signed. A reader SHOULD show `"both"` as "Both" when the roster is a pair and as "Together" otherwise, SHOULD NOT offer it as a byline to a scene of one, and MUST NOT seat `"anon"` on the roster as somebody. `from`, when present, lists the ids of the scraps a piece was drawn from; a writer uses it to avoid drawing the same scrap into a second piece, and readers MAY ignore it.
 
 `kind` is one of `essay`, `photos`, `log`, `mix`, `recipe`, `letters`. Implementations MAY add kinds; readers MUST treat an unknown kind as `essay` rather than dropping the piece.
 

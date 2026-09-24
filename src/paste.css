@@ -21,7 +21,7 @@
    a headline cut off a newspaper, letters off a magazine, and a pen. */
 .v-type { font-family: 'Courier New', monospace; line-height: 1.45; }
 .v-head { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase; }
-.v-marker { font-family: Anton, Impact, sans-serif; line-height: 1.3; }
+.v-marker { font-family: Knewave, Anton, Impact, sans-serif; line-height: 1.3; }
 .rm { display: inline-block; }
 /* Stencil: the display face with bridges cut through it, the way a sprayed
    letter has to be held together. A mask, so it needs no stencil font. */

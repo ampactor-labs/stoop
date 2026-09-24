@@ -88,15 +88,15 @@ fi
 
 # 7. Licenses present (charter III.4), including the font's: the OFL permits
 # bundling on condition that it travels with the face.
-if [ ! -f LICENSE ] || [ ! -f LICENSE-docs ] || [ ! -f src/fonts/OFL.txt ]; then
-  echo "FAIL: LICENSE, LICENSE-docs or src/fonts/OFL.txt missing"
+if [ ! -f LICENSE ] || [ ! -f LICENSE-docs ] || [ ! -f src/fonts/OFL-Anton.txt ] || [ ! -f src/fonts/OFL-Knewave.txt ]; then
+  echo "FAIL: LICENSE, LICENSE-docs or a font licence in src/fonts missing"
   fail=1
 fi
 
 # 9. The page carries its own face. An issue file that set its headlines in
 # whatever the reader's machine had would reflow the moment it was handed on.
-if ! grep -q '@font-face{font-family:Anton' artifact/index.html; then
-  echo "FAIL: the built page does not carry its typeface"
+if ! grep -q '@font-face{font-family:Anton' artifact/index.html || ! grep -q '@font-face{font-family:Knewave' artifact/index.html; then
+  echo "FAIL: the built page does not carry its typefaces"
   fail=1
 fi
 

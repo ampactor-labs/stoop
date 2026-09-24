@@ -35,29 +35,6 @@ function setPanel(page, body) {
 }
 
 // ---------- drawing the sheet ----------
-// Most home printers stop about a quarter inch short of the paper's edge.
-// Where a page meets the edge of the sheet a faint line shows that limit, on
-// screen only; which edges those are depends on the fold.
-function outerEdges(plan) {
-  var out = {};
-  plan.sheets.forEach(function (sheet) {
-    sheet.slots.forEach(function (slot, i) {
-      var row = Math.floor(i / sheet.cols), col = i % sheet.cols;
-      var e = { t: row === 0, b: row === sheet.rows - 1, l: col === 0, r: col === sheet.cols - 1 };
-      out[slot.page] = slot.flip ? { t: e.b, b: e.t, l: e.r, r: e.l } : e;
-    });
-  });
-  return out;
-}
-
-function reachHtml(e) {
-  if (!e) return '';
-  var at = function (on) { return on ? '18pt' : '0'; };
-  return '<div class="reach" title="Most home printers cannot reach past this line" style="top:' + at(e.t) +
-    ';right:' + at(e.r) + ';bottom:' + at(e.b) + ';left:' + at(e.l) + ';border-width:' +
-    [e.t, e.r, e.b, e.l].map(function (on) { return on ? '1px' : '0'; }).join(' ') + '"></div>';
-}
-
 function panelHtml(page, pages, edges) {
   var cover = page === 1 ? ' cover' : (page === pages ? ' backcover' : '');
   return '<div class="panel' + cover + '" data-page="' + page + '">' + reachHtml(edges) +

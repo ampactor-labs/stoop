@@ -33,7 +33,44 @@ function exportBackup() {
   a.remove();
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   toast('Backup downloaded — photos included');
+  try { localStorage.setItem('stoop_last_backup', String(Date.now())); } catch (e) {}
+  keepStorage();
+  renderBackupStatus();
 }
+
+// This browser is the only copy until a backup exists, and a browser may
+// clear a site's storage to make room, or, in Safari, after a week without a
+// visit. Ask it to keep ours, once there is something worth keeping, and say
+// plainly when the last backup was.
+function keepStorage() {
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) {}
+}
+
+function lastBackup() {
+  try { return Number(localStorage.getItem('stoop_last_backup')) || 0; } catch (e) { return 0; }
+}
+
+function backupAge() {
+  var t = lastBackup();
+  if (!t) return 'never';
+  var days = Math.floor((Date.now() - t) / 864e5);
+  return days < 1 ? 'today' : days + ' day' + (days === 1 ? '' : 's') + ' ago';
+}
+
+function renderBackupStatus() {
+  var el = document.getElementById('backupstatus');
+  if (el) el.textContent = 'Last backup: ' + backupAge() + '.';
+  var nudge = document.getElementById('shelfnudge');
+  if (!nudge) return;
+  var stale = !lastBackup() || Date.now() - lastBackup() > 14 * 864e5;
+  nudge.innerHTML = state.issues.length && stale
+    ? 'Everything here lives in this browser and nowhere else. Last backup: ' + esc(backupAge()) +
+      '. <button class="btn quiet" id="nudgebackup">BACK IT UP</button>'
+    : '';
+}
+document.addEventListener('click', function (ev) {
+  if (ev.target.closest && ev.target.closest('#nudgebackup')) exportBackup();
+});
 
 function wasPublished(id) {
   return state.issues.some(function (i) {

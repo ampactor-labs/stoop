@@ -57,8 +57,10 @@ module.exports = async function edges(browser, ok) {
   ok('a scene of one is not offered a "Both" byline', !chips.some(c => /both|together/i.test(c)), chips.join(','));
   await page.click('#authortoggle');
   await page.waitForTimeout(150);
-  ok('and the author toggle stays on the one person there is', (await text('#authorname')) === 'me',
+  ok('and the author toggle offers them or nobody, never "Both"', (await text('#authorname')) === 'Anonymous',
      await text('#authorname'));
+  await page.click('#authortoggle');
+  await page.waitForTimeout(150);
   await go('#desk');
   await page.click('#drawsourcesbtn');
   await page.waitForTimeout(250);

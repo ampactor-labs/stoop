@@ -232,6 +232,7 @@ function fillFormats() {
 }
 
 function fillSettings() {
+  renderBackupStatus();
   var addr = document.getElementById('addressinput');
   if (addr && document.activeElement !== addr) addr.value = state.address || '';
   var zn = document.getElementById('zinename');

@@ -140,6 +140,10 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
 // ---------- the public call ----------
 // Gathers every image the sheet needs, then writes one page per printed side.
 function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
+  return loadFaces().then(function () { return writeSheetPdf(panels, formatId, hand, url, issue, gen); });
+}
+
+function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
   var geom = pdfLayout(formatId);
@@ -170,8 +174,10 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   // The page's own typeface travels with the sheet, so the headline on paper
   // is the headline on screen, glyph for glyph.
   var face = pressFaceLoaded();
-  var faceNum = 0;
+  var marker = markerFaceLoaded();
+  var faceNum = 0, markerNum = 0;
   if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
+  if (marker) chain = chain.then(function () { return pdfEmbedFace(doc, marker).then(function (n) { markerNum = n; }); });
 
   return chain.then(function () {
     var xobjects = Object.keys(images).map(function (k) {
@@ -185,7 +191,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
     var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
-      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + '>>' +
+      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
 
     var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first

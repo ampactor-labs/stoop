@@ -187,3 +187,6 @@ body.landing main { padding-top: 2.4rem; }
 .read-meta { font-family: 'Courier New', monospace; font-size: .75rem; color: var(--grey); text-align: center; margin: 0 0 .9rem; }
 .readrun { padding: 0 6px 1.2rem; }
 @media print { .elmissing { visibility: hidden; } }
+.reading-fig { margin: .6rem 0; }
+.reading-fig figcaption { font-family: 'Courier New', monospace; font-size: .8rem; }
+.shelfnudge:empty { display: none; }

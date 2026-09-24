@@ -65,6 +65,13 @@ module.exports = async function craft(browser, ok) {
   await page.waitForTimeout(400);
   ok('and undo steps back through them', /DOTS/.test(await page.locator('[data-elphscreen]').innerText()));
 
+  // A photograph can say what is in it.
+  await page.locator('[data-page="2"] .el-photo').click();
+  await page.fill('#alttext', 'a bus shelter at night, one light out');
+  await page.waitForTimeout(200);
+  ok('A PHOTOGRAPH CAN SAY WHAT IS IN IT, FOR ANYONE WHO CANNOT SEE IT',
+     (await page.locator('[data-page="2"] .elphoto').getAttribute('alt')) === 'a bus shelter at night, one light out');
+
   // The cover's own photograph has the same controls.
   await go('#scraps');
   await page.setInputFiles('#photofile', photoFile());
@@ -92,6 +99,13 @@ module.exports = async function craft(browser, ok) {
   const kinds = Object.values(seed.photos).map(u => u.slice(0, 22));
   ok('THE KEPT ORIGINALS NEVER RIDE IN A FILE', kinds.every(k => k === 'data:image/png;base64,'),
      kinds.length + ' photos: ' + [...new Set(kinds)].join(' '));
+  await go('#shelf');
+  await page.click('[data-readissue="01"]');
+  await page.waitForTimeout(250);
+  await page.click('#shelfreader [data-readmode="text"]');
+  await page.waitForTimeout(250);
+  ok('and the text view prints it under the photograph',
+     /a bus shelter at night/.test(await page.locator('#shelfreader figcaption').innerText().catch(() => '')));
   const file = path.join(require('os').tmpdir(), 'stoop-craft-issue.html');
   fs.writeFileSync(file, html);
   const other = await (await browser.newContext({ viewport: { width: 1280, height: 1000 } })).newPage();

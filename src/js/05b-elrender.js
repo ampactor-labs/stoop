@@ -78,7 +78,7 @@ function elBody(el, pics, editable, editing) {
     // A back issue's photographs ride in that issue's own file, not in every
     // later one; the place they were glued still shows.
     if (!src) return '<div class="elmissing">' + (editable ? 'photo' : 'photo in its own issue file') + '</div>';
-    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="">';
+    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '">';
   }
   var voice = voiceOf(el);
   var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
