@@ -119,6 +119,17 @@ function screenPhoto(grey, exp, style) {
   });
 }
 
+// A PNG's size from its header, so a page lays out around a photograph
+// before the browser has decoded it; measuring a page for a piece to run on
+// depends on the photograph already taking its room.
+function pngSize(url) {
+  var m = /^data:image\/png;base64,([A-Za-z0-9+\/]{32})/.exec(url || '');
+  if (!m) return null;
+  var b = atob(m[1]);
+  var at = function (i) { return ((b.charCodeAt(i) << 24) | (b.charCodeAt(i + 1) << 16) | (b.charCodeAt(i + 2) << 8) | b.charCodeAt(i + 3)) >>> 0; };
+  return { w: at(16), h: at(20) };
+}
+
 function keepMeta(id, meta) {
   photoMeta[id] = meta;
   return photoTx('readwrite', function (s) { return s.put(meta, id); }, META_STORE).catch(function () {});

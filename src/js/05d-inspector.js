@@ -23,6 +23,11 @@ function inspectorButtons(el) {
   if (el.kind === 'photo' && photoMeta[el.photo]) {
     b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
   }
+  var at = findEl(el.id);
+  var pages = pressState().panels.length;
+  if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
+  if (at && at.page < pages) b.push(['elnextpage', 'PAGE ' + (at.page + 1) + ' \u25b6']);
+  b.push(['eldup', 'DUPLICATE']);
   b.push(['elfront', 'FRONT']);
   b.push(['elback', 'BACK']);
   b.push(['elstraight', 'STRAIGHTEN']);
@@ -106,9 +111,46 @@ document.addEventListener('click', function (ev) {
     return;
   }
   if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); return; }
+  if ((el = hit('[data-eldup]'))) { duplicateEl(el.getAttribute('data-eldup')); return; }
+  if ((el = hit('[data-elprevpage]'))) { moveElToPage(el.getAttribute('data-elprevpage'), -1); return; }
+  if ((el = hit('[data-elnextpage]'))) { moveElToPage(el.getAttribute('data-elnextpage'), 1); return; }
   var shot = hit('[data-elphlight],[data-elphdark],[data-elphscreen],[data-pgphlight],[data-pgphdark],[data-pgphscreen]');
   if (shot) rescreenFrom(shot);
 });
+
+// A second of the same cutting, a little down and to the right, on top.
+function duplicateEl(id) {
+  var hit = findEl(id);
+  if (!hit) return;
+  pasteMark();
+  var copy = JSON.parse(JSON.stringify(hit.el));
+  copy.id = uid('el');
+  copy.x = hit.el.x + 0.04;
+  copy.y = hit.el.y + 0.04;
+  copy.z = topZ(hit.panel) + 1;
+  hit.panel.els.push(copy);
+  pasteSel = copy.id;
+  savePress();
+  renderPress();
+  toast('Duplicated');
+}
+
+// The same place on the next or previous page.
+function moveElToPage(id, dir) {
+  var hit = findEl(id);
+  var ps = pressState();
+  var to = hit && hit.page + dir;
+  if (!hit || to < 1 || to > ps.panels.length) return;
+  pasteMark();
+  hit.panel.els.splice(hit.at, 1);
+  hit.el.z = topZ(ps.panels[to - 1]) + 1;
+  elsOf(ps.panels[to - 1]).push(hit.el);
+  pastePage = to;
+  pasteSel = hit.el.id;
+  savePress();
+  renderPress();
+  toast('Moved to page ' + to);
+}
 
 // Lighter, darker, or the next screen, for a photo cutting or a page's photo.
 function rescreenFrom(btn) {

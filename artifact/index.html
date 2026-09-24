@@ -463,6 +463,9 @@ body.landing main { padding-top: 2.4rem; }
    never taller than its box by the time anything measures it. */
 .eltext { height: auto; min-height: 100%; }
 .v-ransom { line-height: 1.25; }
+
+/* Where the printer stops reaching. Never printed; the print is another sheet. */
+.reach { position: absolute; pointer-events: none; border: 0 dashed rgba(255, 63, 164, .6); z-index: 4; }
 /* Loaded last, so these win over the desktop rules in every other file. */
   /* ---------- a phone ---------- */
   /* The page comes first. The tools sit on a bar along the bottom where a
@@ -780,7 +783,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 224 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 230 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1240,6 +1243,14 @@ function screenPhoto(grey, exp, style) {
   });
 }
 
+function pngSize(url) {
+  var m = /^data:image\/png;base64,([A-Za-z0-9+\/]{32})/.exec(url || '');
+  if (!m) return null;
+  var b = atob(m[1]);
+  var at = function (i) { return ((b.charCodeAt(i) << 24) | (b.charCodeAt(i + 1) << 16) | (b.charCodeAt(i + 2) << 8) | b.charCodeAt(i + 3)) >>> 0; };
+  return { w: at(16), h: at(20) };
+}
+
 function keepMeta(id, meta) {
   photoMeta[id] = meta;
   return photoTx('readwrite', function (s) { return s.put(meta, id); }, META_STORE).catch(function () {});
@@ -1617,9 +1628,29 @@ function setPanel(page, body) {
   if (ps.panels[page - 1]) ps.panels[page - 1].body = body;
 }
 
-function panelHtml(page, pages) {
+function outerEdges(plan) {
+  var out = {};
+  plan.sheets.forEach(function (sheet) {
+    sheet.slots.forEach(function (slot, i) {
+      var row = Math.floor(i / sheet.cols), col = i % sheet.cols;
+      var e = { t: row === 0, b: row === sheet.rows - 1, l: col === 0, r: col === sheet.cols - 1 };
+      out[slot.page] = slot.flip ? { t: e.b, b: e.t, l: e.r, r: e.l } : e;
+    });
+  });
+  return out;
+}
+
+function reachHtml(e) {
+  if (!e) return '';
+  var at = function (on) { return on ? '18pt' : '0'; };
+  return '<div class="reach" title="Most home printers cannot reach past this line" style="top:' + at(e.t) +
+    ';right:' + at(e.r) + ';bottom:' + at(e.b) + ';left:' + at(e.l) + ';border-width:' +
+    [e.t, e.r, e.b, e.l].map(function (on) { return on ? '1px' : '0'; }).join(' ') + '"></div>';
+}
+
+function panelHtml(page, pages, edges) {
   var cover = page === 1 ? ' cover' : (page === pages ? ' backcover' : '');
-  return '<div class="panel' + cover + '" data-page="' + page + '">' +
+  return '<div class="panel' + cover + '" data-page="' + page + '">' + reachHtml(edges) +
     '<div class="pgtag">p. ' + page + '</div>' +
     '<h3 contenteditable="true"></h3>' +
     (page === 1 ? '<div class="no">№<span id="issueno" contenteditable="true">01</span></div><div class="rule"></div>' : '') +
@@ -1636,16 +1667,17 @@ function layoutPages() {
   var zone = document.getElementById('sheetzone');
   if (!zone) return plan;
 
-  if (ps.format !== pageSig) {
+  if (ps.format + ps.hand !== pageSig) {
     var size = pageSize(ps.format);
     var spreads = spreadsOf(pages);
+    var edges = outerEdges(plan);
     zone.innerHTML = '<div class="pages" style="--pw:' + size.pw + 'pt;--ph:' + size.ph + 'pt">' +
       spreads.map(function (sp, i) {
         var kind = i === 0 ? ' cover' : (i === spreads.length - 1 ? ' backcover' : '');
         return '<div class="spread' + kind + '">' +
-          sp.map(function (pg) { return panelHtml(pg, pages); }).join('') + '</div>';
+          sp.map(function (pg) { return panelHtml(pg, pages, edges[pg]); }).join('') + '</div>';
       }).join('') + '</div>';
-    pageSig = ps.format;
+    pageSig = ps.format + ps.hand;
   }
 
   fitPages(zone);
@@ -1662,15 +1694,17 @@ function layoutPages() {
 }
 
 function fitPages(zone) {
+  var sx = window.scrollX, sy = window.scrollY;
   zone.style.setProperty('--fit', 1);
   var run = zone.querySelector('.pages');
-  if (!run) return;
-  var box = run.getBoundingClientRect();
-  var panel = run.querySelector('.panel');
-  if (!box.width || !panel) return;
-  var byWidth = (zone.clientWidth - 2) / box.width;
-  var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
-  zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
+  var box = run && run.getBoundingClientRect();
+  var panel = run && run.querySelector('.panel');
+  if (box && box.width && panel) {
+    var byWidth = (zone.clientWidth - 2) / box.width;
+    var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
+    zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
+  }
+  if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
 }
 
 var fitTimer = null;
@@ -1691,39 +1725,46 @@ function paintPanels() {
   ps.panels.forEach(function (panel, i) {
     var el = zone.querySelector('[data-page="' + (i + 1) + '"]');
     if (!el) return;
-    var head = el.querySelector('h3');
-    var body = el.querySelector('.body');
-    if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
-    if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
-
-    var img = el.querySelector('.panel-photo');
-    var drop = el.querySelector('.panel-unpic');
-    if (panel.photo && photoCache[panel.photo]) {
-      if (!img) {
-        img = document.createElement('img');
-        img.className = 'panel-photo';
-        el.insertBefore(img, body);
-      }
-      if (img.getAttribute('src') !== photoCache[panel.photo]) img.src = photoCache[panel.photo];
-      if (!drop) {
-        drop = document.createElement('button');
-        drop.className = 'panel-unpic';
-        drop.textContent = '✕';
-        drop.title = 'Remove this photo';
-        drop.setAttribute('data-delpanelpic', String(i + 1));
-        el.appendChild(drop);
-      }
-    } else {
-      if (img) img.remove();
-      if (drop) drop.remove();
-    }
-
+    paintFace(el, panel, i + 1, active);
     paintPasteup(el, panel);
   });
 
   var num = document.getElementById('issueno');
   if (num && num !== active && num.innerText !== ps.issue) num.innerText = ps.issue;
   paintAddress(zone, ps.panels.length, issueUrl(ps.issue));
+}
+
+function paintFace(el, panel, page, active) {
+  var head = el.querySelector('h3');
+  var body = el.querySelector('.body');
+  if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
+  if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
+
+  var img = el.querySelector('.panel-photo');
+  var drop = el.querySelector('.panel-unpic');
+  if (panel.photo && photoCache[panel.photo]) {
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'panel-photo';
+      el.insertBefore(img, body);
+    }
+    if (img.getAttribute('src') !== photoCache[panel.photo]) {
+      var size = pngSize(photoCache[panel.photo]);
+      img.style.aspectRatio = size ? size.w + ' / ' + size.h : '';
+      img.src = photoCache[panel.photo];
+    }
+    if (!drop) {
+      drop = document.createElement('button');
+      drop.className = 'panel-unpic';
+      drop.textContent = '✕';
+      drop.title = 'Remove this photo';
+      drop.setAttribute('data-delpanelpic', String(page));
+      el.appendChild(drop);
+    }
+  } else {
+    if (img) img.remove();
+    if (drop) drop.remove();
+  }
 }
 
 function paintAddress(zone, lastPage, url) {
@@ -2250,6 +2291,13 @@ function clamp01(v, span) {
   return Math.max(-0.25, Math.min(1.25 - span, v));
 }
 
+function clampX(v, span, page) {
+  var other = facingPage(page, pressState().panels.length);
+  var lo = other && other < page ? -1 : -0.25;
+  var hi = (other && other > page ? 2 : 1.25) - span;
+  return Math.max(lo, Math.min(hi, v));
+}
+
 function startGrab(ev, mode, elNode) {
   var panelEl = elNode.closest('.panel');
   var hit = findEl(elNode.getAttribute('data-el'));
@@ -2264,7 +2312,8 @@ function startGrab(ev, mode, elNode) {
     start: p,
     from: { x: hit.el.x, y: hit.el.y, w: hit.el.w, h: hit.el.h, rot: hit.el.rot || 0 },
     moved: false,
-    redoWas: redoWas
+    redoWas: redoWas,
+    page: hit.page
   };
   if (mode === 'rot') {
     var cx = (hit.el.x + hit.el.w / 2) * p.w;
@@ -2285,7 +2334,7 @@ function moveGrab(ev) {
     var dx = (p.x - grab.start.x) / p.w;
     var dy = (p.y - grab.start.y) / p.h;
     updateEl(grab.id, {
-      x: clamp01(snap(f.x + dx, !fine), f.w),
+      x: clampX(snap(f.x + dx, !fine), f.w, grab.page),
       y: clamp01(snap(f.y + dy, !fine), f.h)
     }, false, true);
   } else if (grab.mode === 'size') {
@@ -2326,6 +2375,9 @@ function paintOnePanel(panelEl) {
   var page = Number(panelEl.getAttribute('data-page'));
   var panel = panelOfPage(page);
   if (panel) paintPasteup(panelEl, panel);
+  var other = facingPage(page, pressState().panels.length);
+  var otherEl = other && document.querySelector('#sheetzone [data-page="' + other + '"]');
+  if (otherEl) paintPasteup(otherEl, panelOfPage(other));
   renderInspector();
 }
 
@@ -2429,6 +2481,11 @@ document.addEventListener('keydown', function (ev) {
     if (ev.shiftKey) pasteRedoStep(); else pasteUndoStep();
     return;
   }
+  if (meta && (key === 'd' || key === 'D') && pasteSel && !typingInField()) {
+    ev.preventDefault();
+    duplicateEl(pasteSel);
+    return;
+  }
   if (key === 'Escape' && pasteEditing) {
     pasteEditing = null;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -2448,7 +2505,7 @@ document.addEventListener('keydown', function (ev) {
   if (moves[key]) {
     ev.preventDefault();
     pasteMark();
-    updateEl(pasteSel, { x: clamp01(el.x + moves[key][0], el.w), y: clamp01(el.y + moves[key][1], el.h) });
+    updateEl(pasteSel, { x: clampX(el.x + moves[key][0], el.w, findEl(pasteSel).page), y: clamp01(el.y + moves[key][1], el.h) });
     renderPress();
     return;
   }
@@ -2477,6 +2534,11 @@ function inspectorButtons(el) {
   if (el.kind === 'photo' && photoMeta[el.photo]) {
     b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
   }
+  var at = findEl(el.id);
+  var pages = pressState().panels.length;
+  if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
+  if (at && at.page < pages) b.push(['elnextpage', 'PAGE ' + (at.page + 1) + ' \u25b6']);
+  b.push(['eldup', 'DUPLICATE']);
   b.push(['elfront', 'FRONT']);
   b.push(['elback', 'BACK']);
   b.push(['elstraight', 'STRAIGHTEN']);
@@ -2558,9 +2620,44 @@ document.addEventListener('click', function (ev) {
     return;
   }
   if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); return; }
+  if ((el = hit('[data-eldup]'))) { duplicateEl(el.getAttribute('data-eldup')); return; }
+  if ((el = hit('[data-elprevpage]'))) { moveElToPage(el.getAttribute('data-elprevpage'), -1); return; }
+  if ((el = hit('[data-elnextpage]'))) { moveElToPage(el.getAttribute('data-elnextpage'), 1); return; }
   var shot = hit('[data-elphlight],[data-elphdark],[data-elphscreen],[data-pgphlight],[data-pgphdark],[data-pgphscreen]');
   if (shot) rescreenFrom(shot);
 });
+
+function duplicateEl(id) {
+  var hit = findEl(id);
+  if (!hit) return;
+  pasteMark();
+  var copy = JSON.parse(JSON.stringify(hit.el));
+  copy.id = uid('el');
+  copy.x = hit.el.x + 0.04;
+  copy.y = hit.el.y + 0.04;
+  copy.z = topZ(hit.panel) + 1;
+  hit.panel.els.push(copy);
+  pasteSel = copy.id;
+  savePress();
+  renderPress();
+  toast('Duplicated');
+}
+
+function moveElToPage(id, dir) {
+  var hit = findEl(id);
+  var ps = pressState();
+  var to = hit && hit.page + dir;
+  if (!hit || to < 1 || to > ps.panels.length) return;
+  pasteMark();
+  hit.panel.els.splice(hit.at, 1);
+  hit.el.z = topZ(ps.panels[to - 1]) + 1;
+  elsOf(ps.panels[to - 1]).push(hit.el);
+  pastePage = to;
+  pasteSel = hit.el.id;
+  savePress();
+  renderPress();
+  toast('Moved to page ' + to);
+}
 
 function rescreenFrom(btn) {
   var a = Array.prototype.filter.call(btn.attributes, function (x) { return /^data-(elph|pgph)/.test(x.name); })[0];
@@ -3125,22 +3222,18 @@ function compileIssue() {
   ps.issue = c.no;
   ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
 
-  var ran = pieces.slice(0, inner);
-  ran.forEach(function (piece, i) {
-    var panel = ps.panels[i + 1];
-    if (!panel) return;
-    panel.h = piece.title.toUpperCase();
-    panel.body = piece.body;
-    panel.photo = piece.photo || null;
-  });
+  layoutPages();
+  var ran = pourPieces(ps, pieces, pages);
+  var filled = {};
+  ran.forEach(function (r) { filled[r.page] = 1; });
   (ps.ran || []).forEach(function (r) {
     var panel = ps.panels[r.page - 1];
-    if (!panel || r.page - 2 < ran.length || r.page >= pages) return;
+    if (!panel || filled[r.page] || r.page >= pages) return;
     panel.h = '';
     panel.body = '';
     panel.photo = null;
   });
-  ps.ran = ran.map(function (piece, i) { return { page: i + 2, id: piece.id }; });
+  ps.ran = ran;
   ps.ran.forEach(function (r) { ps.panels[r.page - 1].poured = pourMark(ps.panels[r.page - 1]); });
 
   var note = document.getElementById('editornote');
@@ -3155,12 +3248,65 @@ function compileIssue() {
 
   savePress();
   renderPress();
-  var over = pieces.length - inner;
+  var ranIds = {};
+  ran.forEach(function (r) { ranIds[r.id] = 1; });
+  var over = pieces.filter(function (p) { return !ranIds[p.id]; }).length;
   toast(over > 0
     ? 'Compiled. ' + over + ' piece(s) did not fit — cut some, or use a bigger format'
     : 'Compiled issue №' + c.no + ' from ' + pieces.length + ' piece(s)');
 }
 
+
+var RUN_ON_MIN = 12;
+function pourPieces(ps, pieces, pages) {
+  var ran = [];
+  var page = 2;
+  pieces.forEach(function (piece) {
+    var rest = piece.body;
+    var first = true;
+    while (page < pages) {
+      var panel = ps.panels[page - 1];
+      panel.h = first ? piece.title.toUpperCase() : piece.title.toUpperCase() + ', CONTINUED';
+      panel.photo = first ? (piece.photo || null) : null;
+      ran.push({ page: page, id: piece.id });
+      var cut = page < pages - 1 ? runOnAt(page, panel, rest) : -1;
+      if (cut < 0) { panel.body = rest; page++; break; }
+      panel.body = rest.slice(0, cut).replace(/\s+$/, '') + '\n\n(continued on p. ' + (page + 1) + ')';
+      rest = rest.slice(cut).replace(/^\s+/, '');
+      first = false;
+      page++;
+    }
+  });
+  return ran;
+}
+
+function runOnAt(page, panel, text) {
+  var zone = document.getElementById('sheetzone');
+  var el = zone && zone.offsetParent && zone.querySelector('[data-page="' + page + '"]');
+  var body = el && el.querySelector('.body');
+  if (!body) return -1;
+  paintFace(el, { h: panel.h, body: '', photo: panel.photo }, page, null);
+  var fits = function (t) {
+    body.innerText = t;
+    return body.scrollHeight <= body.clientHeight + 1;
+  };
+  var ends = [];
+  var re = /\S+/g;
+  var m;
+  while ((m = re.exec(text))) ends.push(m.index + m[0].length);
+  var tail = '\n\n(continued on p. ' + (page + 1) + ')';
+  var at = -1;
+  if (!fits(text)) {
+    var lo = 0, hi = ends.length;
+    while (lo < hi) {
+      var mid = Math.ceil((lo + hi) / 2);
+      if (fits(text.slice(0, ends[mid - 1]) + tail)) lo = mid; else hi = mid - 1;
+    }
+    if (ends.length - lo >= RUN_ON_MIN) at = lo ? ends[lo - 1] : 0;
+  }
+  body.innerText = '';
+  return at;
+}
 
 function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   var plan = impose(formatId, hand);
@@ -3445,7 +3591,8 @@ function panelFaceHtml(panels, page, pics, url, issue, aspect) {
   var pages = panels.length;
   return '<h3>' + esc(p.h || '') + '</h3>' +
     (page === 1 ? '<div class="no">№' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
-    (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
+    (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt=""' +
+      (pngSize(pics[p.photo]) ? ' style="aspect-ratio:' + pngSize(pics[p.photo]).w + ' / ' + pngSize(pics[p.photo]).h + '"' : '') + '>' : '') +
     '<div class="body">' + esc(p.body || '') + '</div>' +
     pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
     (page === pages ? addrHtml(url) : '');
@@ -3479,6 +3626,7 @@ function readHtml(issue, url, nameFn) {
 }
 
 function fitReads() {
+  var sx = window.scrollX, sy = window.scrollY;
   document.querySelectorAll('.readrun').forEach(function (box) {
     var run = box.querySelector('.pages');
     if (!run || !box.clientWidth) return;
@@ -3486,6 +3634,7 @@ function fitReads() {
     var w = run.getBoundingClientRect().width;
     if (w) box.style.setProperty('--fit', Math.max(0.3, Math.min(2, (box.clientWidth - 12) / w)));
   });
+  if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
 }
 window.addEventListener('resize', fitReads);
 

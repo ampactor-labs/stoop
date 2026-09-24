@@ -110,6 +110,78 @@ module.exports = async function craft(browser, ok) {
      /REMOVE/.test(await other.locator('#inspector').innerText()) && !/LIGHTER/.test(await other.locator('#inspector').innerText()));
   await other.context().close();
 
+  // ---- a long piece runs on, and nothing is lost on the way.
+  await go('#desk');
+  const words = Array.from({ length: 300 }, (_, i) => 'w' + i).join(' ');
+  await page.fill('#piecetitle', 'The Long One');
+  await page.fill('#piecebody', words);
+  await page.click('#piecesubmitbtn');
+  await page.waitForTimeout(200);
+  await page.click('#compileissuebtn');
+  await page.waitForTimeout(600);
+  let ps = (await store()).press;
+  const runs = ps.panels.filter(p => /^THE LONG ONE/.test(p.h || ''));
+  const joined = runs.map(p => p.body.replace(/\n\n\(continued on p\. \d+\)$/, '')).join(' ').split(/\s+/);
+  ok('A LONG PIECE RUNS ON TO THE NEXT PAGE', runs.length >= 2 && /continued on p\. \d+\)$/.test(runs[0].body) &&
+     /, CONTINUED$/.test(runs[1].h), runs.map(p => p.h).join(' / '));
+  ok('and every word of it arrives, in order', joined.join(' ') === words, joined.length + ' words');
+  await go('#press');
+  const warns = (await page.locator('#sheetzone .fitwarn').allInnerTexts()).filter(Boolean);
+  ok('nothing on a run-on page is over', warns.length === 0, warns.join(','));
+
+  // ---- where the printer stops reaching.
+  const edges = () => page.evaluate(() => [1, 2, 8].map(n => {
+    const r = document.querySelector('#sheetzone [data-page="' + n + '"] .reach');
+    return ['top', 'right', 'bottom', 'left'].filter(k => r.style[k] === '18pt').join('+');
+  }).join(' '));
+  const a = await edges();
+  ok('THE PAGES SHOW WHERE A HOME PRINTER STOPS REACHING', a === 'right+bottom bottom+left bottom', a);
+  await go('#paper');
+  await page.click('#swaplayoutbtn');
+  await page.waitForTimeout(300);
+  await go('#press');
+  const b = await edges();
+  ok('and move with the fold', b !== a && /\+/.test(b), b);
+  await go('#paper');
+  await page.click('#swaplayoutbtn');
+  await page.waitForTimeout(300);
+
+  // ---- duplicate, move to a page, and a drag across the gutter.
+  await go('#press');
+  const p5 = page.locator('[data-page="5"]');
+  await p5.scrollIntoViewIfNeeded();
+  await p5.click({ position: { x: 6, y: 6 } });
+  await page.click('[data-addel="box"]');
+  await page.waitForTimeout(200);
+  await page.keyboard.press('Control+d');
+  await page.waitForTimeout(200);
+  ok('CTRL-D DUPLICATES A CUTTING', (await page.locator('[data-page="5"] .el-box:not(.ghost)').count()) === 2);
+  await page.click('[data-eldup]');
+  await page.waitForTimeout(200);
+  await page.click('[data-elnextpage]');
+  await page.waitForTimeout(200);
+  ok('and one can be sent to the next page', (await page.locator('[data-page="5"] .el-box:not(.ghost)').count()) === 2 &&
+     (await page.locator('[data-page="6"] .el-box:not(.ghost)').count()) === 1);
+  const box = page.locator('[data-page="6"] .el-box:not(.ghost)');
+  await box.scrollIntoViewIfNeeded();
+  const before6 = (await box.boundingBox()).y;
+  await box.click();
+  await page.waitForTimeout(250);
+  const after6 = (await box.boundingBox()).y;
+  ok('CLICKING A CUTTING ON A LOWER PAGE LEAVES THE VIEW WHERE IT WAS', Math.abs(after6 - before6) < 2,
+     Math.round(before6) + 'px then ' + Math.round(after6) + 'px');
+  const bb = await box.boundingBox();
+  const pb = await page.locator('[data-page="6"]').boundingBox();
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(pb.x + pb.width * 1.05, bb.y + bb.height / 2, { steps: 12 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  ps = (await store()).press;
+  const moved = ps.panels[5].els.find(e => e.kind === 'box');
+  ok('A CUTTING DRAGS ACROSS THE GUTTER ONTO THE FACING PAGE', moved.x + moved.w > 1.1 &&
+     (await page.locator('[data-page="7"] .el-box.ghost').count()) === 1, 'x ' + moved.x.toFixed(2));
+
   ok('no script errors while making things', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();
 };

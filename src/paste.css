@@ -83,3 +83,6 @@
    never taller than its box by the time anything measures it. */
 .eltext { height: auto; min-height: 100%; }
 .v-ransom { line-height: 1.25; }
+
+/* Where the printer stops reaching. Never printed; the print is another sheet. */
+.reach { position: absolute; pointer-events: none; border: 0 dashed rgba(255, 63, 164, .6); z-index: 4; }

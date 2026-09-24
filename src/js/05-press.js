@@ -35,9 +35,32 @@ function setPanel(page, body) {
 }
 
 // ---------- drawing the sheet ----------
-function panelHtml(page, pages) {
+// Most home printers stop about a quarter inch short of the paper's edge.
+// Where a page meets the edge of the sheet a faint line shows that limit, on
+// screen only; which edges those are depends on the fold.
+function outerEdges(plan) {
+  var out = {};
+  plan.sheets.forEach(function (sheet) {
+    sheet.slots.forEach(function (slot, i) {
+      var row = Math.floor(i / sheet.cols), col = i % sheet.cols;
+      var e = { t: row === 0, b: row === sheet.rows - 1, l: col === 0, r: col === sheet.cols - 1 };
+      out[slot.page] = slot.flip ? { t: e.b, b: e.t, l: e.r, r: e.l } : e;
+    });
+  });
+  return out;
+}
+
+function reachHtml(e) {
+  if (!e) return '';
+  var at = function (on) { return on ? '18pt' : '0'; };
+  return '<div class="reach" title="Most home printers cannot reach past this line" style="top:' + at(e.t) +
+    ';right:' + at(e.r) + ';bottom:' + at(e.b) + ';left:' + at(e.l) + ';border-width:' +
+    [e.t, e.r, e.b, e.l].map(function (on) { return on ? '1px' : '0'; }).join(' ') + '"></div>';
+}
+
+function panelHtml(page, pages, edges) {
   var cover = page === 1 ? ' cover' : (page === pages ? ' backcover' : '');
-  return '<div class="panel' + cover + '" data-page="' + page + '">' +
+  return '<div class="panel' + cover + '" data-page="' + page + '">' + reachHtml(edges) +
     '<div class="pgtag">p. ' + page + '</div>' +
     '<h3 contenteditable="true"></h3>' +
     (page === 1 ? '<div class="no">№<span id="issueno" contenteditable="true">01</span></div><div class="rule"></div>' : '') +
@@ -57,16 +80,17 @@ function layoutPages() {
   var zone = document.getElementById('sheetzone');
   if (!zone) return plan;
 
-  if (ps.format !== pageSig) {
+  if (ps.format + ps.hand !== pageSig) {
     var size = pageSize(ps.format);
     var spreads = spreadsOf(pages);
+    var edges = outerEdges(plan);
     zone.innerHTML = '<div class="pages" style="--pw:' + size.pw + 'pt;--ph:' + size.ph + 'pt">' +
       spreads.map(function (sp, i) {
         var kind = i === 0 ? ' cover' : (i === spreads.length - 1 ? ' backcover' : '');
         return '<div class="spread' + kind + '">' +
-          sp.map(function (pg) { return panelHtml(pg, pages); }).join('') + '</div>';
+          sp.map(function (pg) { return panelHtml(pg, pages, edges[pg]); }).join('') + '</div>';
       }).join('') + '</div>';
-    pageSig = ps.format;
+    pageSig = ps.format + ps.hand;
   }
 
   fitPages(zone);
@@ -88,16 +112,21 @@ function layoutPages() {
 // so a page never grows taller than the window it is being read in. zoom
 // rather than transform, because zoom takes part in layout: a scaled run
 // leaves no hole under itself, and the caret lands where it is aimed.
+// Measuring at scale one shrinks the page for a moment, and the browser
+// pulls the scroll back to fit the shorter page; without putting it back,
+// every repaint threw somebody working on page six up to page three.
 function fitPages(zone) {
+  var sx = window.scrollX, sy = window.scrollY;
   zone.style.setProperty('--fit', 1);
   var run = zone.querySelector('.pages');
-  if (!run) return;
-  var box = run.getBoundingClientRect();
-  var panel = run.querySelector('.panel');
-  if (!box.width || !panel) return;
-  var byWidth = (zone.clientWidth - 2) / box.width;
-  var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
-  zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
+  var box = run && run.getBoundingClientRect();
+  var panel = run && run.querySelector('.panel');
+  if (box && box.width && panel) {
+    var byWidth = (zone.clientWidth - 2) / box.width;
+    var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
+    zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
+  }
+  if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
 }
 
 var fitTimer = null;
@@ -119,39 +148,48 @@ function paintPanels() {
   ps.panels.forEach(function (panel, i) {
     var el = zone.querySelector('[data-page="' + (i + 1) + '"]');
     if (!el) return;
-    var head = el.querySelector('h3');
-    var body = el.querySelector('.body');
-    if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
-    if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
-
-    var img = el.querySelector('.panel-photo');
-    var drop = el.querySelector('.panel-unpic');
-    if (panel.photo && photoCache[panel.photo]) {
-      if (!img) {
-        img = document.createElement('img');
-        img.className = 'panel-photo';
-        el.insertBefore(img, body);
-      }
-      if (img.getAttribute('src') !== photoCache[panel.photo]) img.src = photoCache[panel.photo];
-      if (!drop) {
-        drop = document.createElement('button');
-        drop.className = 'panel-unpic';
-        drop.textContent = '✕';
-        drop.title = 'Remove this photo';
-        drop.setAttribute('data-delpanelpic', String(i + 1));
-        el.appendChild(drop);
-      }
-    } else {
-      if (img) img.remove();
-      if (drop) drop.remove();
-    }
-
+    paintFace(el, panel, i + 1, active);
     paintPasteup(el, panel);
   });
 
   var num = document.getElementById('issueno');
   if (num && num !== active && num.innerText !== ps.issue) num.innerText = ps.issue;
   paintAddress(zone, ps.panels.length, issueUrl(ps.issue));
+}
+
+// A page's heading, words and photograph, painted without touching whatever
+// the caret is in. The photograph takes its room from its header at once.
+function paintFace(el, panel, page, active) {
+  var head = el.querySelector('h3');
+  var body = el.querySelector('.body');
+  if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
+  if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
+
+  var img = el.querySelector('.panel-photo');
+  var drop = el.querySelector('.panel-unpic');
+  if (panel.photo && photoCache[panel.photo]) {
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'panel-photo';
+      el.insertBefore(img, body);
+    }
+    if (img.getAttribute('src') !== photoCache[panel.photo]) {
+      var size = pngSize(photoCache[panel.photo]);
+      img.style.aspectRatio = size ? size.w + ' / ' + size.h : '';
+      img.src = photoCache[panel.photo];
+    }
+    if (!drop) {
+      drop = document.createElement('button');
+      drop.className = 'panel-unpic';
+      drop.textContent = '✕';
+      drop.title = 'Remove this photo';
+      drop.setAttribute('data-delpanelpic', String(page));
+      el.appendChild(drop);
+    }
+  } else {
+    if (img) img.remove();
+    if (drop) drop.remove();
+  }
 }
 
 // The back cover carries the address as text and as a code, so somebody who

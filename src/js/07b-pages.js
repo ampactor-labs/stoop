@@ -32,7 +32,8 @@ function panelFaceHtml(panels, page, pics, url, issue, aspect) {
   var pages = panels.length;
   return '<h3>' + esc(p.h || '') + '</h3>' +
     (page === 1 ? '<div class="no">№' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
-    (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
+    (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt=""' +
+      (pngSize(pics[p.photo]) ? ' style="aspect-ratio:' + pngSize(pics[p.photo]).w + ' / ' + pngSize(pics[p.photo]).h + '"' : '') + '>' : '') +
     '<div class="body">' + esc(p.body || '') + '</div>' +
     pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
     (page === pages ? addrHtml(url) : '');
@@ -68,6 +69,7 @@ function readHtml(issue, url, nameFn) {
 // Scaled to the column, the way the press scales its pages, but only by
 // width: a page is read by scrolling, not held to the window.
 function fitReads() {
+  var sx = window.scrollX, sy = window.scrollY;
   document.querySelectorAll('.readrun').forEach(function (box) {
     var run = box.querySelector('.pages');
     if (!run || !box.clientWidth) return;
@@ -75,6 +77,7 @@ function fitReads() {
     var w = run.getBoundingClientRect().width;
     if (w) box.style.setProperty('--fit', Math.max(0.3, Math.min(2, (box.clientWidth - 12) / w)));
   });
+  if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
 }
 window.addEventListener('resize', fitReads);
 

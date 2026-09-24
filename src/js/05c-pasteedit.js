@@ -18,6 +18,14 @@ function clamp01(v, span) {
   return Math.max(-0.25, Math.min(1.25 - span, v));
 }
 
+// Across the gutter of a spread a cutting can travel the whole facing page.
+function clampX(v, span, page) {
+  var other = facingPage(page, pressState().panels.length);
+  var lo = other && other < page ? -1 : -0.25;
+  var hi = (other && other > page ? 2 : 1.25) - span;
+  return Math.max(lo, Math.min(hi, v));
+}
+
 function startGrab(ev, mode, elNode) {
   var panelEl = elNode.closest('.panel');
   var hit = findEl(elNode.getAttribute('data-el'));
@@ -32,7 +40,8 @@ function startGrab(ev, mode, elNode) {
     start: p,
     from: { x: hit.el.x, y: hit.el.y, w: hit.el.w, h: hit.el.h, rot: hit.el.rot || 0 },
     moved: false,
-    redoWas: redoWas
+    redoWas: redoWas,
+    page: hit.page
   };
   if (mode === 'rot') {
     var cx = (hit.el.x + hit.el.w / 2) * p.w;
@@ -53,7 +62,7 @@ function moveGrab(ev) {
     var dx = (p.x - grab.start.x) / p.w;
     var dy = (p.y - grab.start.y) / p.h;
     updateEl(grab.id, {
-      x: clamp01(snap(f.x + dx, !fine), f.w),
+      x: clampX(snap(f.x + dx, !fine), f.w, grab.page),
       y: clamp01(snap(f.y + dy, !fine), f.h)
     }, false, true);
   } else if (grab.mode === 'size') {
@@ -94,10 +103,14 @@ function endGrab() {
   renderPress();
 }
 
+// A panel and its facing page, since a cutting may hang across both.
 function paintOnePanel(panelEl) {
   var page = Number(panelEl.getAttribute('data-page'));
   var panel = panelOfPage(page);
   if (panel) paintPasteup(panelEl, panel);
+  var other = facingPage(page, pressState().panels.length);
+  var otherEl = other && document.querySelector('#sheetzone [data-page="' + other + '"]');
+  if (otherEl) paintPasteup(otherEl, panelOfPage(other));
   renderInspector();
 }
 
@@ -213,6 +226,11 @@ document.addEventListener('keydown', function (ev) {
     if (ev.shiftKey) pasteRedoStep(); else pasteUndoStep();
     return;
   }
+  if (meta && (key === 'd' || key === 'D') && pasteSel && !typingInField()) {
+    ev.preventDefault();
+    duplicateEl(pasteSel);
+    return;
+  }
   if (key === 'Escape' && pasteEditing) {
     pasteEditing = null;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -232,7 +250,7 @@ document.addEventListener('keydown', function (ev) {
   if (moves[key]) {
     ev.preventDefault();
     pasteMark();
-    updateEl(pasteSel, { x: clamp01(el.x + moves[key][0], el.w), y: clamp01(el.y + moves[key][1], el.h) });
+    updateEl(pasteSel, { x: clampX(el.x + moves[key][0], el.w, findEl(pasteSel).page), y: clamp01(el.y + moves[key][1], el.h) });
     renderPress();
     return;
   }
