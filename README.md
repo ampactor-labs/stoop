@@ -39,7 +39,7 @@ On top of that sits **the paste-up**, because a zine is not a document — it is
 
 Paper comes out four ways: a browser print, a hand-written PDF at exact paper size with nothing for a print dialog to negotiate, a flyer with tear-off tabs, or a single HTML file that is the issue, the archive behind it, and a working press for the next one. That last file is the point: open it on a machine that has never seen this app and you see the issue as it was made, page by page, with the text one tap away; you can make the next one and hand it on. It carries every back issue too, each with its cover, so the file does not grow with the shelf until nobody can send it. And the shelf makes the site the back covers point at: every issue as the page its code leads to, a PDF of each beside it, zipped for Neocities, Netlify Drop, any static host or a thumb drive.
 
-Photos dither to 1-bit on intake, so a page-sized photo costs tens of kilobytes and is already in the form a photocopier reproduces. The back cover carries the scene's address as text and as a QR code generated on the page. Sync is a file that merges by id, and a published issue is never overwritten by a merge.
+Photos dither to 1-bit on intake, so a page-sized photo costs tens of kilobytes and is already in the form a photocopier reproduces. The device keeps a small greyscale original, so a dark phone photo can be made lighter afterwards, or screened as halftone dots or hard copier contrast instead of grain; the original never leaves the device. The back cover carries the scene's address as text and as a QR code generated on the page. Sync is a file that merges by id, and a published issue is never overwritten by a merge.
 
 ### One cycle
 

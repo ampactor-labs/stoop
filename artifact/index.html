@@ -780,7 +780,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 219 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 224 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1015,25 +1015,30 @@ function saveState() {
 
 var PHOTO_DB = 'stoop_photos';
 var PHOTO_STORE = 'photos';
+var META_STORE = 'meta';
+var MASTER_STORE = 'masters';
 var photoCache = {};
+var photoMeta = {};
 
 function openPhotoDb() {
   return new Promise(function (resolve, reject) {
     if (!window.indexedDB) { reject(new Error('no indexeddb')); return; }
-    var req = indexedDB.open(PHOTO_DB, 1);
+    var req = indexedDB.open(PHOTO_DB, 2);
     req.onupgradeneeded = function () {
-      if (!req.result.objectStoreNames.contains(PHOTO_STORE)) req.result.createObjectStore(PHOTO_STORE);
+      [PHOTO_STORE, META_STORE, MASTER_STORE].forEach(function (name) {
+        if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
+      });
     };
     req.onsuccess = function () { resolve(req.result); };
     req.onerror = function () { reject(req.error); };
   });
 }
 
-function photoTx(mode, fn) {
+function photoTx(mode, fn, store) {
   return openPhotoDb().then(function (db) {
     return new Promise(function (resolve, reject) {
-      var tx = db.transaction(PHOTO_STORE, mode);
-      var req = fn(tx.objectStore(PHOTO_STORE));
+      var tx = db.transaction(store || PHOTO_STORE, mode);
+      var req = fn(tx.objectStore(store || PHOTO_STORE));
       tx.oncomplete = function () { resolve(req && req.result); };
       tx.onerror = function () { reject(tx.error); };
     });
@@ -1062,6 +1067,12 @@ function photoLoadAll() {
       };
       tx.onerror = function () { resolve(); };
     });
+  }).then(function () {
+    return photoTx('readonly', function (s) { return s.getAllKeys(); }, META_STORE).then(function (keys) {
+      return photoTx('readonly', function (s) { return s.getAll(); }, META_STORE).then(function (vals) {
+        (keys || []).forEach(function (k, i) { photoMeta[k] = vals[i]; });
+      });
+    });
   }).catch(function () {});
 }
 
@@ -1088,31 +1099,69 @@ function collectPhotoRefs() {
 function sweepPhotos() {
   var live = collectPhotoRefs();
   Object.keys(photoCache).forEach(function (id) { if (!live[id]) photoDel(id); });
+  var roots = {};
+  Object.keys(photoMeta).forEach(function (id) {
+    if (!live[id]) {
+      delete photoMeta[id];
+      photoTx('readwrite', function (s) { return s.delete(id); }, META_STORE).catch(function () {});
+    } else {
+      roots[photoMeta[id].root] = 1;
+    }
+  });
+  photoTx('readonly', function (s) { return s.getAllKeys(); }, MASTER_STORE).then(function (keys) {
+    (keys || []).forEach(function (k) {
+      if (!roots[k]) photoTx('readwrite', function (s) { return s.delete(k); }, MASTER_STORE).catch(function () {});
+    });
+  }).catch(function () {});
 }
 
 
+function renderTray() {
+  var tray = document.getElementById('phototray');
+  if (!tray) return;
+  var ids = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
+    .filter(function (l) { return l.photo && photoCache[l.photo]; })
+    .map(function (l) { return l.photo; });
+  Object.keys(photoCache).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
+  tray.innerHTML = ids.map(function (id) {
+    return '<img class="tray-photo" data-traypic="' + esc(id) + '" src="' + esc(photoCache[id]) +
+      '" alt="" title="Glue this to the page">';
+  }).join('');
+}
+
+function placeFromTray(id) {
+  if (!photoCache[id]) return;
+  addEl(pastePage, 'photo', { photo: id });
+  renderPress();
+  toast('Glued to page ' + pastePage + ' \u2014 drag it where it goes');
+}
 var PHOTO_MAX_EDGE = 1000;
 var PHOTO_CONTRAST = 1.15;
+var SCREENS = ['grain', 'dots', 'hard'];
+var SCREEN_LABEL = { grain: 'GRAIN', dots: 'DOTS', hard: 'HARD' };
+
+function loadImage(src) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () { resolve(img); };
+    img.onerror = function () { reject(new Error('not an image')); };
+    img.src = src;
+  });
+}
 
 function readImage(file) {
   return new Promise(function (resolve, reject) {
     var reader = new FileReader();
-    reader.onload = function () {
-      var img = new Image();
-      img.onload = function () { resolve(img); };
-      img.onerror = function () { reject(new Error('not an image')); };
-      img.src = reader.result;
-    };
+    reader.onload = function () { loadImage(reader.result).then(resolve, reject); };
     reader.onerror = function () { reject(reader.error); };
     reader.readAsDataURL(file);
   });
 }
 
-function ditherToBitmap(img) {
+function greyFrom(img) {
   var scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(img.width, img.height));
   var w = Math.max(1, Math.round(img.width * scale));
   var h = Math.max(1, Math.round(img.height * scale));
-
   var canvas = document.createElement('canvas');
   canvas.width = w;
   canvas.height = h;
@@ -1120,49 +1169,80 @@ function ditherToBitmap(img) {
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
-
-  var imageData = ctx.getImageData(0, 0, w, h);
-  var d = imageData.data;
-  var gray = new Float32Array(w * h);
-
+  var data = ctx.getImageData(0, 0, w, h);
+  var d = data.data;
+  var g = new Float32Array(w * h);
   for (var i = 0; i < w * h; i++) {
-    var lum = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
-    gray[i] = Math.max(0, Math.min(255, (lum - 128) * PHOTO_CONTRAST + 128));
+    g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = g[i];
   }
+  ctx.putImageData(data, 0, 0);
+  return { w: w, h: h, g: g, canvas: canvas };
+}
 
+function screenBits(grey, exp, style) {
+  var w = grey.w, h = grey.h;
+  var g = new Float32Array(w * h);
+  for (var i = 0; i < w * h; i++) {
+    g[i] = Math.max(0, Math.min(255, (grey.g[i] - 128) * PHOTO_CONTRAST + 128 + exp * 26));
+  }
+  var cell = Math.max(4, Math.round(Math.max(w, h) / 140));
   for (var y = 0; y < h; y++) {
     for (var x = 0; x < w; x++) {
       var idx = y * w + x;
-      var old = gray[idx];
+      var old = g[idx];
+      if (style === 'hard') { g[idx] = old < 128 ? 0 : 255; continue; }
+      if (style === 'dots') {
+        var u = (x + y) / (cell * 1.414), v = (x - y) / (cell * 1.414);
+        var t = (Math.cos(u * 2 * Math.PI) + Math.cos(v * 2 * Math.PI) + 2) / 4 * 255;
+        g[idx] = old > t ? 255 : 0;
+        continue;
+      }
       var next = old < 128 ? 0 : 255;
       var err = old - next;
-      gray[idx] = next;
-      if (x + 1 < w) gray[idx + 1] += err * 7 / 16;
+      g[idx] = next;
+      if (x + 1 < w) g[idx + 1] += err * 7 / 16;
       if (y + 1 < h) {
-        if (x > 0) gray[idx + w - 1] += err * 3 / 16;
-        gray[idx + w] += err * 5 / 16;
-        if (x + 1 < w) gray[idx + w + 1] += err * 1 / 16;
+        if (x > 0) g[idx + w - 1] += err * 3 / 16;
+        g[idx + w] += err * 5 / 16;
+        if (x + 1 < w) g[idx + w + 1] += err * 1 / 16;
       }
     }
   }
-
-  for (var p = 0; p < w * h; p++) {
-    var v = gray[p] < 128 ? 0 : 255;
-    d[p * 4] = d[p * 4 + 1] = d[p * 4 + 2] = v;
-    d[p * 4 + 3] = 255;
-  }
-  ctx.putImageData(imageData, 0, 0);
-
   var rowBytes = Math.ceil(w / 8);
   var bits = new Uint8Array(rowBytes * h);
   for (var by = 0; by < h; by++) {
     for (var bx = 0; bx < w; bx++) {
-      if (d[(by * w + bx) * 4] >= 128) bits[by * rowBytes + (bx >> 3)] |= 0x80 >> (bx & 7);
+      if (g[by * w + bx] >= 128) bits[by * rowBytes + (bx >> 3)] |= 0x80 >> (bx & 7);
     }
   }
-  return png1bit(w, h, bits).then(function (url) {
-    return url || canvas.toDataURL('image/png');
+  return bits;
+}
+
+function screenPhoto(grey, exp, style) {
+  var bits = screenBits(grey, exp, style);
+  return png1bit(grey.w, grey.h, bits).then(function (url) {
+    if (url) return url;
+    var c = document.createElement('canvas');
+    c.width = grey.w;
+    c.height = grey.h;
+    var ctx = c.getContext('2d');
+    var img = ctx.createImageData(grey.w, grey.h);
+    var rowBytes = Math.ceil(grey.w / 8);
+    for (var i = 0; i < grey.w * grey.h; i++) {
+      var x = i % grey.w, y = (i / grey.w) | 0;
+      var v = bits[y * rowBytes + (x >> 3)] & (0x80 >> (x & 7)) ? 255 : 0;
+      img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
+      img.data[i * 4 + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return c.toDataURL('image/png');
   });
+}
+
+function keepMeta(id, meta) {
+  photoMeta[id] = meta;
+  return photoTx('readwrite', function (s) { return s.put(meta, id); }, META_STORE).catch(function () {});
 }
 
 var CRC_TABLE = (function () {
@@ -1235,8 +1315,14 @@ function intakePhotos(fileList) {
       return readImage(file)
         .then(function (img) {
           var id = uid('ph');
-          return ditherToBitmap(img)
+          var grey = greyFrom(img);
+          var master = grey.canvas.toDataURL('image/jpeg', 0.85);
+          return screenPhoto(grey, 0, 'grain')
             .then(function (url) { return photoPut(id, url); })
+            .then(function () {
+              photoTx('readwrite', function (s) { return s.put(master, id); }, MASTER_STORE).catch(function () {});
+              return keepMeta(id, { root: id, exp: 0, style: 'grain' });
+            })
             .then(function () { return ids.concat(id); });
         })
         .catch(function () { toast('Skipped a file that is not an image'); return ids; });
@@ -1244,24 +1330,26 @@ function intakePhotos(fileList) {
   }, Promise.resolve([]));
 }
 
-function renderTray() {
-  var tray = document.getElementById('phototray');
-  if (!tray) return;
-  var ids = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .filter(function (l) { return l.photo && photoCache[l.photo]; })
-    .map(function (l) { return l.photo; });
-  Object.keys(photoCache).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
-  tray.innerHTML = ids.map(function (id) {
-    return '<img class="tray-photo" data-traypic="' + esc(id) + '" src="' + esc(photoCache[id]) +
-      '" alt="" title="Glue this to the page">';
-  }).join('');
-}
-
-function placeFromTray(id) {
-  if (!photoCache[id]) return;
-  addEl(pastePage, 'photo', { photo: id });
-  renderPress();
-  toast('Glued to page ' + pastePage + ' \u2014 drag it where it goes');
+var screening = false;
+function rescreen(oldId, change) {
+  var meta = photoMeta[oldId];
+  if (!meta || screening) return Promise.resolve(null);
+  var next = { root: meta.root, exp: Math.max(-4, Math.min(4, meta.exp + (change.exp || 0))), style: change.style || meta.style };
+  var have = Object.keys(photoMeta).filter(function (id) {
+    var m = photoMeta[id];
+    return m.root === next.root && m.exp === next.exp && m.style === next.style && photoCache[id];
+  })[0];
+  if (have) return Promise.resolve(have);
+  screening = true;
+  return photoTx('readonly', function (s) { return s.get(meta.root); }, MASTER_STORE).then(function (src) {
+    if (!src) throw new Error('its original is not on this device');
+    return loadImage(src);
+  }).then(function (img) {
+    return screenPhoto(greyFrom(img), next.exp, next.style);
+  }).then(function (url) {
+    var id = uid('ph');
+    return photoPut(id, url).then(function () { return keepMeta(id, next); }).then(function () { return id; });
+  }).then(function (id) { screening = false; return id; }, function (e) { screening = false; throw e; });
 }
 var activeLogFilter = 'all';
 
@@ -2386,6 +2474,9 @@ function inspectorButtons(el) {
   }
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
+  if (el.kind === 'photo' && photoMeta[el.photo]) {
+    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
+  }
   b.push(['elfront', 'FRONT']);
   b.push(['elback', 'BACK']);
   b.push(['elstraight', 'STRAIGHTEN']);
@@ -2404,6 +2495,17 @@ function renderInspector() {
   }
 
   var el = selectedEl();
+  var page = panelOfPage(pastePage);
+  if (!el && page && page.photo && photoMeta[page.photo]) {
+    var m = photoMeta[page.photo];
+    box.className = 'inspector on';
+    box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
+      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', SCREEN_LABEL[m.style]]]
+        .map(function (pair) {
+          return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
+        }).join('') + '</div>';
+    return;
+  }
   if (!el) {
     box.className = 'inspector';
     box.innerHTML = '';
@@ -2455,8 +2557,33 @@ document.addEventListener('click', function (ev) {
     renderPress();
     return;
   }
-  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
+  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); return; }
+  var shot = hit('[data-elphlight],[data-elphdark],[data-elphscreen],[data-pgphlight],[data-pgphdark],[data-pgphscreen]');
+  if (shot) rescreenFrom(shot);
 });
+
+function rescreenFrom(btn) {
+  var a = Array.prototype.filter.call(btn.attributes, function (x) { return /^data-(elph|pgph)/.test(x.name); })[0];
+  var kind = a.name.replace('data-', '');
+  var onPage = kind.indexOf('pgph') === 0;
+  var hitEl = onPage ? null : findEl(a.value);
+  var panel = onPage ? panelOfPage(Number(a.value)) : null;
+  var photo = onPage ? panel && panel.photo : hitEl && hitEl.el.photo;
+  var meta = photo && photoMeta[photo];
+  if (!meta) return;
+  var change = /light$/.test(kind) ? { exp: 1 } : /dark$/.test(kind) ? { exp: -1 }
+    : { style: SCREENS[(SCREENS.indexOf(meta.style) + 1) % SCREENS.length] };
+  toast('Screening\u2026');
+  rescreen(photo, change).then(function (id) {
+    if (!id) return;
+    pasteMark();
+    if (onPage) panel.photo = id; else hitEl.el.photo = id;
+    savePress();
+    renderPress();
+    var m = photoMeta[id];
+    toast(SCREEN_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
+  }).catch(function (e) { toast('Could not screen it again: ' + e.message); });
+}
 
 document.addEventListener('input', function (ev) {
   if (ev.target.id !== 'ransomtext' || !pasteSel) return;

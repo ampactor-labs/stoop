@@ -20,6 +20,9 @@ function inspectorButtons(el) {
   }
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
+  if (el.kind === 'photo' && photoMeta[el.photo]) {
+    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
+  }
   b.push(['elfront', 'FRONT']);
   b.push(['elback', 'BACK']);
   b.push(['elstraight', 'STRAIGHTEN']);
@@ -38,6 +41,18 @@ function renderInspector() {
   }
 
   var el = selectedEl();
+  var page = panelOfPage(pastePage);
+  if (!el && page && page.photo && photoMeta[page.photo]) {
+    // The page's own photograph, the one a piece brought or the cover's.
+    var m = photoMeta[page.photo];
+    box.className = 'inspector on';
+    box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
+      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', SCREEN_LABEL[m.style]]]
+        .map(function (pair) {
+          return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
+        }).join('') + '</div>';
+    return;
+  }
   if (!el) {
     box.className = 'inspector';
     box.innerHTML = '';
@@ -90,8 +105,34 @@ document.addEventListener('click', function (ev) {
     renderPress();
     return;
   }
-  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
+  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); return; }
+  var shot = hit('[data-elphlight],[data-elphdark],[data-elphscreen],[data-pgphlight],[data-pgphdark],[data-pgphscreen]');
+  if (shot) rescreenFrom(shot);
 });
+
+// Lighter, darker, or the next screen, for a photo cutting or a page's photo.
+function rescreenFrom(btn) {
+  var a = Array.prototype.filter.call(btn.attributes, function (x) { return /^data-(elph|pgph)/.test(x.name); })[0];
+  var kind = a.name.replace('data-', '');
+  var onPage = kind.indexOf('pgph') === 0;
+  var hitEl = onPage ? null : findEl(a.value);
+  var panel = onPage ? panelOfPage(Number(a.value)) : null;
+  var photo = onPage ? panel && panel.photo : hitEl && hitEl.el.photo;
+  var meta = photo && photoMeta[photo];
+  if (!meta) return;
+  var change = /light$/.test(kind) ? { exp: 1 } : /dark$/.test(kind) ? { exp: -1 }
+    : { style: SCREENS[(SCREENS.indexOf(meta.style) + 1) % SCREENS.length] };
+  toast('Screening\u2026');
+  rescreen(photo, change).then(function (id) {
+    if (!id) return;
+    pasteMark();
+    if (onPage) panel.photo = id; else hitEl.el.photo = id;
+    savePress();
+    renderPress();
+    var m = photoMeta[id];
+    toast(SCREEN_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
+  }).catch(function (e) { toast('Could not screen it again: ' + e.message); });
+}
 
 // Repaint as it is typed, so the cutting grows and records its breaks.
 document.addEventListener('input', function (ev) {

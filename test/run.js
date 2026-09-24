@@ -29,7 +29,8 @@ const suites = [
   ['edges', require('./11-edges.js')],
   ['the loop', require('./12-loop.js')],
   ['pages as made', require('./13-pages.js')],
-  ['the site', require('./14-site.js')]
+  ['the site', require('./14-site.js')],
+  ['making things', require('./15-craft.js')]
 ];
 
 (async () => {
