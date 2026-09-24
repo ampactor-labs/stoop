@@ -180,6 +180,9 @@ function addEl(page, kind, extra) {
   }
   els.push(el);
   pasteSel = el.id;
+  // The new cutting has the keyboard: arrows nudge it, not a caret in the page.
+  var a = document.activeElement;
+  if (a && a.blur && a.closest && a.closest('#sheetzone')) a.blur();
   savePress();
   return el;
 }

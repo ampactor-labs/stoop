@@ -12,22 +12,15 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   var paper = paperOf(formatId);
   var pages = plan.format.pages;
   var pics = photos || photoCache;
-  var addr = url ? '<div class="addr"><img class="qr" src="' + esc(qrDataUrl(url, 3)) +
-    '" alt=""><span>' + esc(url.replace(/^https?:\/\//, '')) + '</span></div>' : '';
+  var size = pageSize(formatId);
   return plan.sheets.map(function (sheet, i) {
     return '<div class="sheetwrap"><div class="sheetlabel">' + esc(sheet.side) + '</div>' +
       '<div class="sheet" data-sheet="' + i + '" data-gen="' + (gen || 0) + '" style="width:' + paper.w + ';height:' + paper.h +
       ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
       sheet.slots.map(function (slot) {
-        var p = panels[slot.page - 1] || { h: '', body: '', photo: null };
         var cover = slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '');
         return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '">' +
-          '<h3>' + esc(p.h || '') + '</h3>' +
-          (slot.page === 1 ? '<div class="no">\u2116' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
-          (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
-          '<div class="body">' + esc(p.body || '') + '</div>' +
-          pasteupHtml(p, pics, false) +
-          (slot.page === pages ? addr : '') +
+          panelFaceHtml(panels, slot.page, pics, url, issue, size.ph / size.pw) +
           '<div class="testnum"><b>' + slot.page + '</b><small>' + esc(pageLabel(slot.page, pages)) + '</small></div>' +
           '</div>';
       }).join('') + '</div></div>';
@@ -139,7 +132,8 @@ function renderReader() {
   if (!iss) return;
   box.classList.add('on');
   box.innerHTML = '<div class="reader-bar"><span>Reading №' + esc(iss.no) + '</span>' +
-    '<button class="btn quiet" id="closereader">CLOSE</button></div>' + readingHtml(iss);
+    '<button class="btn quiet" id="closereader">CLOSE</button></div>' + readHtml(iss, issueUrl(iss.no));
+  fitReads();
 }
 
 function readIssue(no) {

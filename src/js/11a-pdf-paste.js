@@ -256,8 +256,8 @@ function pdfEl(el, box, images) {
   return ops + 'Q\n';
 }
 
-function pdfPasteup(panel, box, images) {
-  return elsOf(panel).slice()
+function pdfPasteup(panel, box, images, ghosts) {
+  return elsOf(panel).concat(ghosts || [])
     .sort(function (a, b) { return (a.z || 0) - (b.z || 0); })
     .map(function (el) { return pdfEl(el, box, images); })
     .join('');

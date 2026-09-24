@@ -39,6 +39,19 @@ function photosFor(objs) {
   return out;
 }
 
+// The issue in hand carries every photograph it uses. Back issues carry their
+// covers: each has its own file with the rest, and carrying every photograph
+// of every issue made a file grow with the shelf until it was too big to send.
+function photosForFile(issues, no) {
+  var out = photosFor(issues.filter(function (i) { return i.no === no; }));
+  issues.forEach(function (i) {
+    if (i.no === no) return;
+    var got = photosFor([{ panels: [(i.panels || [])[0]] }]);
+    Object.keys(got).forEach(function (id) { out[id] = got[id]; });
+  });
+  return out;
+}
+
 // Everything the running page put in the DOM comes back out; what ships is the
 // app as built plus a seed. Rendered lists are rebuilt on boot, so carrying
 // them would only add weight and staleness.
@@ -114,7 +127,7 @@ function exportIssueFile(no) {
     // behind. Somebody given №01 is holding the desk for №02, whatever number
     // the exporting scene has since reached.
     cycle: nextCycleAfter(no),
-    photos: photosFor(upTo),
+    photos: photosForFile(upTo, no),
     open: '#shelf', read: no
   });
   download(sceneSlug() + '-' + no + '.html', html);

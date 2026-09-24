@@ -51,7 +51,7 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
   return { op: op, drop: lines.length * lead };
 }
 
-function pdfPanel(panel, page, pages, box, images, url) {
+function pdfPanel(panel, page, pages, box, images, url, ghosts) {
   var ops = '';
   var y = box.y;
   var isCover = page === 1;
@@ -107,7 +107,7 @@ function pdfPanel(panel, page, pages, box, images, url) {
       ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
     });
   }
-  return ops + pdfPasteup(panel, box, images);
+  return ops + pdfPasteup(panel, box, images, ghosts);
 }
 
 // A flipped panel is the same drawing rotated half a turn about its own
@@ -120,7 +120,8 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
-    var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
+    var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
+      spreadGhosts(panels, slot.page, box.h / box.w));
     // The panel clips what hangs over its edge, as it does on screen and in
     // the browser's print; without it a cutting printed onto its neighbour.
     ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +

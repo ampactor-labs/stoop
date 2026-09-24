@@ -105,7 +105,7 @@ function paintOnePanel(panelEl) {
 // before a repaint is detached and every call on it silently does nothing.
 // Anything that selects and then acts has to ask the document again.
 function liveEl(id) {
-  return document.querySelector('.el[data-el="' + id + '"]');
+  return document.querySelector('#sheetzone .el:not(.ghost)[data-el="' + id + '"]');
 }
 
 function selectEl(id) {

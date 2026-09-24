@@ -41,7 +41,7 @@ function renderLanding() {
   var iss = landingIssue();
   if (!iss) { box.innerHTML = ''; return; }
   var next = cycleState().no;
-  box.innerHTML = readingHtml(iss, null, iss === fileIssue() ? fileNameOf : null) +
+  box.innerHTML = readHtml(iss, landingUrl(iss), iss === fileIssue() ? fileNameOf : null) +
     '<div class="landing-tail">' +
     '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
     'No server, no account. You are holding the whole thing.</p>' +
@@ -50,6 +50,7 @@ function renderLanding() {
     '<button class="btn big" id="landown">START YOUR OWN</button>' +
     '<button class="btn quiet big" id="landshelf">THE SHELF</button>' +
     '</div></div>';
+  fitReads();
 }
 
 // Somebody making the next issue from a file has not said who they are, and

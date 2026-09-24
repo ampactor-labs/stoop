@@ -181,3 +181,9 @@ body.landing main { padding-top: 2.4rem; }
 :focus-visible { outline: 3px solid var(--spot); outline-offset: 2px; }
 .panel :focus-visible, .el :focus-visible { outline: 2px dashed var(--red); outline-offset: 1px; }
 .barzine[contenteditable]:focus-visible { outline: 3px solid var(--fg); outline-offset: 1px; }
+
+/* The pages as made, in a file or off the shelf. */
+.readtoggle { display: flex; gap: .4rem; justify-content: center; margin: 0 auto .8rem; }
+.read-meta { font-family: 'Courier New', monospace; font-size: .75rem; color: var(--grey); text-align: center; margin: 0 0 .9rem; }
+.readrun { padding: 0 6px 1.2rem; }
+@media print { .elmissing { visibility: hidden; } }

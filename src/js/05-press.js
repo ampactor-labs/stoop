@@ -58,13 +58,9 @@ function layoutPages() {
   if (!zone) return plan;
 
   if (ps.format !== pageSig) {
-    var first = plan.sheets[0];
-    var pw = (paper.wpt / first.cols).toFixed(2);
-    var ph = (paper.hpt / first.rows).toFixed(2);
-    var spreads = [[1]];
-    for (var p = 2; p < pages; p += 2) spreads.push([p, p + 1]);
-    spreads.push([pages]);
-    zone.innerHTML = '<div class="pages" style="--pw:' + pw + 'pt;--ph:' + ph + 'pt">' +
+    var size = pageSize(ps.format);
+    var spreads = spreadsOf(pages);
+    zone.innerHTML = '<div class="pages" style="--pw:' + size.pw + 'pt;--ph:' + size.ph + 'pt">' +
       spreads.map(function (sp, i) {
         var kind = i === 0 ? ' cover' : (i === spreads.length - 1 ? ' backcover' : '');
         return '<div class="spread' + kind + '">' +

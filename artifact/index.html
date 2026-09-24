@@ -372,6 +372,12 @@ body.landing main { padding-top: 2.4rem; }
 :focus-visible { outline: 3px solid var(--spot); outline-offset: 2px; }
 .panel :focus-visible, .el :focus-visible { outline: 2px dashed var(--red); outline-offset: 1px; }
 .barzine[contenteditable]:focus-visible { outline: 3px solid var(--fg); outline-offset: 1px; }
+
+/* The pages as made, in a file or off the shelf. */
+.readtoggle { display: flex; gap: .4rem; justify-content: center; margin: 0 auto .8rem; }
+.read-meta { font-family: 'Courier New', monospace; font-size: .75rem; color: var(--grey); text-align: center; margin: 0 0 .9rem; }
+.readrun { padding: 0 6px 1.2rem; }
+@media print { .elmissing { visibility: hidden; } }
 /* ---------- the paste-up ---------- */
 /* The layer floats over the flowed text and lets pointer events through
    everywhere it is empty, so clicking a panel's body still puts a caret in it. */
@@ -769,7 +775,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 208 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 213 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1538,13 +1544,9 @@ function layoutPages() {
   if (!zone) return plan;
 
   if (ps.format !== pageSig) {
-    var first = plan.sheets[0];
-    var pw = (paper.wpt / first.cols).toFixed(2);
-    var ph = (paper.hpt / first.rows).toFixed(2);
-    var spreads = [[1]];
-    for (var p = 2; p < pages; p += 2) spreads.push([p, p + 1]);
-    spreads.push([pages]);
-    zone.innerHTML = '<div class="pages" style="--pw:' + pw + 'pt;--ph:' + ph + 'pt">' +
+    var size = pageSize(ps.format);
+    var spreads = spreadsOf(pages);
+    zone.innerHTML = '<div class="pages" style="--pw:' + size.pw + 'pt;--ph:' + size.ph + 'pt">' +
       spreads.map(function (sp, i) {
         var kind = i === 0 ? ' cover' : (i === spreads.length - 1 ? ' backcover' : '');
         return '<div class="spread' + kind + '">' +
@@ -1874,6 +1876,8 @@ function addEl(page, kind, extra) {
   }
   els.push(el);
   pasteSel = el.id;
+  var a = document.activeElement;
+  if (a && a.blur && a.closest && a.closest('#sheetzone')) a.blur();
   savePress();
   return el;
 }
@@ -2002,7 +2006,7 @@ function elBody(el, pics, editable, editing) {
   if (el.kind === 'stamp') return stampHtml(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
-    if (!src) return '<div class="elmissing">photo</div>';
+    if (!src) return '<div class="elmissing">' + (editable ? 'photo' : 'photo in its own issue file') + '</div>';
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="">';
   }
   var voice = voiceOf(el);
@@ -2022,7 +2026,7 @@ function elBody(el, pics, editable, editing) {
 
 function elHtml(el, pics, editable, selected) {
   var editing = editable && el.id === pasteEditing;
-  return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') +
+  return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
     (selected ? ' sel' : '') + (editing ? ' editing' : '') +
     '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + '">' +
     elBody(el, pics, editable, editing) +
@@ -2031,12 +2035,41 @@ function elHtml(el, pics, editable, selected) {
     '</div>';
 }
 
-function pasteupHtml(panel, pics, editable) {
-  var els = elsOf(panel).slice().sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
+function pasteupHtml(panel, pics, editable, ghosts) {
+  var els = elsOf(panel).concat(ghosts || []).sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
   if (!els.length && !editable) return '';
   return '<div class="pasteup">' + els.map(function (e) {
-    return elHtml(e, pics || photoCache, editable, editable && e.id === pasteSel);
+    return elHtml(e, pics || photoCache, editable && !e.ghost, editable && !e.ghost && e.id === pasteSel);
   }).join('') + '</div>';
+}
+
+function facingPage(page, pages) {
+  if (page <= 1 || page >= pages) return 0;
+  var other = page % 2 === 0 ? page + 1 : page - 1;
+  return other > 1 && other < pages ? other : 0;
+}
+
+function spreadGhosts(panels, page, aspect) {
+  var other = facingPage(page, panels.length);
+  var from = other && panels[other - 1];
+  if (!from || !Array.isArray(from.els)) return [];
+  var onLeft = other < page;
+  return from.els.filter(function (e) {
+    var t = (e.rot || 0) * Math.PI / 180;
+    var half = (Math.abs(e.w * Math.cos(t)) + Math.abs(e.h * aspect * Math.sin(t))) / 2;
+    var cx = e.x + e.w / 2;
+    return onLeft ? cx + half > 1 : cx - half < 0;
+  }).map(function (e) {
+    var g = JSON.parse(JSON.stringify(e));
+    g.x = e.x + (onLeft ? -1 : 1);
+    g.ghost = true;
+    return g;
+  });
+}
+
+function pressAspect() {
+  var size = pageSize(pressState().format);
+  return size.ph / size.pw;
 }
 
 function measureLines(node, voice) {
@@ -2089,7 +2122,8 @@ function growTextEls(panelEl, panel) {
 }
 
 function paintPasteup(panelEl, panel) {
-  var want = pasteupHtml(panel, photoCache, true);
+  var ghosts = spreadGhosts(pressState().panels, Number(panelEl.getAttribute('data-page')), pressAspect());
+  var want = pasteupHtml(panel, photoCache, true, ghosts);
   var layer = panelEl.querySelector('.pasteup');
   var typing = document.activeElement;
   if (layer && typing && layer.contains(typing)) {
@@ -2203,7 +2237,7 @@ function paintOnePanel(panelEl) {
 }
 
 function liveEl(id) {
-  return document.querySelector('.el[data-el="' + id + '"]');
+  return document.querySelector('#sheetzone .el:not(.ghost)[data-el="' + id + '"]');
 }
 
 function selectEl(id) {
@@ -3001,22 +3035,15 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   var paper = paperOf(formatId);
   var pages = plan.format.pages;
   var pics = photos || photoCache;
-  var addr = url ? '<div class="addr"><img class="qr" src="' + esc(qrDataUrl(url, 3)) +
-    '" alt=""><span>' + esc(url.replace(/^https?:\/\//, '')) + '</span></div>' : '';
+  var size = pageSize(formatId);
   return plan.sheets.map(function (sheet, i) {
     return '<div class="sheetwrap"><div class="sheetlabel">' + esc(sheet.side) + '</div>' +
       '<div class="sheet" data-sheet="' + i + '" data-gen="' + (gen || 0) + '" style="width:' + paper.w + ';height:' + paper.h +
       ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
       sheet.slots.map(function (slot) {
-        var p = panels[slot.page - 1] || { h: '', body: '', photo: null };
         var cover = slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '');
         return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '">' +
-          '<h3>' + esc(p.h || '') + '</h3>' +
-          (slot.page === 1 ? '<div class="no">\u2116' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
-          (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
-          '<div class="body">' + esc(p.body || '') + '</div>' +
-          pasteupHtml(p, pics, false) +
-          (slot.page === pages ? addr : '') +
+          panelFaceHtml(panels, slot.page, pics, url, issue, size.ph / size.pw) +
           '<div class="testnum"><b>' + slot.page + '</b><small>' + esc(pageLabel(slot.page, pages)) + '</small></div>' +
           '</div>';
       }).join('') + '</div></div>';
@@ -3120,7 +3147,8 @@ function renderReader() {
   if (!iss) return;
   box.classList.add('on');
   box.innerHTML = '<div class="reader-bar"><span>Reading №' + esc(iss.no) + '</span>' +
-    '<button class="btn quiet" id="closereader">CLOSE</button></div>' + readingHtml(iss);
+    '<button class="btn quiet" id="closereader">CLOSE</button></div>' + readHtml(iss, issueUrl(iss.no));
+  fitReads();
 }
 
 function readIssue(no) {
@@ -3211,7 +3239,7 @@ function renderLanding() {
   var iss = landingIssue();
   if (!iss) { box.innerHTML = ''; return; }
   var next = cycleState().no;
-  box.innerHTML = readingHtml(iss, null, iss === fileIssue() ? fileNameOf : null) +
+  box.innerHTML = readHtml(iss, landingUrl(iss), iss === fileIssue() ? fileNameOf : null) +
     '<div class="landing-tail">' +
     '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
     'No server, no account. You are holding the whole thing.</p>' +
@@ -3220,6 +3248,7 @@ function renderLanding() {
     '<button class="btn big" id="landown">START YOUR OWN</button>' +
     '<button class="btn quiet big" id="landshelf">THE SHELF</button>' +
     '</div></div>';
+  fitReads();
 }
 
 function makeFromLanding() {
@@ -3258,6 +3287,82 @@ function startOwn() {
   leaveLanding('#desk');
   toast('Yours. Name it under settings whenever you like.');
 }
+var readMode = 'pages';
+
+function pageSize(formatId) {
+  var plan = impose(formatId, 'A');
+  var paper = paperOf(formatId);
+  var first = plan.sheets[0];
+  return { pw: (paper.wpt / first.cols).toFixed(2), ph: (paper.hpt / first.rows).toFixed(2), pages: plan.format.pages };
+}
+
+function spreadsOf(pages) {
+  var spreads = [[1]];
+  for (var p = 2; p < pages; p += 2) spreads.push([p, p + 1]);
+  spreads.push([pages]);
+  return spreads;
+}
+
+function addrHtml(url) {
+  return url ? '<div class="addr"><img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' +
+    esc(url.replace(/^https?:\/\//, '')) + '</span></div>' : '';
+}
+
+function panelFaceHtml(panels, page, pics, url, issue, aspect) {
+  var p = panels[page - 1] || { h: '', body: '', photo: null };
+  var pages = panels.length;
+  return '<h3>' + esc(p.h || '') + '</h3>' +
+    (page === 1 ? '<div class="no">№' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
+    (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt="">' : '') +
+    '<div class="body">' + esc(p.body || '') + '</div>' +
+    pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
+    (page === pages ? addrHtml(url) : '');
+}
+
+function readPagesHtml(issue, url, nameFn) {
+  var size = pageSize(issue.format);
+  var panels = issue.panels || [];
+  var pages = panels.length || size.pages;
+  var aspect = size.ph / size.pw;
+  var who = nameFn || nameOf;
+  return '<p class="read-meta">' + esc((panels[0] && panels[0].h) || 'STOOP ZINE') + ' · №' + esc(issue.no) +
+    ' · ' + esc(fmtDay(issue.ts)) + ' · edited by ' + esc(who(issue.editor)) + '</p>' +
+    '<div class="readrun"><div class="pages" data-gen="' + (issue.gen || 0) + '" style="--pw:' + size.pw +
+    'pt;--ph:' + size.ph + 'pt">' + spreadsOf(pages).map(function (sp, i, all) {
+      var kind = i === 0 ? ' cover' : (i === all.length - 1 ? ' backcover' : '');
+      return '<div class="spread' + kind + '">' + sp.map(function (pg) {
+        var cls = pg === 1 ? ' cover' : (pg === pages ? ' backcover' : '');
+        return '<div class="panel' + cls + '" data-readpage="' + pg + '">' +
+          panelFaceHtml(panels, pg, photoCache, url, issue.no, aspect) + '</div>';
+      }).join('') + '</div>';
+    }).join('') + '</div></div>';
+}
+
+function readHtml(issue, url, nameFn) {
+  var mode = function (m, label) {
+    return '<button class="btn quiet' + (readMode === m ? ' on' : '') + '" data-readmode="' + m + '">' + label + '</button>';
+  };
+  return '<div class="readtoggle">' + mode('pages', 'PAGES') + mode('text', 'TEXT') + '</div>' +
+    (readMode === 'pages' ? readPagesHtml(issue, url, nameFn) : readingHtml(issue, null, nameFn));
+}
+
+function fitReads() {
+  document.querySelectorAll('.readrun').forEach(function (box) {
+    var run = box.querySelector('.pages');
+    if (!run || !box.clientWidth) return;
+    box.style.setProperty('--fit', 1);
+    var w = run.getBoundingClientRect().width;
+    if (w) box.style.setProperty('--fit', Math.max(0.3, Math.min(2, (box.clientWidth - 12) / w)));
+  });
+}
+window.addEventListener('resize', fitReads);
+
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest && ev.target.closest('[data-readmode]');
+  if (!b) return;
+  readMode = b.getAttribute('data-readmode');
+  if (document.body.classList.contains('landing')) renderLanding(); else renderReader();
+});
 
 var GF_EXP = new Uint8Array(512);
 var GF_LOG = new Uint8Array(256);
@@ -3843,7 +3948,7 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
   return { op: op, drop: lines.length * lead };
 }
 
-function pdfPanel(panel, page, pages, box, images, url) {
+function pdfPanel(panel, page, pages, box, images, url, ghosts) {
   var ops = '';
   var y = box.y;
   var isCover = page === 1;
@@ -3895,7 +4000,7 @@ function pdfPanel(panel, page, pages, box, images, url) {
       ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
     });
   }
-  return ops + pdfPasteup(panel, box, images);
+  return ops + pdfPasteup(panel, box, images, ghosts);
 }
 
 function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
@@ -3905,7 +4010,8 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
-    var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
+    var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
+      spreadGhosts(panels, slot.page, box.h / box.w));
     ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
       box.h.toFixed(2) + ' re W n\n';
     if (slot.flip) {
@@ -4213,8 +4319,8 @@ function pdfEl(el, box, images) {
   return ops + 'Q\n';
 }
 
-function pdfPasteup(panel, box, images) {
-  return elsOf(panel).slice()
+function pdfPasteup(panel, box, images, ghosts) {
+  return elsOf(panel).concat(ghosts || [])
     .sort(function (a, b) { return (a.z || 0) - (b.z || 0); })
     .map(function (el) { return pdfEl(el, box, images); })
     .join('');
@@ -4399,6 +4505,16 @@ function photosFor(objs) {
   return out;
 }
 
+function photosForFile(issues, no) {
+  var out = photosFor(issues.filter(function (i) { return i.no === no; }));
+  issues.forEach(function (i) {
+    if (i.no === no) return;
+    var got = photosFor([{ panels: [(i.panels || [])[0]] }]);
+    Object.keys(got).forEach(function (id) { out[id] = got[id]; });
+  });
+  return out;
+}
+
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
@@ -4457,7 +4573,7 @@ function exportIssueFile(no) {
     people: people, address: state.address || '', zine: state.zine || '',
     issues: upTo,
     cycle: nextCycleAfter(no),
-    photos: photosFor(upTo),
+    photos: photosForFile(upTo, no),
     open: '#shelf', read: no
   });
   download(sceneSlug() + '-' + no + '.html', html);
