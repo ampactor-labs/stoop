@@ -42,8 +42,9 @@ function photosFor(objs) {
 // Everything the running page put in the DOM comes back out; what ships is the
 // app as built plus a seed. Rendered lists are rebuilt on boot, so carrying
 // them would only add weight and staleness.
-var DYNAMIC = ['loglist', 'desktray', 'shelflist',
-  'shelfreader', 'sheetzone', 'phototray', 'reprintzone', 'toast', 'importstatus'];
+var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
+  'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'roster',
+  'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
@@ -163,22 +164,17 @@ function importSeed(seed) {
     if (!photoCache[pid]) photoPut(pid, photos[pid]);
   });
 
-  var addedPieces = 0, addedIssues = 0;
-  var incoming = normalize({ pieces: seed.pieces || [], issues: seed.issues || [] });
-  incoming.issues.forEach(function (i) {
+  var addedIssues = 0;
+  normalize({ issues: seed.issues || [] }).issues.forEach(function (i) {
     if (!i || !i.no) return;
     if (state.issues.some(function (x) { return x.no === i.no; })) return;
     state.issues.push(i);
     addedIssues++;
   });
-  incoming.pieces.forEach(function (p) {
-    if (!p.id || state.pieces.some(function (x) { return x.id === p.id; }) || wasPublished(p.id)) return;
-    state.pieces.push(p);
-    addedPieces++;
-  });
+  var addedPieces = takePieces(seed).length;
   if (seed.address && !state.address) state.address = seed.address;
   if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
-  mergePeople(seed.people);
+  if (seed.stoop === 'issue') mergePeople(seed.people);
   ensurePeople();
 
   saveState();
@@ -187,6 +183,22 @@ function importSeed(seed) {
   toast(msg);
   var status = document.getElementById('importstatus');
   if (status) status.textContent = msg + '.';
+}
+
+// Pieces from a file join the tray, unless they are there already or have
+// run. Only the people who signed them join the roster; a contributor's
+// file carries their whole scene, and the rest of it is not news here.
+function takePieces(seed) {
+  var took = [];
+  var signed = {};
+  normalize({ pieces: seed.pieces || [] }).pieces.forEach(function (p) {
+    if (!p.id || state.pieces.some(function (x) { return x.id === p.id; }) || wasPublished(p.id)) return;
+    state.pieces.push(p);
+    signed[p.byline] = 1;
+    took.push(p);
+  });
+  mergePeople((seed.people || []).filter(function (x) { return x && signed[x.id]; }));
+  return took;
 }
 
 function handleBundleFile(file) {
@@ -220,6 +232,20 @@ function hydrateFromSeed(seed) {
   var photos = seed.photos || {};
   var ids = Object.keys(photos).filter(function (id) { return !photoCache[id]; });
   ids.forEach(function (id) { photoPut(id, photos[id]); });
+
+  // A piece file opened on the desk's own machine takes itself in: opening
+  // it is what the editor meant, and there is nothing else to do with it.
+  if (seed.stoop === 'piece' && !stateFromSeed) {
+    var took = takePieces(seed);
+    ensurePeople();
+    saveState();
+    var first = normalize({ pieces: seed.pieces || [] }).pieces[0];
+    if (took.length) {
+      toast('Took in \u201c' + took[0].title + '\u201d from ' + nameOf(took[0].byline) + '. It is in the tray.');
+    } else if (first) {
+      toast('\u201c' + first.title + '\u201d is already ' + (wasPublished(first.id) ? 'in an issue.' : 'in the tray.'));
+    }
+  }
 
   if (seedIsOurs(seed)) {
     // The roster rides along so a byline in the file still has a name on it.

@@ -71,10 +71,17 @@ function cutPiece(id, cut) {
 }
 
 function dropPiece(id) {
-  state.pieces = state.pieces.filter(function (x) { return x.id !== id; });
+  var at = state.pieces.findIndex(function (x) { return x.id === id; });
+  if (at < 0) return;
+  var gone = state.pieces.splice(at, 1)[0];
   saveState();
-  sweepPhotos();
   renderDesk();
+  toast('\u201c' + gone.title + '\u201d removed.', function () {
+    state.pieces.splice(Math.min(at, state.pieces.length), 0, gone);
+    saveState();
+    renderDesk();
+  });
+  setTimeout(sweepPhotos, 6500);
 }
 
 // ---------- minting pieces from scraps ----------
@@ -135,58 +142,6 @@ function draftFromSources() {
     ? [made ? 'Pulled in ' + made + ' piece(s)' : '', joined ? joined + ' scrap(s) joined SCRAPS' : '']
       .filter(Boolean).join(', ')
     : 'Nothing new since the last issue. Keep something, then pull again.');
-}
-
-// ---------- assembling ----------
-// Pieces flow into the pages between the covers. The vessel is whatever
-// format the press is set to, which is why changing format re-flows an issue
-// instead of forcing a retype.
-function compileIssue() {
-  var ps = pressState();
-  var c = cycleState();
-  var pieces = livePieces();
-  var pages = formatOf(ps.format).pages;
-  var inner = pages - 2;
-
-  pasteMark();
-  ps.issue = c.no;
-  ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
-
-  // A page takes its piece whole. Pages the last compile filled and this one
-  // does not are emptied; handwork and cuttings are left alone.
-  var ran = pieces.slice(0, inner);
-  ran.forEach(function (piece, i) {
-    var panel = ps.panels[i + 1];
-    if (!panel) return;
-    panel.h = piece.title.toUpperCase();
-    panel.body = piece.body;
-    panel.photo = piece.photo || null;
-  });
-  (ps.ran || []).forEach(function (r) {
-    var panel = ps.panels[r.page - 1];
-    if (!panel || r.page - 2 < ran.length || r.page >= pages) return;
-    panel.h = '';
-    panel.body = '';
-    panel.photo = null;
-  });
-  ps.ran = ran.map(function (piece, i) { return { page: i + 2, id: piece.id }; });
-
-  var note = document.getElementById('editornote');
-  ps.panels[pages - 1].h = 'BACK COVER';
-  ps.panels[pages - 1].body = 'Issue №' + c.no + '\nEdited by ' + nameOf(c.editor) + '.\n\n' +
-    ((note && note.value.trim()) ? note.value.trim() + '\n\n' : '') +
-    'Made on a stoop. Take one, leave one.';
-
-  var newest = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
-  if (newest && !ps.panels[0].photo) ps.panels[0].photo = newest.photo;
-
-  savePress();
-  renderPress();
-  var over = pieces.length - inner;
-  toast(over > 0
-    ? 'Compiled. ' + over + ' piece(s) did not fit — cut some, or use a bigger format'
-    : 'Compiled issue №' + c.no + ' from ' + pieces.length + ' piece(s)');
 }
 
 // The bell. Publishing archives the sheet to the shelf whole, so the back

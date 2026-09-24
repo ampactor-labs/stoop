@@ -117,6 +117,20 @@ function addLog(photoIds) {
   toast(ids.length ? 'Kept ' + ids.length + ' photo(s)' : 'Kept');
 }
 
+// Gone at once, back with UNDO while the toast is up; its photograph is only
+// swept once nothing can bring it back.
+function deleteLog(id) {
+  var at = state.logs.findIndex(function (l) { return l.id === id; });
+  if (at < 0) return;
+  var gone = state.logs.splice(at, 1)[0];
+  saveState(); renderLogs(); renderTray();
+  toast('Scrap deleted.', function () {
+    state.logs.splice(Math.min(at, state.logs.length), 0, gone);
+    saveState(); renderLogs(); renderTray();
+  });
+  setTimeout(sweepPhotos, 6500);
+}
+
 function renderAll() {
   renderNames();
   renderBar();

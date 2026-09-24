@@ -15,6 +15,9 @@ var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
 
 function defaultPeople() { return [{ id: 'a', name: 'me' }]; }
+// True when the roster came out of a file: whoever is at this device has not
+// said which of those people they are, if any.
+var peopleFromSeed = false;
 
 var people = (function () {
   try {
@@ -31,11 +34,12 @@ var people = (function () {
   // An issue file opened on a machine that has never seen this app brings its
   // own roster. Defaulting first would take the ids a and b, and the names
   // arriving in the file would be refused as already present.
+  // Only a device with no work of its own adopts the file's roster.
   try {
-    var seed = readSeed();
+    var seed = localStorage.getItem(STORAGE_KEY) ? null : readSeed();
     if (seed && Array.isArray(seed.people) && seed.people.length) {
       var carried = seed.people.filter(function (p) { return p && p.id && p.name; });
-      if (carried.length) return carried;
+      if (carried.length) { peopleFromSeed = true; return carried; }
     }
   } catch (e) {}
   return defaultPeople();
@@ -69,6 +73,9 @@ var currentAuthor = (function () {
 })();
 function rememberAuthor() {
   try { localStorage.setItem(AUTHOR_KEY, currentAuthor); } catch (e) {}
+}
+function authorChosen() {
+  try { return localStorage.getItem(AUTHOR_KEY) !== null; } catch (e) { return false; }
 }
 
 // Every byline in the store must belong to somebody on the roster, or a name
@@ -124,13 +131,21 @@ function fmtStamp(ts) {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric' }) + ' · ' +
     d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-function toast(msg) {
+function toast(msg, undo) {
   var t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
+  // A delete is done at once and can be taken back while the toast is up.
+  if (undo) {
+    var b = document.createElement('button');
+    b.className = 'toast-undo';
+    b.textContent = 'UNDO';
+    b.onclick = function () { t.style.display = 'none'; undo(); };
+    t.appendChild(b);
+  }
   t.style.display = 'block';
   clearTimeout(t._h);
-  t._h = setTimeout(function () { t.style.display = 'none'; }, 2400);
+  t._h = setTimeout(function () { t.style.display = 'none'; }, undo ? 6000 : 2400);
 }
 
 // ---------- seed ----------

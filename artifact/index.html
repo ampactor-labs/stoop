@@ -326,6 +326,7 @@
 .reprintzone { display: none; }
 
 /* Toast */
+.toast-undo { font: inherit; background: var(--fg); color: var(--spot); border: 0; margin-left: .7rem; padding: .1rem .5rem; cursor: pointer; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--spot); color: var(--fg); font-family: 'Courier New', monospace; font-size: .85rem; font-weight: bold; padding: .5rem .9rem; border: 2px solid var(--fg); box-shadow: 3px 3px 0 var(--fg); display: none; z-index: 50; }
 
 @media print {
@@ -354,8 +355,8 @@ body.landing main { padding-top: 2.4rem; }
 .panel.dropping { outline: 3px dashed var(--spot); outline-offset: -3px; }
 
 /* The nudge on a fresh cover. Drawn by the press only, never stored, never printed. */
-.pages .cover .body:empty::before { content: 'click anything \00b7 type \00b7 drop a photo'; color: #b5b0a6; font-style: italic; }
-.pages .panel h3:empty::before { content: '\00a0'; }
+#sheetzone .cover .body:empty::before { content: 'click anything · type · drop a photo'; color: #b5b0a6; font-style: italic; }
+#sheetzone .panel h3:empty::before { content: '\00a0'; }
 
 /* The copier lamp. */
 .flash { position: fixed; inset: 0; pointer-events: none; z-index: 60; opacity: 0;
@@ -768,26 +769,17 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 243 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 208 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
-// ---------- identity ----------
-// A scene is however many people it is. Entries are stored against a stable
-// id, never a spelling, so renaming somebody leaves their past work attached
-// to them. Ids for anyone added after the founding pair are random rather than
-// sequential, because two scenes both handing out "c" would collide the first
-// time they traded a piece.
 var STORAGE_KEY = 'stoop_data_v4';
-// The id of the payload an exported issue carries. It lives here, with the
-// other storage keys, because the store reads it while the app is still
-// starting up: a var assigned further down the bundle is hoisted but empty by
-// then, and the archive silently would not arrive.
 var SEED_ID = 'stoop-seed';
 var PEOPLE_KEY = 'stoop_people';
 var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
 
 function defaultPeople() { return [{ id: 'a', name: 'me' }]; }
+var peopleFromSeed = false;
 
 var people = (function () {
   try {
@@ -801,14 +793,11 @@ var people = (function () {
       return [{ id: 'a', name: String(old.a) }, { id: 'b', name: String(old.b) }];
     }
   } catch (e) {}
-  // An issue file opened on a machine that has never seen this app brings its
-  // own roster. Defaulting first would take the ids a and b, and the names
-  // arriving in the file would be refused as already present.
   try {
-    var seed = readSeed();
+    var seed = localStorage.getItem(STORAGE_KEY) ? null : readSeed();
     if (seed && Array.isArray(seed.people) && seed.people.length) {
       var carried = seed.people.filter(function (p) { return p && p.id && p.name; });
-      if (carried.length) return carried;
+      if (carried.length) { peopleFromSeed = true; return carried; }
     }
   } catch (e) {}
   return defaultPeople();
@@ -818,8 +807,6 @@ function savePeople() {
   try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {}
 }
 function personIds() { return people.map(function (p) { return p.id; }); }
-// 'both' means made together: "Both" for a pair, "Together" otherwise, and
-// not offered to a scene of one.
 function authorIds() { return people.length > 1 ? personIds().concat('both') : personIds(); }
 function personById(id) {
   return people.filter(function (p) { return p.id === id; })[0] || null;
@@ -836,16 +823,16 @@ function addPerson(name) {
   return p;
 }
 
-// Storage can throw (private windows, blocked site data).
 var currentAuthor = (function () {
   try { return localStorage.getItem(AUTHOR_KEY) || 'a'; } catch (e) { return 'a'; }
 })();
 function rememberAuthor() {
   try { localStorage.setItem(AUTHOR_KEY, currentAuthor); } catch (e) {}
 }
+function authorChosen() {
+  try { return localStorage.getItem(AUTHOR_KEY) !== null; } catch (e) { return false; }
+}
 
-// Every byline in the store must belong to somebody on the roster, or a name
-// is lost the moment a piece arrives from another copy of the app.
 function ensurePeople() {
   var seen = {};
   personIds().forEach(function (id) { seen[id] = 1; });
@@ -864,8 +851,6 @@ function ensurePeople() {
   return added.length;
 }
 
-// A roster arriving from a backup or a piece bundle is merged by id: a rename
-// on their device does not overwrite what this one calls them.
 function mergePeople(incoming) {
   if (!Array.isArray(incoming)) return 0;
   var have = {};
@@ -881,7 +866,6 @@ function mergePeople(incoming) {
   return added;
 }
 
-// ---------- helpers ----------
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -897,22 +881,27 @@ function fmtStamp(ts) {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric' }) + ' · ' +
     d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-function toast(msg) {
+function toast(msg, undo) {
   var t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
+  if (undo) {
+    var b = document.createElement('button');
+    b.className = 'toast-undo';
+    b.textContent = 'UNDO';
+    b.onclick = function () { t.style.display = 'none'; undo(); };
+    t.appendChild(b);
+  }
   t.style.display = 'block';
   clearTimeout(t._h);
-  t._h = setTimeout(function () { t.style.display = 'none'; }, 2400);
+  t._h = setTimeout(function () { t.style.display = 'none'; }, undo ? 6000 : 2400);
 }
 
-// ---------- seed ----------
 var seedTs = Date.now();
 var defaultData = {
   logs: [],
   projects: [],
   journal: [],
-  // Two pieces in the tray so the desk has something to show. Cut them.
   pieces: [
     { id: 'pc1', kind: 'essay', byline: 'a', title: 'The Seam',
       body: 'The sodium lamps are going over to LED one block at a time, and you can stand on the line: orange behind you, white ahead.',
@@ -928,15 +917,10 @@ var defaultData = {
   press: null
 };
 
-// ---------- migration ----------
-// v2 stored display names as authors and dates as pre-formatted strings.
 var AUTHOR_MAP = { Suds: 'a', Partner: 'b', Together: 'both', Both: 'both' };
 
 function migrate(data) {
   var fallback = Date.now();
-  // Keep whatever id a record carries. A byline this device has never seen
-  // belongs to a real person on some other device, and ensurePeople() gives
-  // them a seat rather than filing their work under somebody else's name.
   function fixAuthor(v) {
     if (AUTHOR_MAP[v]) return AUTHOR_MAP[v];
     return (typeof v === 'string' && v) ? v : 'a';
@@ -946,8 +930,6 @@ function migrate(data) {
     return item;
   }
   (data.logs || []).forEach(function (l) { l.author = fixAuthor(l.author); fixTs(l); });
-  // Older notebooks kept a journal and a list of projects beside the log.
-  // They were one idea; they arrive as scraps with a title and keep their ids.
   var have = {};
   data.logs.forEach(function (l) { have[l.id] = 1; });
   (data.journal || []).forEach(function (j) {
@@ -970,9 +952,6 @@ function migrate(data) {
   return data;
 }
 
-// Accept anything shaped like a backup; fill in what is missing rather than
-// rejecting the file, so a partial import cannot leave the app unrenderable.
-// A null record must not sink the store.
 function records(list) {
   return Array.isArray(list) ? list.filter(function (x) { return x && typeof x === 'object'; }) : [];
 }
@@ -992,7 +971,6 @@ function normalize(raw) {
   return migrate(out);
 }
 
-// True when this device's work came out of the file it was opened from.
 var stateFromSeed = false;
 var state = (function () {
   try {
@@ -1003,9 +981,6 @@ var state = (function () {
     var old = localStorage.getItem('stoop_data_v2');
     if (old) { toast('Upgraded your notes from the older format'); return normalize(JSON.parse(old)); }
   } catch (e) {}
-  // An exported issue carries its own archive. Opened on a device with nothing
-  // of its own, the file is the publication; opened on one that already has
-  // work, the seed merges later rather than replacing anything.
   var seed = readSeed();
   if (seed) {
     stateFromSeed = true;
@@ -1026,14 +1001,7 @@ function saveState() {
     toast('Could not save — device storage is full');
   }
 }
-// ---------- photos ----------
-// Where they are kept, how they get in, and how one lands on a page. A
-// photograph in this app exists in order to end up on paper.
 
-// ---------- photo store ----------
-// Photos live in IndexedDB (localStorage caps out around 5 MB); the state
-// above holds only their ids. Everything is dithered to 1-bit on intake, so
-// a full-page photo is tens of kilobytes and prints on any copier.
 var PHOTO_DB = 'stoop_photos';
 var PHOTO_STORE = 'photos';
 var photoCache = {};
@@ -1086,7 +1054,6 @@ function photoLoadAll() {
   }).catch(function () {});
 }
 
-// Drop photo blobs no entry or zine panel points at any more.
 function collectPhotoRefs() {
   var live = {};
   function keep(p) {
@@ -1097,13 +1064,10 @@ function collectPhotoRefs() {
   state.logs.forEach(keep);
   state.pieces.forEach(keep);
   if (state.press && state.press.panels) state.press.panels.forEach(keep);
-  // Set-aside pages and undo history can still come back.
   if (state.press && state.press.spare) state.press.spare.forEach(keep);
   (pasteUndo || []).concat(pasteRedo || []).forEach(function (snap) {
     String(snap).replace(/"photo":"([^"]+)"/g, function (m, id) { live[id] = 1; return m; });
   });
-  // A back issue is the archive. Sweeping a photo out from under a published
-  // issue would rewrite history, so every shelved panel pins its photo.
   state.issues.forEach(function (iss) {
     (iss.panels || []).forEach(keep);
     (iss.pieces || []).forEach(keep);
@@ -1116,11 +1080,6 @@ function sweepPhotos() {
 }
 
 
-// ---------- the intake ----------
-// DESIGN.md: "images ship dithered (1-bit and riso-grain, which is also the
-// print bridge)". One pipeline serves both ends of that sentence: the screen
-// gets the scene's aesthetic, and the printer gets pure black and white, which
-// is the only thing a photocopier can honestly reproduce anyway.
 var PHOTO_MAX_EDGE = 1000;
 var PHOTO_CONTRAST = 1.15;
 
@@ -1138,8 +1097,6 @@ function readImage(file) {
   });
 }
 
-// Floyd–Steinberg: threshold each pixel, push the error to the neighbours that
-// have not been decided yet. Grain instead of banding, and it survives a copier.
 function ditherToBitmap(img) {
   var scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(img.width, img.height));
   var w = Math.max(1, Math.round(img.width * scale));
@@ -1149,7 +1106,6 @@ function ditherToBitmap(img) {
   canvas.width = w;
   canvas.height = h;
   var ctx = canvas.getContext('2d');
-  // Paper under it: transparent pixels would otherwise dither to black.
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
@@ -1190,7 +1146,6 @@ function ditherToBitmap(img) {
   var bits = new Uint8Array(rowBytes * h);
   for (var by = 0; by < h; by++) {
     for (var bx = 0; bx < w; bx++) {
-      // 1 is white, matching greyscale PNG and the PDF's DeviceGray.
       if (d[(by * w + bx) * 4] >= 128) bits[by * rowBytes + (bx >> 3)] |= 0x80 >> (bx & 7);
     }
   }
@@ -1199,15 +1154,6 @@ function ditherToBitmap(img) {
   });
 }
 
-// ---------- storing two tones in two tones ----------
-// The dither leaves exactly two values in the image. The browser's own encoder
-// does not care: toDataURL writes whatever the canvas holds, which is 32-bit
-// RGBA, and a photograph comes out about five times the size of the black and
-// white it actually contains. That surcharge is not paid once — it is paid
-// again in every issue file the photograph rides in, and an issue file is the
-// thing people hand to each other. So the intake writes the PNG itself, at the
-// one bit per pixel the picture is made of. pdfAddImage has always packed the
-// same bits this way for the printer; this is the screen's copy catching up.
 var CRC_TABLE = (function () {
   var t = new Int32Array(256);
   for (var n = 0; n < 256; n++) {
@@ -1238,8 +1184,6 @@ function png1bit(w, h, bits) {
   var rowBytes = Math.ceil(w / 8);
   var raw = new Uint8Array((rowBytes + 1) * h);
   for (var y = 0; y < h; y++) {
-    // Filter 0. The other four predict from neighbouring pixels, and dither
-    // grain is exactly the signal nothing can predict; they cost bytes here.
     raw[y * (rowBytes + 1)] = 0;
     raw.set(bits.subarray(y * rowBytes, (y + 1) * rowBytes), y * (rowBytes + 1) + 1);
   }
@@ -1268,7 +1212,6 @@ function png1bit(w, h, bits) {
   }).catch(function () { return null; });
 }
 
-// Returns the new photo ids, in the order the files were chosen.
 function intakePhotos(fileList) {
   var files = Array.prototype.slice.call(fileList).filter(function (f) {
     return /^image\//.test(f.type);
@@ -1290,11 +1233,6 @@ function intakePhotos(fileList) {
   }, Promise.resolve([]));
 }
 
-// ---------- the photo strip ----------
-// Every photograph the scene has, as thumbs above the pages. One click glues
-// one to the page last touched, as a cutting; drag it where it goes. There is
-// nothing to arm and no second click, because a photograph on the strip is
-// already the thing you want on the page.
 function renderTray() {
   var tray = document.getElementById('phototray');
   if (!tray) return;
@@ -1316,10 +1254,6 @@ function placeFromTray(id) {
 }
 var activeLogFilter = 'all';
 
-// The roster is drawn, not written into the HTML: a scene of four needs four
-// chips and four options, and nobody should have to edit a view file to get
-// them.
-// Work signed together keeps a chip to find it by, even on a roster of one.
 function filterIds() {
   var ids = authorIds();
   if (ids.indexOf('both') < 0 && state.logs.some(function (l) { return l.author === 'both'; })) ids.push('both');
@@ -1344,9 +1278,6 @@ function renderNames() {
   renderRoster();
 }
 
-// Somebody who has already written something keeps their seat: removing them
-// would orphan a byline, and ensurePeople would only put them back as
-// "Someone".
 function personHasWork(id) {
   var by = function (x) { return x.author === id || x.byline === id; };
   return state.logs.some(by) || state.pieces.some(by) ||
@@ -1382,10 +1313,6 @@ function photoTag(id, cls) {
   return '<img class="' + cls + '" src="' + esc(src) + '" alt="">';
 }
 
-// ---------- scraps ----------
-// One stream. A scrap is a line, or a page with a title, or a photograph, by
-// somebody, on a day. The desk draws pieces from it once a cycle. There used
-// to be three of these (log, journal, projects) and they were one idea.
 function renderLogs() {
   var list = document.getElementById('loglist');
   if (!list) return;
@@ -1433,6 +1360,18 @@ function addLog(photoIds) {
   toast(ids.length ? 'Kept ' + ids.length + ' photo(s)' : 'Kept');
 }
 
+function deleteLog(id) {
+  var at = state.logs.findIndex(function (l) { return l.id === id; });
+  if (at < 0) return;
+  var gone = state.logs.splice(at, 1)[0];
+  saveState(); renderLogs(); renderTray();
+  toast('Scrap deleted.', function () {
+    state.logs.splice(Math.min(at, state.logs.length), 0, gone);
+    saveState(); renderLogs(); renderTray();
+  });
+  setTimeout(sweepPhotos, 6500);
+}
+
 function renderAll() {
   renderNames();
   renderBar();
@@ -1442,29 +1381,14 @@ function renderAll() {
   renderShelf();
   renderPress();
 }
-// ---------- the imposition solver ----------
-// A format is a page count and a piece of paper; the imposition is computed
-// from those two, not eyeballed. PRESET_A and PRESET_B are the exception and
-// stay literal: they are the two fold handednesses of the one-cut eight-pager,
-// they are the same two the hand kit in press/ offers, and check.sh holds all
-// four arrays equal. An imposition that disagrees with the kit is a stack of
-// misfolded paper.
-//
-// Slot order is position on the printed sheet: 0..3 is the top row left to
-// right, printed upside down; 4..7 is the bottom row.
 var PRESET_A = [5, 4, 3, 2, 6, 7, 8, 1];
 var PRESET_B = [2, 3, 4, 5, 1, 8, 7, 6];
 
-// Swapping the fold hand reverses each row. The test suite asserts this
-// against PRESET_B rather than trusting the comment.
 function oneCutMap(hand) {
   if (hand !== 'B') return PRESET_A.slice();
   return PRESET_A.slice(0, 4).reverse().concat(PRESET_A.slice(4).reverse());
 }
 
-// Saddle stitch: sheets nest inside each other, so sheet k carries the k-th
-// pages in from each end. Four pages per sheet, two per side, which is why
-// the page count rounds up to a multiple of four.
 function saddleSheets(pages) {
   var n = Math.ceil(pages / 4) * 4;
   var out = [];
@@ -1481,8 +1405,6 @@ function saddleSheets(pages) {
   return out;
 }
 
-// Paper, in the units the printer thinks in. Landscape throughout: the one-cut
-// fold needs it, and a saddle signature is two portrait pages side by side.
 var PAPER = {
   letter: { w: '11in', h: '8.5in', wpt: 792, hpt: 612, css: 'letter landscape', label: 'Letter' },
   a4: { w: '297mm', h: '210mm', wpt: 841.89, hpt: 595.28, css: 'A4 landscape', label: 'A4' }
@@ -1520,8 +1442,6 @@ var FORMAT_IDS = ['fold8', 'fold8a4', 'saddle8', 'saddle12', 'saddle16', 'saddle
 function formatOf(id) { return FORMATS[id] || FORMATS.fold8; }
 function paperOf(id) { return PAPER[formatOf(id).paper]; }
 
-// The whole imposition, as data. Everything that draws a sheet — the press,
-// the exported issue, the print stylesheet — reads this and nothing else.
 function impose(formatId, hand) {
   var f = formatOf(formatId);
   if (f.kind === 'saddle') return { format: f, id: formatId, sheets: saddleSheets(f.pages) };
@@ -1535,19 +1455,10 @@ function impose(formatId, hand) {
   };
 }
 
-// What each page is for, so a fresh sheet is never eight blank rectangles.
-// Beyond page 8 the seeds run out and the pages are simply numbered, which is
-// the honest state of a signature nobody has written yet.
-// A fresh page is blank. The cover carries the zine's name and nothing else;
-// the nudge to click and type is drawn by the press, not stored in the page,
-// so it never reaches paper and never has to be deleted.
 function seedPanel(i) {
   return { h: i === 0 ? (state && state.zine) || 'STOOP ZINE' : '', body: '', photo: null };
 }
 
-// Resize to a format without losing anything: the cover stays first, the back
-// cover last, inner pages in order, and pages that no longer fit are set aside
-// in `spare`, blanks between them kept so each comes back where it was.
 function panelHasWork(p) {
   return !!p && !!(String(p.body || '').trim() || String(p.h || '').trim() || p.photo ||
     (Array.isArray(p.els) && p.els.length));
@@ -1566,30 +1477,18 @@ function fitPanels(panels, pages, spare) {
   return { panels: [cover].concat(kept, [back]), spare: left };
 }
 
-// The sheet a new cycle starts on: the section headings survive as prompts,
-// the body text does not. Seeded bodies on a fresh draft are what made a
-// freshly published issue look printable when it was empty.
 function blankPanels(pages) {
   var out = [];
   for (var i = 0; i < pages; i++) out.push({ h: seedPanel(i).h, body: '', photo: null });
   return out;
 }
 
-// The page label under a test-sheet number. Covers are worth naming; the
-// middle of a signature is not.
 function pageLabel(page, pages) {
   if (page === 1) return 'front cover';
   if (page === pages) return 'back cover';
   if (pages === 8 && (page === 4 || page === 5)) return 'center spread';
   return 'p.' + page;
 }
-// ---------- the press ----------
-// The press shows pages: right way up, in reading order, paired as facing
-// spreads. Nobody making a zine thinks in printer slots, and half of those
-// are upside down. The imposition is a property of paper and is applied on
-// the way to it, in the PDF and in the printed sheet, never on the surface
-// being edited. The DOM is rebuilt only when the format changes, and text is
-// painted in place, because re-rendering under the caret fights the cursor.
 var pageSig = '';
 
 function pressState() {
@@ -1619,7 +1518,6 @@ function setPanel(page, body) {
   if (ps.panels[page - 1]) ps.panels[page - 1].body = body;
 }
 
-// ---------- drawing the sheet ----------
 function panelHtml(page, pages) {
   var cover = page === 1 ? ' cover' : (page === pages ? ' backcover' : '');
   return '<div class="panel' + cover + '" data-page="' + page + '">' +
@@ -1631,9 +1529,6 @@ function panelHtml(page, pages) {
     '</div>';
 }
 
-// Pages in reading order: the cover on its own, then facing pairs, then the
-// back cover. A panel is the size it will print at, in points, so the fit
-// meter measures real paper; the whole run is zoomed to the column.
 function layoutPages() {
   var ps = pressState();
   var plan = impose(ps.format, ps.hand);
@@ -1671,12 +1566,6 @@ function layoutPages() {
   return plan;
 }
 
-// A page is 2.75 inches wide, which at 96dpi is 264 pixels: a postage stamp
-// on any real screen, with 8-point body type. So the run is scaled to fill
-// the column rather than only ever shrinking to fit it, bounded by the height
-// so a page never grows taller than the window it is being read in. zoom
-// rather than transform, because zoom takes part in layout: a scaled run
-// leaves no hole under itself, and the caret lands where it is aimed.
 function fitPages(zone) {
   zone.style.setProperty('--fit', 1);
   var run = zone.querySelector('.pages');
@@ -1698,7 +1587,6 @@ window.addEventListener('resize', function () {
   }, 150);
 });
 
-// Paint text without touching a node the caret is inside.
 function paintPanels() {
   var ps = pressState();
   var zone = document.getElementById('sheetzone');
@@ -1743,9 +1631,6 @@ function paintPanels() {
   paintAddress(zone, ps.panels.length, issueUrl(ps.issue));
 }
 
-// The back cover carries the address as text and as a code, so somebody who
-// finds the paper can reach the archive. The two substrates point at each
-// other or the loop is open.
 function paintAddress(zone, lastPage, url) {
   var last = zone.querySelector('[data-page="' + lastPage + '"]');
   if (!last) return;
@@ -1772,13 +1657,6 @@ function renderPress() {
   renderGen();
 }
 
-// ---------- editing ----------
-// Reads the sheet back into the model. Only while the press is on screen:
-// innerText on an element nobody can see falls back to textContent, where a
-// line break is a <br> that contributes nothing, and a back cover captured
-// from the desk came out with every newline deleted and was archived that
-// way. Nothing can have been typed into a hidden sheet, so there is nothing
-// to capture from one.
 function capturePanels() {
   var ps = pressState();
   var zone = document.getElementById('sheetzone');
@@ -1823,9 +1701,6 @@ function swapLayout() {
   toast('Fold layout ' + ps.hand + ' — print a test sheet before committing');
 }
 
-// Paper is where the imposition lives. Both of these render the imposed
-// sheet into the print zone and hand it to the browser. The pages on screen
-// are never what prints.
 function printDraft() {
   capturePanels();
   if (!confirmSheet('Print')) return;
@@ -1847,28 +1722,12 @@ function clearSheet() {
   renderPress();
   toast('Cleared the pages');
 }
-// ---------- the paste-up ----------
-// A zine is not a document. It is a board somebody glued things onto and then
-// photocopied, and its grammar is overlap, tilt, mixed type and grain. The
-// flowed text on a panel — h and body — is the editorial substrate: it comes
-// from the desk and re-flows when the format changes. Everything in els is the
-// paste-up on top of it, placed by hand, at any angle, over anything.
-//
-// Positions are fractions of the panel, never points. A panel is a different
-// size in every format, and a paste-up that only worked at Letter fold-8 would
-// break the one promise the press already makes: change the vessel, retype
-// nothing. Fractions move with the panel, so a collage survives the change the
-// same way a paragraph does.
 
 var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom'];
 var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15 };
 var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM' };
-// Issues made before the marker existed called their pen voice "hand".
 function voiceOf(el) { return el.voice === 'hand' ? 'marker' : (el.voice || 'type'); }
 var pasteSel = null;
-// A text cutting is a thing you move until you say otherwise. Editable text
-// under the pointer would eat the drag, so typing is a mode you enter on a
-// double click and leave on Escape, the way every other canvas works.
 var pasteEditing = null;
 
 function elsOf(panel) {
@@ -1897,11 +1756,6 @@ function selectedEl() {
   return hit ? hit.el : null;
 }
 
-// ---------- undo ----------
-// Direct manipulation without undo is a dare, not a tool. The whole panel
-// array is snapshotted, which is cheap next to the photographs it points at
-// and means a step never half-applies. Typing is snapshotted once per editing
-// session rather than per keystroke, on the way into the field.
 var pasteUndo = [];
 var pasteRedo = [];
 var UNDO_DEPTH = 50;
@@ -1930,7 +1784,6 @@ function pasteRestore(json) {
   renderPress();
 }
 
-// A new draft or a replaced store starts its own history.
 function forgetUndo() {
   pasteUndo.length = 0;
   pasteRedo.length = 0;
@@ -1953,8 +1806,6 @@ function pasteRedoStep() {
   toast('Redo');
 }
 
-// Typing into a page or a cutting's text box is a step too: the state is
-// taken on the way into the field and kept once something is typed.
 var flowSnap = null;
 function isFlowField(t) {
   return !!t && (t.id === 'ransomtext' || t.id === 'issueno' ||
@@ -1970,7 +1821,6 @@ document.addEventListener('input', function (ev) {
   flowSnap = null;
 }, true);
 
-// ---------- adding ----------
 var PASTE_DEFAULTS = {
   text: { w: 0.52, h: 0.16 },
   photo: { w: 0.55, h: 0.34 },
@@ -1983,9 +1833,6 @@ function topZ(panel) {
   return elsOf(panel).reduce(function (m, e) { return Math.max(m, e.z || 0); }, 0);
 }
 
-// Nothing you tape to a board lands square. A couple of degrees either way is
-// the difference between a zine and a memo, so new work arrives slightly
-// crooked and the rotate handle resets to straight on a double click.
 function crooked(seed) {
   return Math.round(((seed % 100) / 100 - 0.5) * 50) / 10;
 }
@@ -1996,8 +1843,6 @@ function addEl(page, kind, extra) {
   pasteMark();
   var els = elsOf(panel);
   var size = PASTE_DEFAULTS[kind] || PASTE_DEFAULTS.text;
-  // Each new cutting lands clear of the last one. A small offset buries them
-  // in a pile and the fourth thing you add looks like it did not arrive.
   var nudge = (els.length % 6) * 0.075;
   var el = {
     id: uid('el'),
@@ -2043,7 +1888,6 @@ function removeEl(id) {
   renderPress();
 }
 
-// ---------- changing one ----------
 function updateEl(id, fields, mark, quiet) {
   var hit = findEl(id);
   if (!hit) return;
@@ -2083,8 +1927,6 @@ function resizeText(id, by) {
   renderPress();
 }
 
-// A photograph on the paste-up can be any shape the panel allows, so the
-// element remembers whether it is showing the whole frame or filling its box.
 function toggleCrop(id) {
   var hit = findEl(id);
   if (!hit || hit.el.kind !== 'photo') return;
@@ -2093,18 +1935,12 @@ function toggleCrop(id) {
   toast(hit.el.crop ? 'Filling the box — edges cropped' : 'Whole frame, letterboxed');
 }
 
-// Black on white or white on black. A knocked-out headline over a photograph
-// is half the visual grammar of the form and costs nothing to print.
 function toggleInk(id) {
   var hit = findEl(id);
   if (!hit || (hit.el.kind !== 'text' && hit.el.kind !== 'box')) return;
   updateEl(id, { ink: hit.el.ink === 'white' ? 'black' : 'white' }, true);
   renderPress();
 }
-// ---------- drawing the paste-up ----------
-// One renderer serves the editable press, the shelf, and the exported issue,
-// because an issue that looked different on the machine it was made on would
-// make the self-carrying file a lie.
 
 function hash32(s) {
   var h = 2166136261;
@@ -2115,19 +1951,8 @@ function hash32(s) {
   return h >>> 0;
 }
 
-// Ransom note. Every character is cut from a different magazine, which means
-// a different face, size, tilt and sometimes a knocked-out block. The jitter
-// is derived from the element's id and the character's position rather than
-// from a random number, so the letters sit in exactly the same places on the
-// screen, in the PDF, and on the machine that opens the issue next week.
-// One description of the cut letters, read by the screen and by the PDF
-// writer. If these two derived the jitter separately they would drift, and a
-// press whose paper does not match its screen is not a press.
 function ransomSpec(text) {
   return String(text || '').split('').map(function (ch, i) {
-    // Unsigned shifts throughout: hash32 fills all 32 bits, and >> would read
-    // the top bit as a sign for half of all characters, which lands a negative
-    // face index and a negative type size.
     var r = hash32(i + ':' + ch + ':' + (i * 7));
     return {
       ch: ch,
@@ -2139,7 +1964,6 @@ function ransomSpec(text) {
   });
 }
 
-// Marker: every word written a little differently, the way a hand does.
 function markerSpec(text) {
   return String(text || '').split(/(\s+)/).map(function (w, i) {
     if (!w.trim()) return { ch: w, space: true };
@@ -2190,9 +2014,6 @@ function elBody(el, pics, editable, editing) {
   if (voice === 'marker') {
     return '<div class="' + cls + '" style="' + style + '">' + markerHtml(el.text) + '</div>';
   }
-  // Type, headline and stencil are edited where they sit. Ransom and marker
-  // are per-piece markup, and typing into that fights the caret on every
-  // keystroke, so they are edited in the inspector instead.
   return '<div class="' + cls + '" style="' + style + '"' +
     (editable && editing ? ' contenteditable="true"' : '') +
     (editable ? ' data-eltext="' + esc(el.id) + '"' : '') +
@@ -2218,13 +2039,6 @@ function pasteupHtml(panel, pics, editable) {
   }).join('') + '</div>';
 }
 
-// A cutting is a piece of paper with words on it: it is as tall as the words.
-// Anything else silently swallows a line, which is the failure the fit meter
-// exists to prevent for flowed text, and the paste-up owes the same honesty.
-// The height is measured from the layout the browser actually performed and
-// written back, so the model, the screen and the PDF agree on one number.
-// Where the browser actually broke the lines, recorded so any reader of the
-// file breaks where the maker saw it break. Ransom flows per character.
 function measureLines(node, voice) {
   if (!node || node.contains(document.activeElement)) return null;
   var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;
@@ -2274,15 +2088,11 @@ function growTextEls(panelEl, panel) {
   return grew;
 }
 
-// The editable sheet repaints the paste-up in place. Rebuilding it wholesale
-// on every keystroke would drop the caret out of whatever is being typed into,
-// so a layer whose shape has not changed is left alone.
 function paintPasteup(panelEl, panel) {
   var want = pasteupHtml(panel, photoCache, true);
   var layer = panelEl.querySelector('.pasteup');
   var typing = document.activeElement;
   if (layer && typing && layer.contains(typing)) {
-    // Geometry can still move under the caret; text cannot be touched.
     elsOf(panel).forEach(function (el) {
       var node = layer.querySelector('[data-el="' + el.id + '"]');
       if (node && node.getAttribute('style') !== elGeom(el)) node.setAttribute('style', elGeom(el));
@@ -2297,10 +2107,6 @@ function paintPasteup(panelEl, panel) {
   }
   if (growTextEls(panelEl, panel)) savePress();
 }
-// ---------- direct manipulation ----------
-// Pages are zoomed to fit the column, which is the only difficulty here.
-// Every gesture works in panel-local pixels taken from the live bounding box,
-// and that absorbs the zoom for free.
 var grab = null;
 var GRID = 1 / 24;
 
@@ -2356,8 +2162,6 @@ function moveGrab(ev) {
       y: clamp01(snap(f.y + dy, !fine), f.h)
     }, false, true);
   } else if (grab.mode === 'size') {
-    // The delta is turned back through the element's own rotation, so dragging
-    // the corner of a crooked cutting grows it along its own edges.
     var a = -(f.rot || 0) * Math.PI / 180;
     var mx = p.x - grab.start.x;
     var my = p.y - grab.start.y;
@@ -2379,10 +2183,8 @@ function moveGrab(ev) {
   paintOnePanel(grab.panelEl);
 }
 
-// A drag saves once, when it ends.
 function endGrab() {
   if (!grab) return;
-  // A click costs neither an undo step nor the redo history.
   if (!grab.moved) {
     pasteUndo.pop();
     Array.prototype.push.apply(pasteRedo, grab.redoWas);
@@ -2400,9 +2202,6 @@ function paintOnePanel(panelEl) {
   renderInspector();
 }
 
-// Repainting a panel swaps its paste-up layer wholesale, so any node captured
-// before a repaint is detached and every call on it silently does nothing.
-// Anything that selects and then acts has to ask the document again.
 function liveEl(id) {
   return document.querySelector('.el[data-el="' + id + '"]');
 }
@@ -2434,8 +2233,6 @@ document.addEventListener('pointerdown', function (ev) {
       selectEl(id);
       node = liveEl(id) || node;
     }
-    // A cutting being typed into owns its own pointer, or selecting a word
-    // inside it would drag the whole thing across the panel instead.
     if (ev.target.isContentEditable) return;
     startGrab(ev, 'move', node);
     return;
@@ -2450,8 +2247,6 @@ document.addEventListener('pointermove', moveGrab);
 document.addEventListener('pointerup', endGrab);
 document.addEventListener('pointercancel', endGrab);
 
-// Double-clicking the turn handle puts a cutting back on the square.
-// Double-clicking a text cutting is how you get into it.
 document.addEventListener('dblclick', function (ev) {
   var h = ev.target.closest && ev.target.closest('.h-rot');
   if (h) {
@@ -2464,8 +2259,6 @@ document.addEventListener('dblclick', function (ev) {
   var hit = findEl(node.getAttribute('data-el'));
   if (!hit || hit.el.kind !== 'text') return;
   if (voiceOf(hit.el) === 'ransom' || voiceOf(hit.el) === 'marker') {
-    // These are typed in the inspector; the double-click still has to land
-    // somewhere, so it lands there.
     selectEl(hit.el.id);
     var area = document.getElementById('ransomtext');
     if (area) { area.focus(); area.select(); }
@@ -2486,8 +2279,6 @@ document.addEventListener('dblclick', function (ev) {
   }
 });
 
-// Typing into a pasted text element. The model is written on input; the undo
-// step is taken once, when the field is first entered.
 document.addEventListener('focusin', function (ev) {
   if (ev.target.hasAttribute && ev.target.hasAttribute('data-eltext')) pasteMark();
 });
@@ -2497,7 +2288,6 @@ document.addEventListener('input', function (ev) {
   updateEl(t.getAttribute('data-eltext'), { text: t.innerText });
 });
 
-// Cutting keys stand down while somebody is typing in a field.
 function typingInField() {
   var a = document.activeElement;
   return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
@@ -2540,11 +2330,6 @@ document.addEventListener('keydown', function (ev) {
   if (key === ']') { ev.preventDefault(); raiseEl(pasteSel, true); return; }
   if (key === '[') { ev.preventDefault(); raiseEl(pasteSel, false); }
 });
-// ---------- the inspector ----------
-// Geometry is done by hand on the sheet. Everything that is not geometry —
-// which voice, how big, black or knocked out, what order things stack in —
-// lives here, in one strip, rather than in a popover floating over a panel
-// that might itself be upside down.
 var pastePage = 1;
 
 function pasteTargetLabel() {
@@ -2600,7 +2385,6 @@ function renderInspector() {
 
 function addToPasteup(kind) {
   if (kind === 'photo') {
-    // A photograph comes from the device, through the same intake as a drop.
     var input = document.getElementById('pastephotofile');
     if (input) input.click();
     return;
@@ -2635,30 +2419,21 @@ document.addEventListener('click', function (ev) {
   if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
 });
 
-// Repaint as it is typed, so the cutting grows and records its breaks.
 document.addEventListener('input', function (ev) {
   if (ev.target.id !== 'ransomtext' || !pasteSel) return;
   updateEl(pasteSel, { text: ev.target.value });
-  // The panel only: rebuilding the inspector would destroy this very field.
   var node = liveEl(pasteSel);
   var panelEl = node && node.closest('.panel');
   var panel = panelEl && panelOfPage(Number(panelEl.getAttribute('data-page')));
   if (panel) paintPasteup(panelEl, panel);
 });
 
-// Which panel a new cutting lands on is simply the last one touched.
 document.addEventListener('pointerdown', function (ev) {
   var p = ev.target.closest && ev.target.closest('.panel');
   if (!p) return;
   var page = Number(p.getAttribute('data-page'));
   if (page && page !== pastePage) { pastePage = page; renderInspector(); }
 });
-// ---------- things that land on the sheet ----------
-// The sheet accepts what is dropped on it. A photograph dragged in from the
-// desktop is dithered and glued down where it fell; text dragged or pasted in
-// becomes a cutting there. No tray, no arming, no button to press first: the
-// paper is the interface, and putting a thing on paper means putting it on
-// the paper.
 
 function dropPoint(panelEl, ev) {
   var p = panelLocal(panelEl, ev.clientX, ev.clientY);
@@ -2679,13 +2454,11 @@ function acceptFiles(page, files, at) {
 function acceptText(page, text, at) {
   var t = String(text || '').trim();
   if (!t) return;
-  // A line is a headline; a paragraph is typewriter copy.
   addEl(page, 'text', { text: t.slice(0, 4000), voice: t.length > 70 ? 'type' : 'head', at: at });
   renderPress();
   toast('Cutting glued down');
 }
 
-// A file dropped off a page would replace the press in the browser.
 function draggingFiles(ev) {
   var types = ev.dataTransfer && ev.dataTransfer.types;
   return !!types && Array.prototype.indexOf.call(types, 'Files') >= 0;
@@ -2723,9 +2496,6 @@ document.addEventListener('drop', function (ev) {
   if (text) acceptText(page, text, at);
 });
 
-// Paste lands on the panel last touched, unless a caret has somewhere better
-// to put it.
-// Behind a drawer nothing lands unseen; over the scraps a photo is a scrap.
 document.addEventListener('paste', function (ev) {
   var a = document.activeElement;
   if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
@@ -2750,7 +2520,6 @@ document.addEventListener('paste', function (ev) {
   if (text) { ev.preventDefault(); acceptText(pastePage, text, null); }
 });
 
-// + PHOTO on the press: the device's picker, then the same path as a drop.
 var pasteInput = document.getElementById('pastephotofile');
 if (pasteInput) {
   pasteInput.addEventListener('change', function (e) {
@@ -2758,20 +2527,10 @@ if (pasteInput) {
     e.target.value = '';
   });
 }
-// ---------- the fit meter ----------
-// A press that silently eats a paragraph is not a press. Every panel is
-// measured against its own box and the words that will not print are counted
-// and named, on the panel and in one line above the sheet. Split from the
-// press only for the line ceiling; it reads and writes the same sheet.
 
-// ---------- the fit meter ----------
-// The panel clips what does not fit, because a printer will too — but it must
-// not do so silently. Binary search the word list for the last line that fits:
-// about nine reflows per over-full panel, on demand rather than per keystroke.
 function measureOverflow(body) {
   if (body.scrollHeight <= body.clientHeight + 1) return 0;
   var original = body.innerText;
-  // Trials keep the typed line breaks, or paragraphs go uncounted.
   var ends = [];
   var re = /\S+/g;
   var m;
@@ -2812,9 +2571,6 @@ function checkFit() {
   return total;
 }
 
-// ---------- what the sheet is ----------
-// Ringing the bell leaves a fresh draft, so say so before paper is spent on
-// it. Cuttings count as content; the cover's heading is just the zine's name.
 function sheetIsBlank() {
   return pressState().panels.every(function (p, i) {
     return i === 0 ? !String(p.body || '').trim() && !p.photo && !(p.els || []).length : !panelHasWork(p);
@@ -2842,15 +2598,6 @@ function pressStatus() {
   el.textContent = said.join(' ');
   el.classList.toggle('bad', !!spare || (!!last && blank));
 }
-// ---------- stamps ----------
-// The grammar of the form, ready cut: FREE, TAKE ONE, an arrow, a star, a
-// strip of tape, a staple, a barcode that scans nothing. Each is one small
-// description in a unit box, and the same description is drawn as SVG on
-// the screen and as path operators on paper, so the two cannot drift.
-//
-//   p: polygon, points in 0..1     r: filled rect [x, y, w, h]
-//   o: outlined rect [x,y,w,h,stroke]   l: line [x1, y1, x2, y2, stroke]
-//   t: text, drawn upright and fitted to the box
 var STAMPS = {
   free:    { w: 0.34, h: 0.11, ops: [{ o: [0.02, 0.06, 0.96, 0.88, 0.07] }, { t: 'FREE' }] },
   takeone: { w: 0.44, h: 0.11, ops: [{ o: [0.02, 0.06, 0.96, 0.88, 0.06] }, { t: 'TAKE ONE' }] },
@@ -2864,8 +2611,6 @@ var STAMPS = {
 };
 var STAMP_ORDER = ['free', 'takeone', 'copy', 'no', 'arrow', 'star', 'tape', 'staple', 'barcode'];
 
-// The barcode's bars come from a hash so every copy of the issue draws the
-// same nothing.
 (function () {
   var x = 0, i = 0;
   while (x < 0.98) {
@@ -2906,8 +2651,6 @@ function stampHtml(el) {
   return '<div class="elstamp">' + stampSvg(el.stamp) + '</div>';
 }
 
-// The palette under + STAMP: every stamp, drawn small, one click to glue it
-// to the page last touched.
 function renderStampPalette(open) {
   var box = document.getElementById('stamps');
   if (!box) return;
@@ -2935,12 +2678,6 @@ document.addEventListener('click', function (ev) {
     toast('Stamped. Drag it, turn it.');
   }
 });
-// ---------- generation ----------
-// How many times this has been through the copier. Nought is the master;
-// three is the copy somebody's cousin made of the copy they found in a
-// laundromat. On screen it is an SVG filter that frays edges and throws
-// toner; on paper it is speckle over every panel and dust in the
-// photographs, drawn from the same seed on every machine.
 var GEN_LABEL = ['GEN 0 · master', 'GEN 1 · a copy', 'GEN 2 · copy of a copy', 'GEN 3 · laundromat'];
 
 function genOf(ps) {
@@ -2965,7 +2702,6 @@ function cycleGen() {
   toast(GEN_LABEL[genOf(ps)]);
 }
 
-// Deterministic speckle for one panel: a list of tiny rects in 0..1 space.
 function speckle(gen, seed) {
   var out = [];
   if (!gen) return out;
@@ -2980,11 +2716,6 @@ function speckle(gen, seed) {
 document.addEventListener('click', function (ev) {
   if (ev.target.closest && ev.target.closest('#genbtn')) cycleGen();
 });
-// ---------- the desk ----------
-// Exactly one person holds the final cut on any given issue, and the desk goes
-// round whoever is on the roster, in order: alone it is always yours, at two
-// it alternates, at four it comes back every fourth issue. Nobody administers
-// it.
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -3010,7 +2741,6 @@ function livePieces() {
     .sort(function (x, y) { return x.ts - y.ts; });
 }
 
-// ---------- submissions ----------
 function addPiece(fields) {
   var piece = {
     id: uid('pc'),
@@ -3041,8 +2771,6 @@ function submitPiece() {
   toast('Submitted to the desk');
 }
 
-// A cut is a conversation, not a deletion: the maker keeps the piece and it
-// can run next cycle. Nothing here removes anybody's work.
 function cutPiece(id, cut) {
   var p = state.pieces.find(function (x) { return x.id === id; });
   if (!p) return;
@@ -3053,20 +2781,19 @@ function cutPiece(id, cut) {
 }
 
 function dropPiece(id) {
-  state.pieces = state.pieces.filter(function (x) { return x.id !== id; });
+  var at = state.pieces.findIndex(function (x) { return x.id === id; });
+  if (at < 0) return;
+  var gone = state.pieces.splice(at, 1)[0];
   saveState();
-  sweepPhotos();
   renderDesk();
+  toast('\u201c' + gone.title + '\u201d removed.', function () {
+    state.pieces.splice(Math.min(at, state.pieces.length), 0, gone);
+    saveState();
+    renderDesk();
+  });
+  setTimeout(sweepPhotos, 6500);
 }
 
-// ---------- minting pieces from scraps ----------
-// Scraps are a source, not a destination. Once a cycle the desk draws what
-// was written since the last issue shipped, so issue two never reprints
-// issue one. A scrap with a title, or a long one, is a piece of its own; the
-// short ones run together as one piece, the way a log column does.
-// A piece remembers its scraps (`from`), so pulling twice draws nothing twice,
-// and new short scraps join the waiting SCRAPS column. The column is signed by
-// whoever wrote it, or as made together when several did.
 function draftFromSources() {
   var since = lastIssueTs();
   var drawn = {};
@@ -3119,60 +2846,6 @@ function draftFromSources() {
     : 'Nothing new since the last issue. Keep something, then pull again.');
 }
 
-// ---------- assembling ----------
-// Pieces flow into the pages between the covers. The vessel is whatever
-// format the press is set to, which is why changing format re-flows an issue
-// instead of forcing a retype.
-function compileIssue() {
-  var ps = pressState();
-  var c = cycleState();
-  var pieces = livePieces();
-  var pages = formatOf(ps.format).pages;
-  var inner = pages - 2;
-
-  pasteMark();
-  ps.issue = c.no;
-  ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
-
-  // A page takes its piece whole. Pages the last compile filled and this one
-  // does not are emptied; handwork and cuttings are left alone.
-  var ran = pieces.slice(0, inner);
-  ran.forEach(function (piece, i) {
-    var panel = ps.panels[i + 1];
-    if (!panel) return;
-    panel.h = piece.title.toUpperCase();
-    panel.body = piece.body;
-    panel.photo = piece.photo || null;
-  });
-  (ps.ran || []).forEach(function (r) {
-    var panel = ps.panels[r.page - 1];
-    if (!panel || r.page - 2 < ran.length || r.page >= pages) return;
-    panel.h = '';
-    panel.body = '';
-    panel.photo = null;
-  });
-  ps.ran = ran.map(function (piece, i) { return { page: i + 2, id: piece.id }; });
-
-  var note = document.getElementById('editornote');
-  ps.panels[pages - 1].h = 'BACK COVER';
-  ps.panels[pages - 1].body = 'Issue №' + c.no + '\nEdited by ' + nameOf(c.editor) + '.\n\n' +
-    ((note && note.value.trim()) ? note.value.trim() + '\n\n' : '') +
-    'Made on a stoop. Take one, leave one.';
-
-  var newest = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
-  if (newest && !ps.panels[0].photo) ps.panels[0].photo = newest.photo;
-
-  savePress();
-  renderPress();
-  var over = pieces.length - inner;
-  toast(over > 0
-    ? 'Compiled. ' + over + ' piece(s) did not fit — cut some, or use a bigger format'
-    : 'Compiled issue №' + c.no + ' from ' + pieces.length + ' piece(s)');
-}
-
-// The bell. Publishing archives the sheet to the shelf whole, so the back
-// issue reprints exactly as it shipped, and starts the next cycle clean.
 function buildIssue() {
   var ps = pressState();
   var c = cycleState();
@@ -3183,7 +2856,6 @@ function buildIssue() {
     state.issues = state.issues.filter(function (i) { return i.no !== ps.issue; });
   }
 
-  // What shipped is what was compiled; pieces that did not fit stay.
   var live = livePieces();
   var ranIds = Array.isArray(ps.ran) ? ps.ran.map(function (r) { return r.id; }) : null;
   var shipped = ranIds ? live.filter(function (p) { return ranIds.indexOf(p.id) >= 0; }) : live;
@@ -3203,7 +2875,6 @@ function buildIssue() {
     ts: Date.now()
   });
 
-  // Cut pieces stay for next cycle, which is the promise a cut makes.
   state.pieces = state.pieces.filter(function (p) { return shipped.indexOf(p) < 0; });
 
   var next = String((parseInt(ps.issue, 10) || 1) + 1);
@@ -3226,7 +2897,6 @@ function buildIssue() {
     (held ? ' ' + held + ' piece(s) that did not fit wait in the tray.' : ''));
 }
 
-// ---------- the view ----------
 function fmtBell(ts) {
   var days = Math.ceil((ts - Date.now()) / 864e5);
   if (days < 0) return 'the bell has rung — ' + (-days) + ' day(s) ago';
@@ -3266,15 +2936,66 @@ function renderDesk() {
       '</div>';
   }).join('');
 }
-// ---------- the shelf ----------
-// An issue is archived whole — its panels, its format, its fold hand — so a
-// back issue reprints as it shipped rather than as the current draft is set.
+function pourMark(p) {
+  return String(hash32((String(p.h || '') + ' ' + String(p.body || '')).replace(/\s+/g, ' ').trim()));
+}
 
-// The imposed sheet, with nothing editable about it. This is the only place
-// the imposition is drawn as HTML: the press on screen shows pages, and this
-// is what goes to the printer, whether for the draft, a numbered test sheet,
-// or a back issue off the shelf. Test numbers are always in the markup and
-// shown only when the print zone carries the testing class.
+function compileIssue() {
+  var ps = pressState();
+  var c = cycleState();
+  var pieces = livePieces();
+  var pages = formatOf(ps.format).pages;
+  var inner = pages - 2;
+
+  var edited = [];
+  (ps.ran || []).forEach(function (r) {
+    var p = ps.panels[r.page - 1];
+    if (p && p.poured && p.poured !== pourMark(p) && edited.indexOf(r.page) < 0) edited.push(r.page);
+  });
+  if (edited.length && !confirm((edited.length > 1 ? 'Pages ' : 'Page ') + edited.join(', ') +
+    ' changed by hand since the pieces were last flowed on. Flow them again and replace ' +
+    (edited.length > 1 ? 'those pages?' : 'that page?'))) return;
+  pasteMark();
+  ps.issue = c.no;
+  ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
+
+  var ran = pieces.slice(0, inner);
+  ran.forEach(function (piece, i) {
+    var panel = ps.panels[i + 1];
+    if (!panel) return;
+    panel.h = piece.title.toUpperCase();
+    panel.body = piece.body;
+    panel.photo = piece.photo || null;
+  });
+  (ps.ran || []).forEach(function (r) {
+    var panel = ps.panels[r.page - 1];
+    if (!panel || r.page - 2 < ran.length || r.page >= pages) return;
+    panel.h = '';
+    panel.body = '';
+    panel.photo = null;
+  });
+  ps.ran = ran.map(function (piece, i) { return { page: i + 2, id: piece.id }; });
+  ps.ran.forEach(function (r) { ps.panels[r.page - 1].poured = pourMark(ps.panels[r.page - 1]); });
+
+  var note = document.getElementById('editornote');
+  ps.panels[pages - 1].h = 'BACK COVER';
+  ps.panels[pages - 1].body = 'Issue №' + c.no + '\nEdited by ' + nameOf(c.editor) + '.\n\n' +
+    ((note && note.value.trim()) ? note.value.trim() + '\n\n' : '') +
+    'Made on a stoop. Take one, leave one.';
+
+  var newest = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
+    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
+  if (newest && !ps.panels[0].photo) ps.panels[0].photo = newest.photo;
+
+  savePress();
+  renderPress();
+  var over = pieces.length - inner;
+  toast(over > 0
+    ? 'Compiled. ' + over + ' piece(s) did not fit — cut some, or use a bigger format'
+    : 'Compiled issue №' + c.no + ' from ' + pieces.length + ' piece(s)');
+}
+
+
 function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   var plan = impose(formatId, hand);
   var paper = paperOf(formatId);
@@ -3302,10 +3023,6 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
   }).join('');
 }
 
-// The other substrate. Same source, no imposition and no paste-up: a collage
-// is a property of a page at a fixed size, and this view has neither. What was
-// written still reads, cuttings included; where it was glued does not. This
-// is the issue you open on a phone at the bus stop.
 function cuttingWords(p) {
   return (p && Array.isArray(p.els) ? p.els : []).filter(function (e) {
     return e && e.kind === 'text' && String(e.text || '').trim();
@@ -3342,9 +3059,6 @@ function readingHtml(issue, photos, nameFn) {
   return out + '</article>';
 }
 
-// What the press is about to commit, judged against what is already on the
-// shelf. The draft on screen is never the issue that just went up, so anything
-// that spends paper, ink or a file asks first.
 function lastPublished() {
   return state.issues.length ? state.issues[state.issues.length - 1] : null;
 }
@@ -3358,7 +3072,6 @@ function confirmSheet(what) {
 }
 
 
-// ---------- the view ----------
 var openIssueNo = null;
 
 function issueByNo(no) {
@@ -3417,11 +3130,6 @@ function readIssue(no) {
   if (box && openIssueNo) box.scrollIntoView({ block: 'start' });
 }
 
-// One print path. Whatever is going to paper — the draft, a numbered test
-// sheet, a back issue — is imposed into the print zone and handed to the
-// browser, and the zone is emptied again when the dialog closes. Opening a
-// back issue this way never costs the draft, because the draft is not what
-// is being printed.
 function printSheet(panels, format, hand, url, testing, note, gen, issue) {
   var zone = document.getElementById('reprintzone');
   if (!zone) return;
@@ -3442,13 +3150,6 @@ function reprintIssue(no) {
     'Reprinting \u2116' + iss.no + ' \u2014 your draft is untouched', iss.gen, iss.no);
 }
 
-// The keyboard shortcut prints the sheet too. Somebody who presses print on
-// the pages view gets the imposed sheet, not a grid of upright pages.
-// Ctrl-P from anywhere prints the sheet. Printing is about paper and paper
-// is the imposed sheet, wherever somebody happened to be standing when the
-// thought struck them; the alternative, which this used to do, was to hand
-// the browser a blank page unless they were on the press.
-// On the landing, the issue in the file is what prints.
 window.addEventListener('beforeprint', function () {
   if (document.body.classList.contains('reprinting')) return;
   var zone = document.getElementById('reprintzone');
@@ -3466,10 +3167,6 @@ window.addEventListener('beforeprint', function () {
   document.body.classList.add('reprinting');
 });
 
-// Not every browser fires afterprint, and a cancelled dialog may not either.
-// A print zone left populated keeps body.reprinting set, and the guard above
-// would then print that stale sheet for ever, so clearing it is on a timer as
-// well as on the event.
 function endPrinting() {
   document.body.classList.remove('reprinting');
   var zone = document.getElementById('reprintzone');
@@ -3478,13 +3175,6 @@ function endPrinting() {
   if (style) style.textContent = '@page { size: ' + paperOf(pressState().format).css + '; margin: 0; }';
 }
 window.addEventListener('afterprint', endPrinting);
-// ---------- landing ----------
-// Somebody scanned the back of a zine, or was handed the file. What they were
-// holding was paper, so what they get is the issue and nothing else: no
-// header, no tabs, no shelf, no settings. At the end of it the press they are
-// already holding offers itself, because that is the whole point of the file.
-// The issue being held is the one in the file, named from the file's roster,
-// whatever this device's own shelf keeps.
 var landingSeed;
 function fileIssue() {
   if (landingSeed === undefined) landingSeed = readSeed();
@@ -3532,14 +3222,26 @@ function renderLanding() {
     '</div></div>';
 }
 
+function makeFromLanding() {
+  if (peopleFromSeed && !authorChosen()) {
+    var name = prompt('Who is writing? Your name goes on what you make here.\n\nAlready in this zine: ' +
+      people.map(function (p) { return p.name; }).join(', '), '');
+    name = String(name || '').trim().slice(0, 24);
+    if (name) {
+      var known = people.filter(function (p) { return p.name.toLowerCase() === name.toLowerCase(); })[0];
+      currentAuthor = (known || addPerson(name)).id;
+      rememberAuthor();
+      renderAll();
+    }
+  }
+  leaveLanding('#desk');
+}
+
 function leaveLanding(hash) {
   document.body.classList.remove('landing');
   location.hash = hash;
 }
 
-// Your own zine, on the press you were handed. The issue that got you here is
-// cleared rather than kept, so your first file carries only your own work and
-// not somebody else's №01 in its archive.
 function startOwn() {
   var own = stateFromSeed ? 0 : state.logs.length + state.pieces.length + state.issues.length;
   if (!confirm('Start your own zine on this device? Everything stored here is cleared' +
@@ -3556,15 +3258,7 @@ function startOwn() {
   leaveLanding('#desk');
   toast('Yours. Name it under settings whenever you like.');
 }
-// ---------- the code on the back cover ----------
-// The printed issue carries its own address, which needs a QR encoder, and the
-// zero-external-requests law means writing one rather than fetching one. Byte
-// mode, error correction L, versions 1 through 10.
-//
-// The matrix is checked module for module against fixtures from an independent
-// implementation in test/05-qr.js.
 
-// GF(256) over the QR primitive polynomial, for Reed-Solomon.
 var GF_EXP = new Uint8Array(512);
 var GF_LOG = new Uint8Array(256);
 (function () {
@@ -3601,7 +3295,6 @@ function rsEncode(data, n) {
   return Array.prototype.slice.call(res, data.length);
 }
 
-// Per version at ECC level L: [total codewords, ecc per block, block sizes].
 var QR_L = {
   1: [26, 7, [19]], 2: [44, 10, [34]], 3: [70, 15, [55]], 4: [100, 20, [80]],
   5: [134, 26, [108]], 6: [172, 18, [68, 68]], 7: [196, 20, [78, 78]],
@@ -3642,7 +3335,6 @@ function qrBitStream(bytes, version) {
   return words;
 }
 
-// Split into blocks, encode each, then interleave data then ecc, per spec.
 function qrCodewords(text, version) {
   var spec = QR_L[version];
   var words = qrBitStream(utf8Bytes(text), version);
@@ -3663,10 +3355,6 @@ function qrCodewords(text, version) {
   }
   return out;
 }
-// ---------- drawing the symbol ----------
-// Function patterns, masking, and the penalty rules that choose between the
-// eight masks. Split from the encoder above only to keep both files under the
-// repo's line ceiling; together they are one concern.
 var QR_MASKS = [
   function (i, j) { return (i + j) % 2 === 0; },
   function (i) { return i % 2 === 0; },
@@ -3703,9 +3391,6 @@ function qrSkeleton(version) {
     if (t % 2) { m[6][t] = 0; m[t][6] = 0; }
   }
 
-  // Alignment patterns sit at every pairing of the centres except the three
-  // that would land on a finder. They may overlap the timing pattern, and at
-  // version 7 and up they do, so the test is the corner and not the reservation.
   var centers = QR_ALIGN[version];
   centers.forEach(function (r) {
     centers.forEach(function (c) {
@@ -3773,9 +3458,6 @@ function qrPenalty(m, n) {
       if (s === 0 || s === 4) score += 3;
     }
   }
-  // Rule 3: the 1:1:3:1:1 finder ratio with four light modules on either
-  // side, in both orientations. Missing the second orientation still yields a
-  // scannable symbol but picks a worse mask, which is how this was caught.
   function finderLike(at) {
     var a = at(0), b = at(1), c = at(2), d = at(3), e = at(4), f = at(5),
       g = at(6), h = at(7), i2 = at(8), j2 = at(9), k2 = at(10);
@@ -3794,7 +3476,6 @@ function qrPenalty(m, n) {
   return score;
 }
 
-// The public call: a matrix of 0/1, smallest version that fits the text.
 function qrMatrix(text) {
   var bytes = utf8Bytes(text), version = 0;
   for (var v = 1; v <= 10; v++) {
@@ -3823,15 +3504,11 @@ function qrMatrix(text) {
     up = !up;
   }
 
-  // Masks are scored with the format modules and the dark module blanked, so
-  // that only what the mask actually controls is being judged. The winner then
-  // gets its real format bits written in.
   function writeFormat(cand, mask, live) {
     var fmt = live ? qrFormatBits(mask) : 0;
     for (var b = 0; b < 15; b++) {
       var bit = live ? (fmt >> b) & 1 : 0;
       if (b < 6) { cand[b][8] = bit; } else if (b < 8) { cand[b + 1][8] = bit; } else { cand[n - 15 + b][8] = bit; }
-      // Column 6 of row 8 is the timing pattern, so bit 8 steps over it to 7.
       if (b < 8) { cand[8][n - 1 - b] = bit; } else if (b < 9) { cand[8][7] = bit; } else { cand[8][14 - b] = bit; }
     }
     cand[n - 8][8] = live ? 1 : 0;
@@ -3861,7 +3538,6 @@ function qrMatrix(text) {
   return best;
 }
 
-// Matrix to a 1-bit PNG data URL, quiet zone included, no smoothing.
 function qrDataUrl(text, scale) {
   var m = qrMatrix(text);
   if (!m) return '';
@@ -3879,21 +3555,10 @@ function qrDataUrl(text, scale) {
   }
   return cv.toDataURL('image/png');
 }
-// ---------- a PDF, written by hand ----------
-// A browser print dialog decides margins, scale and paper somewhere the press
-// cannot see, and a sheet that comes out at 94% does not fold. A PDF fixes all
-// three, and is also what a copy shop will accept.
-//
-// Written rather than fetched, per the zero-external-requests law. Only what
-// this press puts on paper is supported: two of the standard fourteen fonts,
-// which need no embedding, and 1-bit images, which are the only kind the
-// intake produces.
 
 var PT_PER_PX = 0.75;     // CSS pixels at 96dpi into PDF points at 72dpi
 var PT_PER_IN = 72;
 
-// The standard fonts speak WinAnsi. Anything outside it becomes a character
-// that prints rather than a mystery box.
 var PDF_SUBS = {
   '\u2014': '\x97', '\u2013': '\x96', '\u2018': '\x91', '\u2019': '\x92',
   '\u201c': '\x93', '\u201d': '\x94', '\u2022': '\x95', '\u2026': '\x85',
@@ -3914,8 +3579,6 @@ function pdfSafe(s) {
   return out;
 }
 
-// The page's own face carries № at 128, where WinAnsi keeps a euro the
-// subset does not; a standard face spells it out through PDF_SUBS.
 function faceText(face, text) {
   return face && face.face ? String(text).replace(/\u2116/g, '\x80') : String(text);
 }
@@ -3930,10 +3593,6 @@ function pdfBytes(str) {
   return out;
 }
 
-// ---------- metrics ----------
-// Courier is 600/1000 for every glyph, which is why the body text wraps
-// exactly. Helvetica-Bold is not, so it carries a table; headings are short
-// and shrink to fit rather than spilling.
 var COURIER_W = 0.6;
 var HELV_BOLD_W = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278,
   556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975,
@@ -3942,7 +3601,6 @@ var HELV_BOLD_W = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 2
   556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
   333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
 
-// Monospace wrapping, newlines respected: the body is typed, not flowed.
 function wrapMono(text, size, width) {
   var cols = Math.max(4, Math.floor(width / (size * COURIER_W)));
   var lines = [];
@@ -3961,19 +3619,14 @@ function wrapMono(text, size, width) {
   return lines;
 }
 
-// ---------- the document ----------
 function pdfDoc() {
   var objects = [];
   return {
     obj: function (chunks) { objects.push(chunks); return objects.length; },
-    // A page tree has to name its kids and the kids have to name the tree, so
-    // one object is reserved first and filled in once the pages exist.
     replace: function (num, chunks) { objects[num - 1] = chunks; },
     stream: function (dict, data) {
       return this.obj(['<<' + dict + '/Length ' + data.length + '>>\nstream\n', data, '\nendstream']);
     },
-    // Offsets are counted in bytes as they are written, because an xref table
-    // that disagrees with the file by one byte is a file no reader will open.
     build: function (root) {
       var parts = [], at = 0, offsets = [];
       function push(chunk) {
@@ -4001,9 +3654,6 @@ function pdfDoc() {
   };
 }
 
-// ---------- images ----------
-// Everything this press prints is already 1-bit, so the samples pack eight to
-// a byte and the PDF carries the same black and white the photocopier will.
 function deflate(bytes) {
   if (typeof CompressionStream === 'undefined') return Promise.resolve(null);
   try {
@@ -4027,13 +3677,9 @@ function packBitmap(dataUrl, gen) {
       var out = new Uint8Array(rowBytes * h);
       for (var y = 0; y < h; y++) {
         for (var x = 0; x < w; x++) {
-          // 1 is white in DeviceGray; the sample byte is the red channel
-          // because the intake already collapsed the image to grey.
           if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
         }
       }
-      // A copy of a copy: dust lands as black, thin things drop out as white,
-      // from a fixed seed so every print of the issue wears the same marks.
       if (gen) {
         var flips = Math.floor(w * h * gen * 0.004);
         for (var k = 0; k < flips; k++) {
@@ -4061,13 +3707,6 @@ function pdfAddImage(doc, dataUrl, gen) {
     });
   });
 }
-// ---------- the press's face, on paper ----------
-// The page sets its headlines in the one typeface it ships, and the paper
-// embeds those same bytes, so the two cannot differ. This reads enough of a
-// TrueType file to describe it to a PDF — units per em, ascent and descent,
-// the bounding box, every glyph's advance, and the map from character to
-// glyph — and nothing else. The bytes come back out of the stylesheet the
-// build put them in, so the font is stored once.
 var pressFace = null;
 
 function fontBytesFromPage() {
@@ -4080,9 +3719,6 @@ function fontBytesFromPage() {
   return out;
 }
 
-// WinAnsi's high half, for the punctuation the subset carries, plus № in
-// the euro's seat at 128 (declared to the PDF as a Differences entry).
-// Everything else in 128–159 has no glyph here and measures as notdef.
 var WINANSI_HIGH = { 0x80: 0x2116, 0x85: 0x2026, 0x91: 0x2018, 0x92: 0x2019, 0x93: 0x201C, 0x94: 0x201D, 0x95: 0x2022, 0x96: 0x2013, 0x97: 0x2014 };
 function winAnsiToUnicode(code) {
   return WINANSI_HIGH[code] || (code < 128 || code >= 160 ? code : 0);
@@ -4103,8 +3739,6 @@ function parseTrueType(bytes) {
     var rec = cmap + 4 + j * 8;
     if (dv.getUint16(rec) === 3 && dv.getUint16(rec + 2) === 1) sub = cmap + dv.getUint32(rec + 4);
   }
-  // cmap format 4: segments of contiguous codes, each with a delta or a
-  // range into the glyph array.
   var glyphOf = function () { return 0; };
   if (sub && dv.getUint16(sub) === 4) {
     var segX2 = dv.getUint16(sub + 6), seg = segX2 / 2;
@@ -4134,15 +3768,11 @@ function parseTrueType(bytes) {
   };
   f.advance = function (g) { return dv.getUint16(hmtx + Math.min(g, numH - 1) * 4); };
   if (!f.capHeight) f.capHeight = Math.round(f.ascent * 0.7);
-  // Advance of every WinAnsi code from 32 to 255, in thousandths of an em:
-  // the PDF's /Widths array and the wrapper's width table, from one source.
   f.widths = [];
   for (var c = 32; c <= 255; c++) f.widths.push(Math.round(f.advance(f.glyphOf(winAnsiToUnicode(c))) * 1000 / f.upm));
   return f;
 }
 
-// The face, parsed once. Null on a page that carries none (an issue file
-// written before the press had one), in which case Helvetica-Bold stands in.
 function pressFaceLoaded() {
   if (pressFace === null) {
     var bytes = fontBytesFromPage();
@@ -4151,8 +3781,6 @@ function pressFaceLoaded() {
   return pressFace || null;
 }
 
-// Embed as a simple TrueType font: WinAnsi codes look up glyphs through the
-// font's own (3,1) cmap. Resolves to the font object's number.
 function pdfEmbedFace(doc, f) {
   var k = 1000 / f.upm;
   return deflate(f.bytes).then(function (packed) {
@@ -4167,17 +3795,10 @@ function pdfEmbedFace(doc, f) {
   });
 }
 
-// Where the browser puts the first baseline: the face's content area is
-// centred in the line box, and the baseline sits an ascent below its top.
 function faceBaseline(f, size, lead) {
   var content = (f.ascent - f.descent) / f.upm;
   return size * ((lead / size - content) / 2 + f.ascent / f.upm);
 }
-// ---------- the sheet, as a PDF ----------
-// The same imposition the screen draws, laid onto paper at exact coordinates.
-// PDF puts its origin at the bottom left and CSS at the top left, so every
-// vertical here is measured down from the panel's top edge and flipped once,
-// at the end, rather than reasoned about twice.
 
 var PAD_X = 0.3 * PT_PER_IN;     // the panel padding from views.css, in points
 var PAD_Y = 0.28 * PT_PER_IN;
@@ -4187,7 +3808,6 @@ function pdfLayout(formatId) {
   return { w: paper.wpt, h: paper.hpt };
 }
 
-// A panel's content box, in PDF coordinates.
 function panelBox(geom, sheet, index) {
   var pw = geom.w / sheet.cols;
   var ph = geom.h / sheet.rows;
@@ -4208,9 +3828,6 @@ function pdfLine(text, font, size, x, y) {
     ' Tm (' + pdfEsc(text) + ') Tj ET\n';
 }
 
-// A heading breaks where the screen broke it, since both measure the same
-// face at the same width; the issue number shrinks to its line instead, the
-// way a number would. Returns the ink and how far the next thing moves down.
 function pdfHeading(text, x, y, width, size, lh, oneLine) {
   var face = displayFace();
   var s = size;
@@ -4232,9 +3849,6 @@ function pdfPanel(panel, page, pages, box, images, url) {
   var isCover = page === 1;
   var isBack = page === pages;
 
-  // The vertical rhythm is views.css in points: the h3 and its 6px below,
-  // the number at line-height .9 with 2px either side, the 3px rule with 6px
-  // either side, the photograph with 5px under it.
   var head = pdfHeading(String(panel.h || '').toUpperCase(), box.x, y, box.cw, isCover ? 18 : 15);
   ops += head.op;
   y -= head.drop + 4.5;
@@ -4259,7 +3873,6 @@ function pdfPanel(panel, page, pages, box, images, url) {
     y -= ih + 3.75;
   }
 
-  // Courier New at line-height 1.45 puts its first baseline .99em down.
   var size = isBack ? 7.875 : 8.625;
   var leading = size * 1.45;
   var floorY = box.top - box.h + PAD_Y + (isBack && url ? 52 : 0);
@@ -4285,9 +3898,6 @@ function pdfPanel(panel, page, pages, box, images, url) {
   return ops + pdfPasteup(panel, box, images);
 }
 
-// A flipped panel is the same drawing rotated half a turn about its own
-// centre, which is the one place this file has to think in two directions at
-// once. Everything inside the q/Q pair is drawn as though it were upright.
 function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
@@ -4296,18 +3906,19 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
+    ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
+      box.h.toFixed(2) + ' re W n\n';
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
     } else {
       ops += inner;
     }
+    ops += 'Q\n';
   });
   return ops;
 }
 
-// ---------- the public call ----------
-// Gathers every image the sheet needs, then writes one page per printed side.
 function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
@@ -4336,8 +3947,6 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
     });
   }
 
-  // The page's own typeface travels with the sheet, so the headline on paper
-  // is the headline on screen, glyph for glyph.
   var face = pressFaceLoaded();
   var faceNum = 0;
   if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
@@ -4387,19 +3996,9 @@ function savePdf(panels, formatId, hand, url, issue, name, gen) {
     toast('Could not write the PDF: ' + e.message);
   });
 }
-// ---------- the paste-up, on paper ----------
-// Everything the screen lets somebody glue down has to survive the trip to
-// the printer, or the sheet on screen is a mockup and the press is a lie.
-// Coordinates arrive as fractions of the panel and land as points.
-//
-// Widths for the standard faces, in thousandths of an em, from code 32 up.
-// Helvetica-BoldOblique is Helvetica-Bold sheared, so it shares that table
-// exactly; Courier-Bold is 600 for every glyph like its roman.
 var TIMES_BOLD_W = [250,333,555,500,500,1000,833,278,333,333,500,570,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,570,570,570,500,930,722,667,722,722,667,611,778,778,389,500,778,667,944,722,778,611,778,722,556,667,722,722,1000,722,722,667,333,278,333,581,500,333,500,556,444,556,444,333,500,556,278,333,556,278,833,556,500,556,556,444,389,333,556,500,722,500,500,444,394,220,394,520];
 var TIMES_ITALIC_W = [250,333,420,500,500,833,778,214,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541];
 
-// The four hands a ransom note is cut from, and the voices a text element can
-// speak in. `w` of null means a monospaced 600.
 var FACES = {
   type: { f: 'F1', w: null },
   head: { f: 'F2', w: HELV_BOLD_W },
@@ -4415,9 +4014,6 @@ var RANSOM_FACES = [
   { f: 'F5', w: HELV_BOLD_W }
 ];
 
-// The display voices are set in the page's own typeface when the page carries
-// one, so a headline breaks where the screen broke it. An issue file written
-// before the press had a face falls back to Helvetica-Bold.
 function displayFace() {
   var f = pressFaceLoaded();
   return f ? { f: 'F7', w: f.widths, face: f } : FACES.head;
@@ -4433,8 +4029,6 @@ function faceOf(el) {
   return FACES[voice] || FACES.type;
 }
 
-// Where the first baseline sits below the top of the box: for the page's own
-// face, exactly where the browser puts it; for a standard face, an em down.
 function firstBaseline(voice, size, lead) {
   var f = pressFaceLoaded();
   return f && isDisplayVoice(voice) ? faceBaseline(f, size, lead) : size;
@@ -4447,8 +4041,6 @@ function glyphWidth(face, ch, size) {
   return face.w[c - 32] / 1000 * size;
 }
 
-// Measured on the bytes that will be written, so a dash or a curly quote is
-// as wide on the ruler as it is on the paper.
 function runWidth(face, text, size) {
   var safe = pdfSafe(faceText(face, text));
   var total = 0;
@@ -4456,8 +4048,6 @@ function runWidth(face, text, size) {
   return total;
 }
 
-// Word wrap against a real width table, so a proportional headline breaks
-// where it actually runs out of panel rather than where a monospace guess says.
 function wrapFace(text, face, size, width) {
   var out = [];
   String(text || '').split('\n').forEach(function (para) {
@@ -4474,14 +4064,9 @@ function wrapFace(text, face, size, width) {
   return out;
 }
 
-// A cutting's type size is CSS pixels on the screen and points on paper:
-// four pixels are three points. Drawing 20 there for 20 here made every
-// cutting a third too big, which is why a headline that sat on three lines
-// wanted four.
 var PT = 0.75;
 function ptSize(el) { return (el.size || 12) * PT; }
 
-// The screen's own line breaks, if it recorded any; otherwise wrap here.
 function linesOf(el, face, size, width, upper) {
   var rec = el.lines;
   if (rec && rec.length) return upper ? rec.map(function (l) { return l.toUpperCase(); }) : rec.slice();
@@ -4489,8 +4074,6 @@ function linesOf(el, face, size, width, upper) {
   return wrapFace(text, face, size, width);
 }
 
-// An element's box, in PDF points. The paste-up layer covers the whole panel,
-// padding included, because a cutting glued over the margin is the point.
 function elBoxPdf(box, el) {
   var w = el.w * box.w;
   var h = el.h * box.h;
@@ -4499,9 +4082,6 @@ function elBoxPdf(box, el) {
   return { x: x, y: top - h, w: w, h: h, top: top, cx: x + w / 2, cy: top - h / 2 };
 }
 
-// CSS turns clockwise with y running down the page; PDF turns anticlockwise
-// with y running up. The same visual tilt is therefore the negative angle,
-// applied about the element's own centre so it matches transform-origin.
 function spin(deg, cx, cy) {
   if (!deg) return '';
   var t = deg * Math.PI / 180;
@@ -4522,7 +4102,6 @@ function pdfElPhoto(el, g, images) {
   var iw = g.w, ih = g.h;
   var ar = pic.w / pic.h;
   if (el.crop) {
-    // Fill the box and clip the overflow, which is what object-fit: cover does.
     if (g.w / g.h < ar) { ih = g.h; iw = ih * ar; } else { iw = g.w; ih = iw / ar; }
     return 'q ' + rect(g) + ' W n ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' +
       (g.cx - iw / 2).toFixed(2) + ' ' + (g.cy - ih / 2).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
@@ -4561,17 +4140,11 @@ function pdfElRansom(el, g) {
   return ops;
 }
 
-// Marker: each word turned by its own small angle about its own centre, the
-// same angles the screen derived.
 function pdfElMarker(el, g, face, size) {
   var ops = '';
   var lead = size * 1.3;
   var y = g.top - firstBaseline('marker', size, lead);
-  // A word turns about the centre of its own line box, which sits this far
-  // above the baseline for every size the word might be scaled to.
   var mid = firstBaseline('marker', size, lead) / size - 0.65;
-  // Each word keeps the angle the screen gave it, found by its position in
-  // the whole text rather than in its line, so the two agree word for word.
   var spec = markerSpec(el.text).filter(function (w) { return !w.space; });
   var at = 0;
   linesOf(el, face, size, g.w - 4, false).forEach(function (line) {
@@ -4603,8 +4176,6 @@ function pdfElText(el, g) {
   var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
   var y = g.top - firstBaseline(voice, size, lead);
   var draw = '';
-  // A cutting hangs over its box rather than losing a line, up to a little
-  // more than half its height; a glued cutting overhangs anyway.
   linesOf(el, face, size, g.w - 4, voice === 'stencil' || voice === 'head').forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
@@ -4614,9 +4185,6 @@ function pdfElText(el, g) {
     y -= lead;
   });
   if (voice === 'stencil') {
-    // The screen masks bridges through the letters at fixed intervals from the
-    // top of the box: ink for .42em, a gap to .5em, and nothing past the box.
-    // On paper the same text is drawn once per band of ink, clipped to it.
     for (var b = g.top; b > g.y; b -= size * 0.5) {
       var band = Math.min(size * 0.42, b - g.y);
       ops += 'q ' + g.x.toFixed(2) + ' ' + (b - band).toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
@@ -4651,13 +4219,6 @@ function pdfPasteup(panel, box, images) {
     .map(function (el) { return pdfEl(el, box, images); })
     .join('');
 }
-// ---------- the flyer ----------
-// A sheet for a noticeboard: the zine's name big enough to read walking past,
-// and a fringe of tear-off tabs each carrying the address sideways. Split from
-// the sheet writer only because the file hit its line ceiling; it shares
-// pdfDoc, the fonts and the image packing with it.
-// Tear-off tabs go here rather than on a back cover, because tearing a tab off
-// a folded zine destroys the zine.
 var FLYER = { w: 612, h: 792, pad: 54, strip: 96, tabs: 8 };
 
 function pdfFlyerContent(title, issue, url, photo, images) {
@@ -4700,8 +4261,6 @@ function pdfFlyerContent(title, issue, url, photo, images) {
     });
   }
 
-  // The strip: one dashed rule across, then a comb of cuts, then the address
-  // turned on its side in every tab.
   ops += 'q 1 w 0 G [4 3] 0 d ' + F.pad + ' ' + stripTop.toFixed(2) + ' m ' +
     (F.pad + width) + ' ' + stripTop.toFixed(2) + ' l S Q\n';
   var tabW = width / F.tabs;
@@ -4769,9 +4328,6 @@ function saveFlyer(title, issue, url, photoId, name) {
     toast('Could not write the flyer: ' + e.message);
   });
 }
-// ---------- stamps, on paper ----------
-// The same unit-box descriptions in 05g-stamps.js, as path operators. A
-// stamp's text is fitted to its box in the page's own face, as on screen.
 function pdfElStamp(el, g) {
   var st = STAMPS[el.stamp];
   if (!st) return '';
@@ -4789,8 +4345,6 @@ function pdfElStamp(el, g) {
     } else if (op.l) {
       ops += 'q ' + (op.l[4] * g.h).toFixed(2) + ' w ' + X(op.l[0]) + ' ' + Y(op.l[1]) + ' m ' + X(op.l[2]) + ' ' + Y(op.l[3]) + ' l S Q\n';
     } else if (op.t) {
-      // The screen sets the lettering at 62% of the box and centres its line
-      // box, which puts the baseline this far below the middle for any face.
       var face = displayFace();
       var f = face.face;
       var size = g.h * 0.62;
@@ -4804,19 +4358,12 @@ function pdfElStamp(el, g) {
   return ops;
 }
 
-// Toner over a panel, at the generation the issue was printed at.
 function pdfSpeckle(gen, box, seed) {
   return speckle(gen, seed).map(function (d) {
     return (box.left + d.x * box.w).toFixed(2) + ' ' + (box.top - d.y * box.h).toFixed(2) + ' ' +
       d.s.toFixed(2) + ' ' + d.s.toFixed(2) + ' re';
   }).join(' ') + (gen ? ' f\n' : '');
 }
-// ---------- the self-carrying issue ----------
-// An exported issue is the reading view, the imposed sheet, the shelf, and a
-// working press for the next issue, in one file: the app's own HTML plus a
-// seed it boots from. The press is a flat cost of about 230 KB, typeface
-// included; test/08-weight.js is where that is measured and held.
-// SEED_ID lives in 01-store.js, where the store can see it.
 
 function sceneSlug() {
   var a = (state.address || '').replace(/\/+$/, '');
@@ -4852,19 +4399,12 @@ function photosFor(objs) {
   return out;
 }
 
-// Everything the running page put in the DOM comes back out; what ships is the
-// app as built plus a seed. Rendered lists are rebuilt on boot, so carrying
-// them would only add weight and staleness.
-var DYNAMIC = ['loglist', 'desktray', 'shelflist',
-  'shelfreader', 'sheetzone', 'phototray', 'reprintzone', 'toast', 'importstatus'];
+var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
+  'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'roster',
+  'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
-  // Emptying a container is not enough: a toast that was showing at export
-  // time carries display:block inline, and the file shipped an empty orange
-  // box that never went away. The same goes for anything the running page
-  // hung on body, such as the test-sheet overlay. What ships is the page as
-  // built, not the page as it happened to be at the moment of export.
   DYNAMIC.forEach(function (id) {
     var el = doc.querySelector('#' + id);
     if (el) { el.innerHTML = ''; el.removeAttribute('style'); }
@@ -4880,7 +4420,6 @@ function pageWithSeed(seed) {
   var script = document.createElement('script');
   script.type = 'application/json';
   script.id = SEED_ID;
-  // The seed is parsed before the app's own script runs, so it must come first.
   script.textContent = JSON.stringify(seed).replace(/<\//g, '<\\/');
   body.insertBefore(script, body.firstChild);
   return '<!doctype html>\n' + doc.outerHTML;
@@ -4898,8 +4437,6 @@ function download(name, html) {
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 
-// The copier's lamp sweeps the pages once. Half a second; it is the one
-// moment in the whole loop that should feel like a machine did something.
 function copierFlash() {
   var f = document.getElementById('flash');
   if (!f) return;
@@ -4912,9 +4449,6 @@ function exportIssueFile(no) {
   var iss = issueByNo(no);
   if (!iss) { toast('No such issue on the shelf'); return; }
   copierFlash();
-  // The shelf travels up to and including this issue: a reader who is handed
-  // №03 gets №01 and №02 with it, because a zine you cannot read back is a
-  // stream with extra steps.
   var upTo = state.issues.filter(function (i) {
     return (parseInt(i.no, 10) || 0) <= (parseInt(no, 10) || 0);
   });
@@ -4922,9 +4456,6 @@ function exportIssueFile(no) {
     stoop: 'issue', version: 1, no: no,
     people: people, address: state.address || '', zine: state.zine || '',
     issues: upTo,
-    // The cycle handed on follows the issue in the file, not the shelf it left
-    // behind. Somebody given №01 is holding the desk for №02, whatever number
-    // the exporting scene has since reached.
     cycle: nextCycleAfter(no),
     photos: photosFor(upTo),
     open: '#shelf', read: no
@@ -4933,8 +4464,6 @@ function exportIssueFile(no) {
   toast('\u2116' + no + ' is a file now. It is also the press.');
 }
 
-// The verb on the bar. Whatever was published last is what you hand on; a
-// draft is not an issue until the bell has rung for it.
 function handOn() {
   var last = lastPublished();
   if (!last) {
@@ -4945,8 +4474,6 @@ function handOn() {
   exportIssueFile(last.no);
 }
 
-// A contributor opens the issue file, writes a piece, and sends back a few
-// kilobytes. No server anywhere in that loop.
 function exportPieceBundle(id) {
   var piece = state.pieces.find(function (p) { return p.id === id; });
   if (!piece) return;
@@ -4960,8 +4487,6 @@ function exportPieceBundle(id) {
   toast('Piece exported — send it to whoever holds the desk');
 }
 
-// Reading a bundle back: pull the seed out of the file rather than trusting
-// anything else about it, and merge by id so importing twice is harmless.
 function seedFromHtml(text) {
   var re = new RegExp('<script[^>]*id="' + SEED_ID + '"[^>]*>([\\s\\S]*?)<\\/script>');
   var m = text.match(re);
@@ -4976,22 +4501,17 @@ function importSeed(seed) {
     if (!photoCache[pid]) photoPut(pid, photos[pid]);
   });
 
-  var addedPieces = 0, addedIssues = 0;
-  var incoming = normalize({ pieces: seed.pieces || [], issues: seed.issues || [] });
-  incoming.issues.forEach(function (i) {
+  var addedIssues = 0;
+  normalize({ issues: seed.issues || [] }).issues.forEach(function (i) {
     if (!i || !i.no) return;
     if (state.issues.some(function (x) { return x.no === i.no; })) return;
     state.issues.push(i);
     addedIssues++;
   });
-  incoming.pieces.forEach(function (p) {
-    if (!p.id || state.pieces.some(function (x) { return x.id === p.id; }) || wasPublished(p.id)) return;
-    state.pieces.push(p);
-    addedPieces++;
-  });
+  var addedPieces = takePieces(seed).length;
   if (seed.address && !state.address) state.address = seed.address;
   if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
-  mergePeople(seed.people);
+  if (seed.stoop === 'issue') mergePeople(seed.people);
   ensurePeople();
 
   saveState();
@@ -5002,6 +4522,19 @@ function importSeed(seed) {
   if (status) status.textContent = msg + '.';
 }
 
+function takePieces(seed) {
+  var took = [];
+  var signed = {};
+  normalize({ pieces: seed.pieces || [] }).pieces.forEach(function (p) {
+    if (!p.id || state.pieces.some(function (x) { return x.id === p.id; }) || wasPublished(p.id)) return;
+    state.pieces.push(p);
+    signed[p.byline] = 1;
+    took.push(p);
+  });
+  mergePeople((seed.people || []).filter(function (x) { return x && signed[x.id]; }));
+  return took;
+}
+
 function handleBundleFile(file) {
   var reader = new FileReader();
   reader.onload = function (e) { importSeed(seedFromHtml(String(e.target.result))); };
@@ -5009,19 +4542,12 @@ function handleBundleFile(file) {
   reader.readAsText(file);
 }
 
-// ---------- booting from a seed ----------
-// A file handed to somebody who has never opened this app should show them the
-// issue, not an empty notebook. A device that already has its own work keeps
-// it: the seed is merged, never imposed.
 function readSeed() {
   var el = document.getElementById(SEED_ID);
   if (!el) return null;
   try { return JSON.parse(el.textContent); } catch (e) { return null; }
 }
 
-// The file's photos always load so its issue can be shown. Its people and
-// issues join this device only if the file is this scene's own; a stranger's
-// zine is shown, not merged (settings takes it in on purpose).
 function seedIsOurs(seed) {
   return stateFromSeed || (seed.issues || []).some(function (i) {
     return i && state.issues.some(function (x) { return x.no === i.no && x.ts === i.ts; });
@@ -5034,8 +4560,19 @@ function hydrateFromSeed(seed) {
   var ids = Object.keys(photos).filter(function (id) { return !photoCache[id]; });
   ids.forEach(function (id) { photoPut(id, photos[id]); });
 
+  if (seed.stoop === 'piece' && !stateFromSeed) {
+    var took = takePieces(seed);
+    ensurePeople();
+    saveState();
+    var first = normalize({ pieces: seed.pieces || [] }).pieces[0];
+    if (took.length) {
+      toast('Took in \u201c' + took[0].title + '\u201d from ' + nameOf(took[0].byline) + '. It is in the tray.');
+    } else if (first) {
+      toast('\u201c' + first.title + '\u201d is already ' + (wasPublished(first.id) ? 'in an issue.' : 'in the tray.'));
+    }
+  }
+
   if (seedIsOurs(seed)) {
-    // The roster rides along so a byline in the file still has a name on it.
     mergePeople(seed.people);
     if (seed.names && seed.names.a && seed.names.b) {
       mergePeople([{ id: 'a', name: String(seed.names.a) }, { id: 'b', name: String(seed.names.b) }]);
@@ -5053,11 +4590,6 @@ function hydrateFromSeed(seed) {
     else if (seed.open) location.hash = seed.open;
   }
 }
-// ---------- carrying the notebook between devices ----------
-// Two people means two browsers, and a backup that replaces the other person's
-// work is not a sync, it is a coin flip. Import merges by id and keeps the
-// newer copy of anything held in both. Sending it both ways leaves the two
-// devices agreeing, which is as much as a file on a thumb drive can promise.
 var BACKUP_VERSION = 4;
 
 function exportBackup() {
@@ -5132,12 +4664,9 @@ function importBackup(raw, mode) {
     };
     var before = count();
     state.logs = mergeList(state.logs, incoming.logs);
-    // Issues are keyed by number and never overwritten: a published issue is
-    // history, and the copy already on the shelf wins.
     incoming.issues.forEach(function (iss) {
       if (!state.issues.some(function (x) { return x.no === iss.no; })) state.issues.push(iss);
     });
-    // A piece already published elsewhere must not return to the tray.
     state.pieces = mergeList(state.pieces, incoming.pieces)
       .filter(function (p) { return !wasPublished(p.id); });
     if (!state.address) state.address = incoming.address;
@@ -5158,7 +4687,6 @@ function importBackup(raw, mode) {
   } else {
     mergePeople(raw && raw.people);
   }
-  // A backup written before the roster existed carries two names instead.
   if (raw && raw.names && raw.names.a && raw.names.b) {
     mergePeople([{ id: 'a', name: String(raw.names.a) }, { id: 'b', name: String(raw.names.b) }]);
   }
@@ -5205,7 +4733,6 @@ function resetData() {
   toast('Reset to defaults');
 }
 
-// Enter in any settings field saves them all, the zine's name included.
 function saveNameFields() {
   var zn = document.getElementById('zinename');
   var was = state.zine;
@@ -5224,7 +4751,6 @@ function saveNameFields() {
   toast('Saved');
 }
 
-// Start empty is the opposite of reset: no sample pieces, nothing borrowed.
 function startEmpty() {
   if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
   forgetUndo();
@@ -5235,11 +4761,6 @@ function startEmpty() {
   renderAll();
   toast('Empty. The first issue is yours alone.');
 }
-// ---------- router ----------
-// The press is the surface and is always on screen. Every other view is a
-// drawer over it, one at a time, and the landing replaces both when an issue
-// file opens. The old hashes still work: log, journal, projects and notebook
-// are all the scraps now, and anything unknown is the press.
 var views = document.querySelectorAll('section[data-view]');
 var navs = document.querySelectorAll('[data-nav]');
 var SCRAP_HASHES = { log: 1, journal: 1, projects: 1, notebook: 1 };
@@ -5274,7 +4795,6 @@ function ensureClose(sec) {
   head.insertAdjacentHTML('beforeend', '<button class="btn quiet drawer-close" data-closedrawer>CLOSE</button>');
 }
 
-// Drawers hang below the bar, whatever height the bar wrapped to.
 function measureBar() {
   var bar = document.querySelector('header.chrome');
   document.body.style.setProperty('--barh', (bar ? bar.offsetHeight : 0) + 'px');
@@ -5282,37 +4802,30 @@ function measureBar() {
 window.addEventListener('resize', measureBar);
 
 
-// ---------- events ----------
 function hit(target, sel) { return target.closest ? target.closest(sel) : null; }
 
 document.addEventListener('click', function (e) {
   var t = e.target;
   var el;
 
-  // The bar and the drawers.
   if ((el = hit(t, '[data-nav].here'))) { e.preventDefault(); location.hash = '#press'; return; }
   if (hit(t, '[data-closedrawer]') || hit(t, '#scrim')) { location.hash = '#press'; return; }
   if (hit(t, '#handonbtn')) return handOn();
 
-  // One click glues a photograph the scene already has to the page last touched.
   if ((el = hit(t, '[data-traypic]'))) { placeFromTray(el.getAttribute('data-traypic')); return; }
   if ((el = hit(t, '[data-delpanelpic]'))) {
     pressState().panels[Number(el.getAttribute('data-delpanelpic')) - 1].photo = null;
     savePress(); renderPress(); return;
   }
 
-  if (hit(t, '#landmake')) return leaveLanding('#desk');
+  if (hit(t, '#landmake')) return makeFromLanding();
   if (hit(t, '#landown')) return startOwn();
   if (hit(t, '#landshelf')) return leaveLanding('#shelf');
 
   if (hit(t, '#authortoggle')) return toggleAuthor();
   if (hit(t, '#logaddbtn')) return addLog();
   if (hit(t, '#photobtn')) return document.getElementById('photofile').click();
-  if ((el = hit(t, '[data-dellog]'))) {
-    var lid = el.getAttribute('data-dellog');
-    state.logs = state.logs.filter(function (l) { return l.id !== lid; });
-    saveState(); sweepPhotos(); renderLogs(); renderTray(); return;
-  }
+  if ((el = hit(t, '[data-dellog]'))) return deleteLog(el.getAttribute('data-dellog'));
   if ((el = hit(t, '[data-logfilter]'))) {
     activeLogFilter = el.getAttribute('data-logfilter');
     document.querySelectorAll('[data-logfilter]').forEach(function (b) {
@@ -5321,7 +4834,6 @@ document.addEventListener('click', function (e) {
     return renderLogs();
   }
 
-  // ---------- the desk ----------
   if (hit(t, '#piecesubmitbtn')) return submitPiece();
   if (hit(t, '#drawsourcesbtn')) return draftFromSources();
   if (hit(t, '#savebellbtn')) return saveBell();
@@ -5331,7 +4843,6 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#compileissuebtn')) return compileIssue();
   if (hit(t, '#buildissuebtn')) return buildIssue();
 
-  // ---------- the shelf ----------
   if ((el = hit(t, '[data-readissue]'))) return readIssue(el.getAttribute('data-readissue'));
   if ((el = hit(t, '[data-reprintissue]'))) return reprintIssue(el.getAttribute('data-reprintissue'));
   if ((el = hit(t, '[data-exportissue]'))) return exportIssueFile(el.getAttribute('data-exportissue'));
@@ -5420,7 +4931,6 @@ document.addEventListener('change', function (e) {
   if (e.target.id === 'formatsel') setFormat(e.target.value);
 });
 
-// Panel edits save on a debounce so the caret is never yanked mid-word.
 var panelTimer = null;
 document.addEventListener('input', function (e) {
   if (!e.target.closest || !e.target.closest('#sheetzone')) return;
@@ -5462,7 +4972,6 @@ if (bundleInput) {
   });
 }
 
-// ---------- boot ----------
 function fillFormats() {
   var sel = document.getElementById('formatsel');
   if (!sel) return;
@@ -5479,8 +4988,6 @@ function fillSettings() {
   if (zn && document.activeElement !== zn) zn.value = state.zine || '';
 }
 
-// Photos load before the first paint so renders stay synchronous; the app is
-// usable either way, so a failed store degrades to text rather than a blank page.
 photoLoadAll().then(function () {
   hydrateFromSeed(readSeed());
   fillFormats();
@@ -5489,16 +4996,11 @@ photoLoadAll().then(function () {
   fillSettings();
   showView();
 });
-// ---------- the bar ----------
-// The zine's name, where it is shown and where it is changed. Split from boot
-// only for the line ceiling.
 function renderBar() {
   var z = document.getElementById('barzine');
   if (z && document.activeElement !== z) z.textContent = state.zine || 'STOOP ZINE';
 }
 
-// The name is edited where it is shown. It lands on the cover, the flyer and
-// every file this press writes, the moment you leave the field.
 function commitBarName() {
   var z = document.getElementById('barzine');
   if (!z) return;

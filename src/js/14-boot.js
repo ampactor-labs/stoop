@@ -64,18 +64,14 @@ document.addEventListener('click', function (e) {
     savePress(); renderPress(); return;
   }
 
-  if (hit(t, '#landmake')) return leaveLanding('#desk');
+  if (hit(t, '#landmake')) return makeFromLanding();
   if (hit(t, '#landown')) return startOwn();
   if (hit(t, '#landshelf')) return leaveLanding('#shelf');
 
   if (hit(t, '#authortoggle')) return toggleAuthor();
   if (hit(t, '#logaddbtn')) return addLog();
   if (hit(t, '#photobtn')) return document.getElementById('photofile').click();
-  if ((el = hit(t, '[data-dellog]'))) {
-    var lid = el.getAttribute('data-dellog');
-    state.logs = state.logs.filter(function (l) { return l.id !== lid; });
-    saveState(); sweepPhotos(); renderLogs(); renderTray(); return;
-  }
+  if ((el = hit(t, '[data-dellog]'))) return deleteLog(el.getAttribute('data-dellog'));
   if ((el = hit(t, '[data-logfilter]'))) {
     activeLogFilter = el.getAttribute('data-logfilter');
     document.querySelectorAll('[data-logfilter]').forEach(function (b) {

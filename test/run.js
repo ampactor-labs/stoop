@@ -26,7 +26,8 @@ const suites = [
   ['weight', require('./08-weight.js')],
   ['paste-up', require('./09-pasteup.js')],
   ['typeface', require('./10-typeface.js')],
-  ['edges', require('./11-edges.js')]
+  ['edges', require('./11-edges.js')],
+  ['the loop', require('./12-loop.js')]
 ];
 
 (async () => {

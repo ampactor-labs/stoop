@@ -33,7 +33,10 @@ emit_app_fragment() {
   printf '</main>\n'
   cat src/footer.html
   printf '<script>\n(function(){\n'
-  cat src/js/*.js
+  # Whole-line comments stay in src/, for whoever works on the press. They
+  # are dropped here because every issue file carries the press, and every
+  # reader would pay for them again in every file.
+  cat src/js/*.js | sed -E '/^[[:space:]]*\/\//d'
   printf '\n})();\n</script>\n'
 }
 

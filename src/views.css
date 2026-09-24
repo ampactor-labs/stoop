@@ -135,6 +135,7 @@
 .reprintzone { display: none; }
 
 /* Toast */
+.toast-undo { font: inherit; background: var(--fg); color: var(--spot); border: 0; margin-left: .7rem; padding: .1rem .5rem; cursor: pointer; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--spot); color: var(--fg); font-family: 'Courier New', monospace; font-size: .85rem; font-weight: bold; padding: .5rem .9rem; border: 2px solid var(--fg); box-shadow: 3px 3px 0 var(--fg); display: none; z-index: 50; }
 
 @media print {
@@ -163,8 +164,8 @@ body.landing main { padding-top: 2.4rem; }
 .panel.dropping { outline: 3px dashed var(--spot); outline-offset: -3px; }
 
 /* The nudge on a fresh cover. Drawn by the press only, never stored, never printed. */
-.pages .cover .body:empty::before { content: 'click anything \00b7 type \00b7 drop a photo'; color: #b5b0a6; font-style: italic; }
-.pages .panel h3:empty::before { content: '\00a0'; }
+#sheetzone .cover .body:empty::before { content: 'click anything · type · drop a photo'; color: #b5b0a6; font-style: italic; }
+#sheetzone .panel h3:empty::before { content: '\00a0'; }
 
 /* The copier lamp. */
 .flash { position: fixed; inset: 0; pointer-events: none; z-index: 60; opacity: 0;

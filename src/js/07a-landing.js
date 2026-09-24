@@ -52,6 +52,24 @@ function renderLanding() {
     '</div></div>';
 }
 
+// Somebody making the next issue from a file has not said who they are, and
+// the file's first person is somebody else. Ask once, before their name goes
+// on anything.
+function makeFromLanding() {
+  if (peopleFromSeed && !authorChosen()) {
+    var name = prompt('Who is writing? Your name goes on what you make here.\n\nAlready in this zine: ' +
+      people.map(function (p) { return p.name; }).join(', '), '');
+    name = String(name || '').trim().slice(0, 24);
+    if (name) {
+      var known = people.filter(function (p) { return p.name.toLowerCase() === name.toLowerCase(); })[0];
+      currentAuthor = (known || addPerson(name)).id;
+      rememberAuthor();
+      renderAll();
+    }
+  }
+  leaveLanding('#desk');
+}
+
 function leaveLanding(hash) {
   document.body.classList.remove('landing');
   location.hash = hash;

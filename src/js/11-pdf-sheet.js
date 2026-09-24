@@ -121,12 +121,17 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
+    // The panel clips what hangs over its edge, as it does on screen and in
+    // the browser's print; without it a cutting printed onto its neighbour.
+    ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
+      box.h.toFixed(2) + ' re W n\n';
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
     } else {
       ops += inner;
     }
+    ops += 'Q\n';
   });
   return ops;
 }
