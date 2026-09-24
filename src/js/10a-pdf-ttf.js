@@ -1,20 +1,62 @@
-// ---------- the press's face, on paper ----------
-// The page sets its headlines in the one typeface it ships, and the paper
-// embeds those same bytes, so the two cannot differ. This reads enough of a
-// TrueType file to describe it to a PDF — units per em, ascent and descent,
-// the bounding box, every glyph's advance, and the map from character to
-// glyph — and nothing else. The bytes come back out of the stylesheet the
-// build put them in, so the font is stored once.
+// ---------- the press's faces, on paper ----------
+// The page sets its headlines in Anton and its marker in Knewave, and the
+// paper embeds those same bytes, so the two cannot differ. This reads enough
+// of a TrueType file to describe it to a PDF — units per em, ascent and
+// descent, the bounding box, every glyph's advance, and the map from
+// character to glyph — and nothing else. The bytes come back out of the
+// stylesheet the build put them in, so each font is stored once.
 var pressFace = null;
+var markerFace = null;
+var facesReady = null;
 
-function fontBytesFromPage() {
+function fontBytesFromPage(family) {
   var css = Array.prototype.map.call(document.querySelectorAll('style'), function (s) { return s.textContent; }).join('\n');
-  var m = /font-family:Anton;[^}]*url\(data:font\/ttf;base64,([^)]+)\)/.exec(css);
+  var m = new RegExp('font-family:' + family + ';[^}]*url\\(data:font\\/(woff|ttf);base64,([^)]+)\\)').exec(css);
   if (!m) return null;
-  var bin = atob(m[1]);
+  var bin = atob(m[2]);
   var out = new Uint8Array(bin.length);
   for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
+  return { woff: m[1] === 'woff', bytes: out };
+}
+
+function inflate(bytes) {
+  var stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Response(stream).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+}
+
+// WOFF is TrueType with each table compressed and a header of its own. A PDF
+// wants the TrueType, so the tables are unpacked and laid end to end again
+// behind a TrueType directory; their bytes are the ones the page drew with.
+function woffToSfnt(b) {
+  var dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  var n = dv.getUint16(12);
+  var entries = [];
+  for (var i = 0; i < n; i++) {
+    var at = 44 + i * 20;
+    entries.push({ tag: dv.getUint32(at), off: dv.getUint32(at + 4), comp: dv.getUint32(at + 8),
+      orig: dv.getUint32(at + 12), sum: dv.getUint32(at + 16) });
+  }
+  return Promise.all(entries.map(function (e) {
+    var raw = b.subarray(e.off, e.off + e.comp);
+    return e.comp < e.orig ? inflate(raw) : Promise.resolve(raw);
+  })).then(function (tables) {
+    var head = 12 + 16 * n;
+    var total = tables.reduce(function (a, t) { return a + ((t.length + 3) & ~3); }, head);
+    var out = new Uint8Array(total);
+    var o = new DataView(out.buffer);
+    var pow = 1, log = 0;
+    while (pow * 2 <= n) { pow *= 2; log++; }
+    o.setUint32(0, dv.getUint32(4));
+    o.setUint16(4, n); o.setUint16(6, pow * 16); o.setUint16(8, log); o.setUint16(10, n * 16 - pow * 16);
+    var at = head;
+    entries.forEach(function (e, i) {
+      var r = 12 + i * 16;
+      o.setUint32(r, e.tag); o.setUint32(r + 4, e.sum); o.setUint32(r + 8, at); o.setUint32(r + 12, tables[i].length);
+      out.set(tables[i], at);
+      at += (tables[i].length + 3) & ~3;
+    });
+    return out;
+  });
 }
 
 // WinAnsi's high half, for the punctuation the subset carries, plus № in
@@ -78,15 +120,28 @@ function parseTrueType(bytes) {
   return f;
 }
 
-// The face, parsed once. Null on a page that carries none (an issue file
-// written before the press had one), in which case Helvetica-Bold stands in.
-function pressFaceLoaded() {
-  if (pressFace === null) {
-    var bytes = fontBytesFromPage();
-    pressFace = bytes ? parseTrueType(bytes) : false;
-  }
-  return pressFace || null;
+// Both faces, unpacked and parsed once, before any PDF is written. A page
+// that carries neither (an issue file from before the press had them) gets
+// Helvetica-Bold standing in, as it always did.
+function loadFaces() {
+  if (facesReady) return facesReady;
+  var one = function (family) {
+    var got = fontBytesFromPage(family);
+    if (!got) return Promise.resolve(false);
+    return (got.woff ? woffToSfnt(got.bytes) : Promise.resolve(got.bytes)).then(function (bytes) {
+      var f = parseTrueType(bytes);
+      f.name = family;
+      return f;
+    }).catch(function () { return false; });
+  };
+  facesReady = Promise.all([one('Anton'), one('Knewave')]).then(function (got) {
+    pressFace = got[0];
+    markerFace = got[1];
+  });
+  return facesReady;
 }
+function pressFaceLoaded() { return pressFace || null; }
+function markerFaceLoaded() { return markerFace || null; }
 
 // Embed as a simple TrueType font: WinAnsi codes look up glyphs through the
 // font's own (3,1) cmap. Resolves to the font object's number.
@@ -94,12 +149,14 @@ function pdfEmbedFace(doc, f) {
   var k = 1000 / f.upm;
   return deflate(f.bytes).then(function (packed) {
     var file = doc.stream('/Length1 ' + f.bytes.length + (packed ? '/Filter/FlateDecode' : ''), packed || f.bytes);
-    var desc = doc.obj(['<</Type/FontDescriptor/FontName/STOOPP+Anton/Flags 32/FontBBox[' +
+    var base = (f.name === 'Knewave' ? 'STOOPM+' : 'STOOPP+') + (f.name || 'Anton');
+    var desc = doc.obj(['<</Type/FontDescriptor/FontName/' + base + '/Flags 32/FontBBox[' +
       f.bbox.map(function (v) { return Math.round(v * k); }).join(' ') + ']/ItalicAngle 0/Ascent ' +
       Math.round(f.ascent * k) + '/Descent ' + Math.round(f.descent * k) + '/CapHeight ' +
       Math.round(f.capHeight * k) + '/StemV 140/FontFile2 ' + file + ' 0 R>>']);
-    return doc.obj(['<</Type/Font/Subtype/TrueType/BaseFont/STOOPP+Anton/FirstChar 32/LastChar 255/Widths[' +
-      f.widths.join(' ') + ']/Encoding<</Type/Encoding/BaseEncoding/WinAnsiEncoding/Differences[128/numero]>>' +
+    return doc.obj(['<</Type/Font/Subtype/TrueType/BaseFont/' + base + '/FirstChar 32/LastChar 255/Widths[' +
+      f.widths.join(' ') + ']/Encoding' + (f.glyphOf(0x2116)
+        ? '<</Type/Encoding/BaseEncoding/WinAnsiEncoding/Differences[128/numero]>>' : '/WinAnsiEncoding') +
       '/FontDescriptor ' + desc + ' 0 R>>']);
   });
 }

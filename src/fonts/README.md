@@ -1,14 +1,20 @@
-# The press's face
+# The press's faces
 
-`anton-press.ttf` is [Anton](https://github.com/google/fonts/tree/main/ofl/anton) by Vernon Adams, under the SIL Open Font License (`OFL.txt` alongside). It is the one typeface the press ships: every headline, stencil, marker, stamp and cover number on every page, on every machine, in every issue file the press writes, and embedded in every PDF. Body text stays in Courier, which every PDF reader carries and every machine has.
+Two typefaces ship inside the press, and nothing else does.
 
-The file is a subset, not the whole font: printable ASCII, Latin-1, the typographic punctuation people actually type, and №. Hinting, layout and name tables are dropped. That is why it is 15 KB where Anton is 170 KB. To regenerate it:
+- `anton-press.woff` is [Anton](https://github.com/google/fonts/tree/main/ofl/anton) by Vernon Adams (`OFL-Anton.txt`). Every headline, stencil, stamp and cover number.
+- `knewave-press.woff` is [Knewave](https://github.com/google/fonts/tree/main/ofl/knewave) by Tyler Finck (`OFL-Knewave.txt`). The marker voice: a fat felt-tip, which is what a marker on a paste-up is.
+
+Both are under the SIL Open Font License, which permits bundling and embedding on condition that the licence travels with the font; it does. Body text stays in Courier, which every PDF reader carries.
+
+Each file is a subset: printable ASCII, Latin-1, the typographic punctuation people actually type, and, for Anton, №. Hinting, layout and name tables are dropped, and the result is wrapped as WOFF, which is the same TrueType with each table compressed. To regenerate them:
 
     pip install fonttools
-    pyftsubset Anton-Regular.ttf --output-file=anton-press.ttf \
+    pyftsubset Anton-Regular.ttf --output-file=anton-press.woff --flavor=woff \
       --unicodes=U+0020-007E,U+00A0-00FF,U+2013-2014,U+2018-2019,U+201C-201D,U+2022,U+2026,U+2116 \
       --no-hinting --drop-tables+=GSUB,GPOS,GDEF,DSIG,kern,morx,prop,FFTM --name-IDs= --notdef-outline
+    pyftsubset Knewave-Regular.ttf --output-file=knewave-press.woff --flavor=woff \
+      --unicodes=U+0020-007E,U+00A0-00FF,U+2013-2014,U+2018-2019,U+201C-201D,U+2022,U+2026 \
+      --no-hinting --drop-tables+=GSUB,GPOS,GDEF,DSIG,kern,morx,prop,FFTM --name-IDs= --notdef-outline
 
-`build.sh` base64-encodes it into a `@font-face` rule in the page's stylesheet, so the font is one file inside one file and the page makes no request for it. The PDF writer reads those same bytes back out of the stylesheet and embeds them as a `FontFile2`, so the paper is set in exactly the face the screen was.
-
-The OFL permits bundling and embedding. It forbids selling the font on its own and requires this licence to travel with it, which it does.
+`build.sh` base64-encodes each into a `@font-face` rule in the page's stylesheet, so the fonts are files inside one file and the page makes no request for them. The PDF writer reads the same bytes back out of the stylesheet, unpacks each table, lays them end to end as TrueType again, and embeds that as a `FontFile2`, so the paper is set in exactly the faces the screen was. `test/10-typeface.js` holds it to that, table for table.

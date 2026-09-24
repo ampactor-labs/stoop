@@ -18,11 +18,20 @@ function clamp01(v, span) {
   return Math.max(-0.25, Math.min(1.25 - span, v));
 }
 
+// Across the gutter of a spread a cutting can travel the whole facing page.
+function clampX(v, span, page) {
+  var other = facingPage(page, pressState().panels.length);
+  var lo = other && other < page ? -1 : -0.25;
+  var hi = (other && other > page ? 2 : 1.25) - span;
+  return Math.max(lo, Math.min(hi, v));
+}
+
 function startGrab(ev, mode, elNode) {
   var panelEl = elNode.closest('.panel');
   var hit = findEl(elNode.getAttribute('data-el'));
   if (!panelEl || !hit) return;
   var p = panelLocal(panelEl, ev.clientX, ev.clientY);
+  var redoWas = pasteRedo.slice();
   pasteMark();
   grab = {
     mode: mode,
@@ -30,7 +39,9 @@ function startGrab(ev, mode, elNode) {
     panelEl: panelEl,
     start: p,
     from: { x: hit.el.x, y: hit.el.y, w: hit.el.w, h: hit.el.h, rot: hit.el.rot || 0 },
-    moved: false
+    moved: false,
+    redoWas: redoWas,
+    page: hit.page
   };
   if (mode === 'rot') {
     var cx = (hit.el.x + hit.el.w / 2) * p.w;
@@ -51,9 +62,9 @@ function moveGrab(ev) {
     var dx = (p.x - grab.start.x) / p.w;
     var dy = (p.y - grab.start.y) / p.h;
     updateEl(grab.id, {
-      x: clamp01(snap(f.x + dx, !fine), f.w),
+      x: clampX(snap(f.x + dx, !fine), f.w, grab.page),
       y: clamp01(snap(f.y + dy, !fine), f.h)
-    });
+    }, false, true);
   } else if (grab.mode === 'size') {
     // The delta is turned back through the element's own rotation, so dragging
     // the corner of a crooked cutting grows it along its own edges.
@@ -65,7 +76,7 @@ function moveGrab(ev) {
     updateEl(grab.id, {
       w: Math.max(0.04, snap(f.w + rx / p.w, !fine)),
       h: Math.max(0.015, snap(f.h + ry / p.h, !fine))
-    });
+    }, false, true);
   } else if (grab.mode === 'rot') {
     var ccx = (f.x + f.w / 2) * p.w;
     var ccy = (f.y + f.h / 2) * p.h;
@@ -73,23 +84,33 @@ function moveGrab(ev) {
     var rot = f.rot + (now - grab.angle0);
     if (ev.shiftKey) rot = Math.round(rot / 15) * 15;
     else if (Math.abs(rot) < 1.5) rot = 0;          // straight is findable by hand
-    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 });
+    updateEl(grab.id, { rot: Math.round(rot * 10) / 10 }, false, true);
   }
   paintOnePanel(grab.panelEl);
 }
 
+// A drag saves once, when it ends.
 function endGrab() {
   if (!grab) return;
-  // A gesture that never moved is a click; it should not cost an undo step.
-  if (!grab.moved) pasteUndo.pop();
+  // A click costs neither an undo step nor the redo history.
+  if (!grab.moved) {
+    pasteUndo.pop();
+    Array.prototype.push.apply(pasteRedo, grab.redoWas);
+  } else {
+    savePress();
+  }
   grab = null;
   renderPress();
 }
 
+// A panel and its facing page, since a cutting may hang across both.
 function paintOnePanel(panelEl) {
   var page = Number(panelEl.getAttribute('data-page'));
   var panel = panelOfPage(page);
   if (panel) paintPasteup(panelEl, panel);
+  var other = facingPage(page, pressState().panels.length);
+  var otherEl = other && document.querySelector('#sheetzone [data-page="' + other + '"]');
+  if (otherEl) paintPasteup(otherEl, panelOfPage(other));
   renderInspector();
 }
 
@@ -97,7 +118,7 @@ function paintOnePanel(panelEl) {
 // before a repaint is detached and every call on it silently does nothing.
 // Anything that selects and then acts has to ask the document again.
 function liveEl(id) {
-  return document.querySelector('.el[data-el="' + id + '"]');
+  return document.querySelector('#sheetzone .el:not(.ghost)[data-el="' + id + '"]');
 }
 
 function selectEl(id) {
@@ -190,13 +211,24 @@ document.addEventListener('input', function (ev) {
   updateEl(t.getAttribute('data-eltext'), { text: t.innerText });
 });
 
+// Cutting keys stand down while somebody is typing in a field.
+function typingInField() {
+  var a = document.activeElement;
+  return !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+}
+
 document.addEventListener('keydown', function (ev) {
   var key = ev.key;
   var meta = ev.metaKey || ev.ctrlKey;
   if (meta && (key === 'z' || key === 'Z')) {
-    if (document.activeElement && document.activeElement.isContentEditable) return;
+    if (typingInField()) return;
     ev.preventDefault();
     if (ev.shiftKey) pasteRedoStep(); else pasteUndoStep();
+    return;
+  }
+  if (meta && (key === 'd' || key === 'D') && pasteSel && !typingInField()) {
+    ev.preventDefault();
+    duplicateEl(pasteSel);
     return;
   }
   if (key === 'Escape' && pasteEditing) {
@@ -210,7 +242,7 @@ document.addEventListener('keydown', function (ev) {
     return;
   }
   if (!pasteSel) return;
-  if (document.activeElement && document.activeElement.isContentEditable) return;
+  if (typingInField() || document.body.hasAttribute('data-drawer') || meta || ev.altKey) return;
   var el = selectedEl();
   if (!el) return;
   var step = ev.shiftKey ? 0.02 : 0.004;
@@ -218,7 +250,7 @@ document.addEventListener('keydown', function (ev) {
   if (moves[key]) {
     ev.preventDefault();
     pasteMark();
-    updateEl(pasteSel, { x: clamp01(el.x + moves[key][0], el.w), y: clamp01(el.y + moves[key][1], el.h) });
+    updateEl(pasteSel, { x: clampX(el.x + moves[key][0], el.w, findEl(pasteSel).page), y: clamp01(el.y + moves[key][1], el.h) });
     renderPress();
     return;
   }

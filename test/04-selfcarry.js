@@ -82,7 +82,7 @@ module.exports = async function selfcarry(browser, ok) {
   ok('with no chrome around it',
      (await other.evaluate(() => getComputedStyle(document.querySelector('header.chrome')).display)) === 'none');
   ok('the issue reads',
-     /orange behind you|handed over as a file/i.test(await other.locator('#landing .reading').innerText()));
+     /orange behind you|handed over as a file/i.test(await other.locator('#landing').innerText()));
   ok('and the press it rode in offers itself',
      /MAKE №02/.test(await other.locator('#landmake').innerText()),
      await other.locator('#landmake').innerText());

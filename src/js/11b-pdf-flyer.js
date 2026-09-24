@@ -67,6 +67,10 @@ function pdfFlyerContent(title, issue, url, photo, images) {
 }
 
 function buildFlyerPdf(title, issue, url, photoId) {
+  return loadFaces().then(function () { return writeFlyerPdf(title, issue, url, photoId); });
+}
+
+function writeFlyerPdf(title, issue, url, photoId) {
   var doc = pdfDoc();
   var images = {};
   var chain = Promise.resolve();

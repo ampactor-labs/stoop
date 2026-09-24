@@ -51,7 +51,7 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
   return { op: op, drop: lines.length * lead };
 }
 
-function pdfPanel(panel, page, pages, box, images, url) {
+function pdfPanel(panel, page, pages, box, images, url, ghosts) {
   var ops = '';
   var y = box.y;
   var isCover = page === 1;
@@ -107,7 +107,7 @@ function pdfPanel(panel, page, pages, box, images, url) {
       ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
     });
   }
-  return ops + pdfPasteup(panel, box, images);
+  return ops + pdfPasteup(panel, box, images, ghosts);
 }
 
 // A flipped panel is the same drawing rotated half a turn about its own
@@ -120,13 +120,19 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
     if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
-    var inner = pdfPanel(panel, slot.page, panels.length, box, images, url);
+    var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
+      spreadGhosts(panels, slot.page, box.h / box.w));
+    // The panel clips what hangs over its edge, as it does on screen and in
+    // the browser's print; without it a cutting printed onto its neighbour.
+    ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
+      box.h.toFixed(2) + ' re W n\n';
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
     } else {
       ops += inner;
     }
+    ops += 'Q\n';
   });
   return ops;
 }
@@ -134,6 +140,10 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
 // ---------- the public call ----------
 // Gathers every image the sheet needs, then writes one page per printed side.
 function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
+  return loadFaces().then(function () { return writeSheetPdf(panels, formatId, hand, url, issue, gen); });
+}
+
+function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
   var geom = pdfLayout(formatId);
@@ -164,8 +174,10 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   // The page's own typeface travels with the sheet, so the headline on paper
   // is the headline on screen, glyph for glyph.
   var face = pressFaceLoaded();
-  var faceNum = 0;
+  var marker = markerFaceLoaded();
+  var faceNum = 0, markerNum = 0;
   if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
+  if (marker) chain = chain.then(function () { return pdfEmbedFace(doc, marker).then(function (n) { markerNum = n; }); });
 
   return chain.then(function () {
     var xobjects = Object.keys(images).map(function (k) {
@@ -179,7 +191,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
     var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
-      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + '>>' +
+      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
 
     var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first

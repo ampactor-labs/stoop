@@ -40,6 +40,8 @@ function addPiece(fields) {
     cut: false,
     ts: Date.now()
   };
+  if (fields.from) piece.from = fields.from;
+  if (fields.scraps) piece.scraps = true;
   state.pieces.push(piece);
   saveState();
   return piece;
@@ -69,10 +71,17 @@ function cutPiece(id, cut) {
 }
 
 function dropPiece(id) {
-  state.pieces = state.pieces.filter(function (x) { return x.id !== id; });
+  var at = state.pieces.findIndex(function (x) { return x.id === id; });
+  if (at < 0) return;
+  var gone = state.pieces.splice(at, 1)[0];
   saveState();
-  sweepPhotos();
   renderDesk();
+  toast('\u201c' + gone.title + '\u201d removed.', function () {
+    state.pieces.splice(Math.min(at, state.pieces.length), 0, gone);
+    saveState();
+    renderDesk();
+  });
+  setTimeout(sweepPhotos, 6500);
 }
 
 // ---------- minting pieces from scraps ----------
@@ -80,77 +89,59 @@ function dropPiece(id) {
 // was written since the last issue shipped, so issue two never reprints
 // issue one. A scrap with a title, or a long one, is a piece of its own; the
 // short ones run together as one piece, the way a log column does.
+// A piece remembers its scraps (`from`), so pulling twice draws nothing twice,
+// and new short scraps join the waiting SCRAPS column. The column is signed by
+// whoever wrote it, or as made together when several did.
 function draftFromSources() {
   var since = lastIssueTs();
-  var fresh = state.logs.filter(function (l) { return (l.ts || 0) > since && (l.text || l.title || l.photo); })
-    .sort(function (x, y) { return x.ts - y.ts; });
+  var drawn = {};
+  state.pieces.forEach(function (p) { (p.from || []).forEach(function (id) { drawn[id] = 1; }); });
+  var fresh = state.logs.filter(function (l) {
+    return (l.ts || 0) > since && !drawn[l.id] && (l.text || l.title || l.photo);
+  }).sort(function (x, y) { return x.ts - y.ts; });
   var made = 0;
   var short = [];
 
   fresh.forEach(function (l) {
     var own = l.title || (l.text || '').length > 280;
     if (own) {
-      addPiece({ kind: 'essay', title: l.title || (l.text || '').slice(0, 40), byline: l.author, body: l.text || '', photo: l.photo });
+      addPiece({ kind: 'essay', title: l.title || (l.text || '').slice(0, 40), byline: l.author,
+        body: l.text || '', photo: l.photo, from: [l.id] });
       made++;
     } else {
       short.push(l);
     }
   });
+  var joined = 0;
   if (short.length) {
-    addPiece({
-      kind: 'log', title: 'SCRAPS', byline: 'both',
-      body: short.filter(function (l) { return l.text; })
-        .map(function (l) { return '\u2022 [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n'),
-      photo: (short.filter(function (l) { return l.photo && photoCache[l.photo]; })[0] || {}).photo
-    });
-    made++;
+    var column = state.pieces.filter(function (p) { return p.scraps && !p.cut; })[0];
+    var who = {};
+    short.forEach(function (l) { who[l.author] = 1; });
+    if (column) who[column.byline] = 1;
+    var hands = Object.keys(who);
+    var byline = hands.length === 1 ? hands[0] : 'both';
+    var bullets = short.filter(function (l) { return l.text; })
+      .map(function (l) { return '\u2022 [' + nameOf(l.author) + '] ' + l.text; }).join('\n\n');
+    var pic = (short.filter(function (l) { return l.photo && photoCache[l.photo]; })[0] || {}).photo;
+    var ids = short.map(function (l) { return l.id; });
+    if (column) {
+      column.body = [column.body, bullets].filter(Boolean).join('\n\n');
+      column.byline = byline;
+      column.from = (column.from || []).concat(ids);
+      if (!column.photo && pic) column.photo = pic;
+      saveState();
+      joined = short.length;
+    } else {
+      addPiece({ kind: 'log', title: 'SCRAPS', byline: byline, body: bullets, photo: pic, from: ids, scraps: true });
+      made++;
+    }
   }
 
   renderDesk();
-  toast(made ? 'Pulled in ' + made + ' piece(s)' : 'Nothing new since the last issue. Keep something, then pull again.');
-}
-
-// ---------- assembling ----------
-// Pieces flow into the pages between the covers. The vessel is whatever
-// format the press is set to, which is why changing format re-flows an issue
-// instead of forcing a retype.
-function compileIssue() {
-  var ps = pressState();
-  var c = cycleState();
-  var pieces = livePieces();
-  var pages = formatOf(ps.format).pages;
-  var inner = pages - 2;
-
-  ps.issue = c.no;
-  ps.panels[0].h = state.zine || ps.title || 'STOOP ZINE';
-
-  pieces.slice(0, inner).forEach(function (piece, i) {
-    var panel = ps.panels[i + 1];
-    if (!panel) return;
-    panel.h = piece.title.toUpperCase();
-    panel.body = piece.body;
-    if (piece.photo) panel.photo = piece.photo;
-  });
-  for (var j = pieces.length; j < inner; j++) {
-    if (ps.panels[j + 1]) ps.panels[j + 1].body = '';
-  }
-
-  var note = document.getElementById('editornote');
-  ps.panels[pages - 1].h = 'BACK COVER';
-  ps.panels[pages - 1].body = 'Issue №' + c.no + '\nEdited by ' + nameOf(c.editor) + '.\n\n' +
-    ((note && note.value.trim()) ? note.value.trim() + '\n\n' : '') +
-    'Made on a stoop. Take one, leave one.';
-
-  var newest = state.logs.slice().sort(function (x, y) { return y.ts - x.ts; })
-    .filter(function (l) { return l.photo && photoCache[l.photo]; })[0];
-  if (newest && !ps.panels[0].photo) ps.panels[0].photo = newest.photo;
-
-  savePress();
-  renderPress();
-  var over = pieces.length - inner;
-  toast(over > 0
-    ? 'Compiled. ' + over + ' piece(s) did not fit — cut some, or use a bigger format'
-    : 'Compiled issue №' + c.no + ' from ' + pieces.length + ' piece(s)');
+  toast(made || joined
+    ? [made ? 'Pulled in ' + made + ' piece(s)' : '', joined ? joined + ' scrap(s) joined SCRAPS' : '']
+      .filter(Boolean).join(', ')
+    : 'Nothing new since the last issue. Keep something, then pull again.');
 }
 
 // The bell. Publishing archives the sheet to the shelf whole, so the back
@@ -165,6 +156,12 @@ function buildIssue() {
     state.issues = state.issues.filter(function (i) { return i.no !== ps.issue; });
   }
 
+  // What shipped is what was compiled; pieces that did not fit stay.
+  var live = livePieces();
+  var ranIds = Array.isArray(ps.ran) ? ps.ran.map(function (r) { return r.id; }) : null;
+  var shipped = ranIds ? live.filter(function (p) { return ranIds.indexOf(p.id) >= 0; }) : live;
+  var held = live.length - shipped.length;
+
   var note = document.getElementById('editornote');
   state.issues.push({
     no: ps.issue,
@@ -175,13 +172,12 @@ function buildIssue() {
     editor: c.editor,
     note: note ? note.value.trim() : '',
     panels: JSON.parse(JSON.stringify(ps.panels)),
-    pieces: JSON.parse(JSON.stringify(livePieces())),
+    pieces: JSON.parse(JSON.stringify(shipped)),
     ts: Date.now()
   });
 
-  // The tray empties; cut pieces stay for next cycle, which is the promise a
-  // cut makes. Published pieces are in the issue now and leave the desk.
-  state.pieces = state.pieces.filter(function (p) { return p.cut; });
+  // Cut pieces stay for next cycle, which is the promise a cut makes.
+  state.pieces = state.pieces.filter(function (p) { return shipped.indexOf(p) < 0; });
 
   var next = String((parseInt(ps.issue, 10) || 1) + 1);
   c.no = next.length < 2 ? '0' + next : next;
@@ -192,12 +188,38 @@ function buildIssue() {
   ps.issue = c.no;
   ps.panels = blankPanels(formatOf(ps.format).pages);
   ps.panels[0].h = state.zine || 'STOOP ZINE';
+  ps.spare = [];
+  ps.ran = null;
+  forgetUndo();
   savePress();
+  keepStorage();
   renderAll();
   location.hash = '#shelf';
   toast('Issue №' + state.issues[state.issues.length - 1].no + ' is on the shelf. ' +
-    nameOf(c.editor) + ' has the desk for №' + c.no + '.');
+    nameOf(c.editor) + ' has the desk for №' + c.no + '.' +
+    (held ? ' ' + held + ' piece(s) that did not fit wait in the tray.' : ''));
 }
+
+// The bell where people already keep their days: a calendar file with a
+// reminder the day before. No server is told anything; the file is handed
+// round like the zine.
+function bellIcs() {
+  var c = cycleState();
+  var stamp = function (t) { return new Date(t).toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''); };
+  var text = function (s) { return String(s).replace(/([\\;,])/g, '\\$1').replace(/\n/g, '\\n'); };
+  var zine = state.zine || 'STOOP ZINE';
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//stoop//press//EN', 'BEGIN:VEVENT',
+    'UID:' + sceneSlug() + '-' + c.no + '@stoop', 'DTSTAMP:' + stamp(Date.now()), 'DTSTART:' + stamp(c.bell),
+    'DURATION:PT1H', 'SUMMARY:' + text(zine + ' \u2116' + c.no + ': the bell'),
+    'DESCRIPTION:' + text('Pieces to ' + nameOf(c.editor) + ' by now. The issue goes to the shelf when the bell rings.'),
+    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:' + text('The bell rings tomorrow'), 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n') + '\r\n';
+}
+document.addEventListener('click', function (ev) {
+  if (!ev.target.closest || !ev.target.closest('#icsbtn')) return;
+  downloadBlob(sceneSlug() + '-' + cycleState().no + '-bell.ics', new Blob([bellIcs()], { type: 'text/calendar' }));
+  toast('The bell, as a calendar event, with a reminder the day before');
+});
 
 // ---------- the view ----------
 function fmtBell(ts) {
@@ -231,9 +253,10 @@ function renderDesk() {
     return '<div class="sub-row' + (p.cut ? ' cut' : '') + '">' +
       '<span class="ord">' + ord + '</span>' +
       '<span class="meta"><b>' + esc(p.title) + '</b> — ' + esc(nameOf(p.byline)) +
-      '<small>' + esc(p.kind) + ' · ' + p.body.split(/\s+/).filter(Boolean).length + ' words</small></span>' +
+      '<small>' + esc(p.kind) + ' · ' + String(p.body || '').split(/\s+/).filter(Boolean).length + ' words</small></span>' +
       '<button class="subbtn" data-' + (p.cut ? 'restore' : 'cut') + 'piece="' + esc(p.id) + '">' +
       (p.cut ? 'RESTORE' : 'CUT') + '</button>' +
+      '<button class="subbtn" data-piecebundle="' + esc(p.id) + '" title="Save it as a file to send to whoever holds the desk">SEND</button>' +
       '<button class="log-del" data-droppiece="' + esc(p.id) + '" title="Remove entirely">✕</button>' +
       '</div>';
   }).join('');

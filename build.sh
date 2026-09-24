@@ -20,12 +20,16 @@ OUT_ROOT="${OUT_ROOT:-.}"
 emit_app_fragment() {
   cat src/meta.html
   printf '<style>\n'
-  # The press's one typeface, base64 into a @font-face rule: a font inside a
-  # stylesheet inside a page, so the page asks nobody for it. The PDF writer
-  # reads these same bytes back out of the stylesheet to embed them.
-  printf '@font-face{font-family:Anton;font-display:block;src:url(data:font/ttf;base64,%s) format("truetype")}\n' \
-    "$(base64 -w0 src/fonts/anton-press.ttf)"
-  cat src/base.css src/forms.css src/views.css src/paste.css src/phone.css
+  # The press's two faces, base64 into @font-face rules: fonts inside a
+  # stylesheet inside a page, so the page asks nobody for them. WOFF is the
+  # same TrueType with each table compressed; the PDF writer reads these same
+  # bytes back out of the stylesheet, unpacks them and embeds them.
+  printf '@font-face{font-family:Anton;font-display:block;src:url(data:font/woff;base64,%s) format("woff")}\n' \
+    "$(base64 -w0 src/fonts/anton-press.woff)"
+  printf '@font-face{font-family:Knewave;font-display:block;src:url(data:font/woff;base64,%s) format("woff")}\n' \
+    "$(base64 -w0 src/fonts/knewave-press.woff)"
+  # Comments stay in src/ and out of every issue file, as with the script.
+  cat src/base.css src/forms.css src/views.css src/paste.css src/phone.css | perl -0pe 's{/\*.*?\*/}{}gs'
   printf '</style>\n\n'
   cat src/chrome.html
   printf '\n<main>\n\n'
@@ -33,7 +37,10 @@ emit_app_fragment() {
   printf '</main>\n'
   cat src/footer.html
   printf '<script>\n(function(){\n'
-  cat src/js/*.js
+  # Whole-line comments stay in src/, for whoever works on the press. They
+  # are dropped here because every issue file carries the press, and every
+  # reader would pay for them again in every file.
+  cat src/js/*.js | sed -E '/^[[:space:]]*\/\//d'
   printf '\n})();\n</script>\n'
 }
 

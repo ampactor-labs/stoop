@@ -101,15 +101,25 @@ function seedPanel(i) {
   return { h: i === 0 ? (state && state.zine) || 'STOOP ZINE' : '', body: '', photo: null };
 }
 
-// Resize a panel array to a format without losing what was written. Growing
-// pads with seeds; shrinking keeps the low pages, because the cover and the
-// early spreads are the ones somebody actually filled in.
-function fitPanels(panels, pages) {
-  var out = [];
-  for (var i = 0; i < pages; i++) {
-    out.push(panels && panels[i] ? panels[i] : seedPanel(i));
-  }
-  return out;
+// Resize to a format without losing anything: the cover stays first, the back
+// cover last, inner pages in order, and pages that no longer fit are set aside
+// in `spare`, blanks between them kept so each comes back where it was.
+function panelHasWork(p) {
+  return !!p && !!(String(p.body || '').trim() || String(p.h || '').trim() || p.photo ||
+    (Array.isArray(p.els) && p.els.length));
+}
+
+function fitPanels(panels, pages, spare) {
+  var src = Array.isArray(panels) ? panels.filter(Boolean) : [];
+  var cover = src[0] || seedPanel(0);
+  var back = src.length > 1 ? src[src.length - 1] : seedPanel(pages - 1);
+  var inner = src.slice(1, Math.max(1, src.length - 1)).concat(spare || []);
+  var room = Math.max(0, pages - 2);
+  var kept = inner.slice(0, room);
+  var left = inner.slice(room);
+  while (left.length && !panelHasWork(left[left.length - 1])) left.pop();
+  while (kept.length < room) kept.push(seedPanel(kept.length + 1));
+  return { panels: [cover].concat(kept, [back]), spare: left };
 }
 
 // The sheet a new cycle starts on: the section headings survive as prompts,

@@ -58,7 +58,8 @@ var pasteRedo = [];
 var UNDO_DEPTH = 50;
 
 function snapshot() {
-  return JSON.stringify(pressState().panels);
+  var ps = pressState();
+  return JSON.stringify({ format: ps.format, panels: ps.panels, spare: ps.spare || [] });
 }
 
 function pasteMark() {
@@ -69,11 +70,24 @@ function pasteMark() {
 
 function pasteRestore(json) {
   var ps = pressState();
-  ps.panels = JSON.parse(json);
+  var snap = JSON.parse(json);
+  if (Array.isArray(snap)) snap = { format: ps.format, panels: snap, spare: ps.spare };
+  if (FORMATS[snap.format]) ps.format = snap.format;
+  ps.panels = snap.panels;
+  ps.spare = snap.spare || [];
   savePress();
   if (pasteSel && !findEl(pasteSel)) pasteSel = null;
   pageSig = '';
   renderPress();
+}
+
+// A new draft or a replaced store starts its own history.
+function forgetUndo() {
+  pasteUndo.length = 0;
+  pasteRedo.length = 0;
+  flowSnap = null;
+  pasteSel = null;
+  pasteEditing = null;
 }
 
 function pasteUndoStep() {
@@ -89,6 +103,23 @@ function pasteRedoStep() {
   pasteRestore(pasteRedo.pop());
   toast('Redo');
 }
+
+// Typing into a page or a cutting's text box is a step too: the state is
+// taken on the way into the field and kept once something is typed.
+var flowSnap = null;
+function isFlowField(t) {
+  return !!t && (t.id === 'ransomtext' || t.id === 'alttext' || t.id === 'issueno' ||
+    (!!t.closest && !!t.closest('#sheetzone') && /^(H3)$/.test(t.tagName)) ||
+    (!!t.classList && t.classList.contains('body') && !!t.closest && !!t.closest('#sheetzone')));
+}
+document.addEventListener('focusin', function (ev) { if (isFlowField(ev.target)) flowSnap = snapshot(); });
+document.addEventListener('input', function (ev) {
+  if (!flowSnap || !isFlowField(ev.target)) return;
+  pasteUndo.push(flowSnap);
+  if (pasteUndo.length > UNDO_DEPTH) pasteUndo.shift();
+  pasteRedo.length = 0;
+  flowSnap = null;
+}, true);
 
 // ---------- adding ----------
 var PASTE_DEFAULTS = {
@@ -149,6 +180,9 @@ function addEl(page, kind, extra) {
   }
   els.push(el);
   pasteSel = el.id;
+  // The new cutting has the keyboard: arrows nudge it, not a caret in the page.
+  var a = document.activeElement;
+  if (a && a.blur && a.closest && a.closest('#sheetzone')) a.blur();
   savePress();
   return el;
 }
@@ -164,12 +198,12 @@ function removeEl(id) {
 }
 
 // ---------- changing one ----------
-function updateEl(id, fields, mark) {
+function updateEl(id, fields, mark, quiet) {
   var hit = findEl(id);
   if (!hit) return;
   if (mark) pasteMark();
   Object.keys(fields).forEach(function (k) { hit.el[k] = fields[k]; });
-  savePress();
+  if (!quiet) savePress();
 }
 
 function raiseEl(id, toFront) {

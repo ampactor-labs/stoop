@@ -61,6 +61,8 @@ module.exports = async function publication(browser, ok) {
 
   // A back issue keeps its own words rather than the current draft's.
   await page.click('[data-readissue="01"]');
+  await page.waitForTimeout(200);
+  await page.click('#shelfreader [data-readmode="text"]');
   await page.waitForTimeout(400);
   const reading = await page.locator('.reading').innerText();
   ok('the back issue still holds its own pieces', /sodium lamps|substation/i.test(reading));

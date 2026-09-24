@@ -1,7 +1,6 @@
 // ---------- stamps, on paper ----------
 // The same unit-box descriptions in 05g-stamps.js, as path operators. A
-// stamp's text is fitted to its box in Helvetica-Bold, which is the nearest
-// standard face to the Impact the screen uses.
+// stamp's text is fitted to its box in the page's own face, as on screen.
 function pdfElStamp(el, g) {
   var st = STAMPS[el.stamp];
   if (!st) return '';

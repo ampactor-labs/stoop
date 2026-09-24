@@ -3,7 +3,15 @@ var activeLogFilter = 'all';
 // The roster is drawn, not written into the HTML: a scene of four needs four
 // chips and four options, and nobody should have to edit a view file to get
 // them.
+// Work signed together keeps a chip to find it by, even on a roster of one.
+function filterIds() {
+  var ids = authorIds();
+  if (ids.indexOf('both') < 0 && state.logs.some(function (l) { return l.author === 'both'; })) ids.push('both');
+  return ids;
+}
+
 function renderNames() {
+  if (activeLogFilter !== 'all' && filterIds().indexOf(activeLogFilter) < 0) activeLogFilter = 'all';
   var el = document.getElementById('authorname');
   if (el) el.textContent = nameOf(currentAuthor);
 
@@ -11,7 +19,7 @@ function renderNames() {
   if (chips) {
     chips.innerHTML = '<button class="chip' + (activeLogFilter === 'all' ? ' on' : '') +
       '" data-logfilter="all">all</button>' +
-      authorIds().map(function (id) {
+      filterIds().map(function (id) {
         return '<button class="chip' + (activeLogFilter === id ? ' on' : '') +
           '" data-logfilter="' + esc(id) + '">' + esc(nameOf(id)) + '</button>';
       }).join('');
@@ -47,7 +55,7 @@ function renderRoster() {
 function toggleAuthor() {
   var ids = authorIds();
   currentAuthor = ids[(ids.indexOf(currentAuthor) + 1) % ids.length];
-  localStorage.setItem(AUTHOR_KEY, currentAuthor);
+  rememberAuthor();
   renderNames();
   toast('Now writing as ' + nameOf(currentAuthor));
 }
@@ -107,6 +115,20 @@ function addLog(photoIds) {
   saveState();
   renderLogs();
   toast(ids.length ? 'Kept ' + ids.length + ' photo(s)' : 'Kept');
+}
+
+// Gone at once, back with UNDO while the toast is up; its photograph is only
+// swept once nothing can bring it back.
+function deleteLog(id) {
+  var at = state.logs.findIndex(function (l) { return l.id === id; });
+  if (at < 0) return;
+  var gone = state.logs.splice(at, 1)[0];
+  saveState(); renderLogs(); renderTray();
+  toast('Scrap deleted.', function () {
+    state.logs.splice(Math.min(at, state.logs.length), 0, gone);
+    saveState(); renderLogs(); renderTray();
+  });
+  setTimeout(sweepPhotos, 6500);
 }
 
 function renderAll() {

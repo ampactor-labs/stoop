@@ -15,6 +15,9 @@ var NAMES_KEY = 'stoop_names';
 var AUTHOR_KEY = 'stoop_active_author';
 
 function defaultPeople() { return [{ id: 'a', name: 'me' }]; }
+// True when the roster came out of a file: whoever is at this device has not
+// said which of those people they are, if any.
+var peopleFromSeed = false;
 
 var people = (function () {
   try {
@@ -31,11 +34,12 @@ var people = (function () {
   // An issue file opened on a machine that has never seen this app brings its
   // own roster. Defaulting first would take the ids a and b, and the names
   // arriving in the file would be refused as already present.
+  // Only a device with no work of its own adopts the file's roster.
   try {
-    var seed = readSeed();
+    var seed = localStorage.getItem(STORAGE_KEY) ? null : readSeed();
     if (seed && Array.isArray(seed.people) && seed.people.length) {
       var carried = seed.people.filter(function (p) { return p && p.id && p.name; });
-      if (carried.length) return carried;
+      if (carried.length) { peopleFromSeed = true; return carried; }
     }
   } catch (e) {}
   return defaultPeople();
@@ -45,12 +49,15 @@ function savePeople() {
   try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(people)); } catch (e) {}
 }
 function personIds() { return people.map(function (p) { return p.id; }); }
-function authorIds() { return personIds().concat('both'); }
+// 'both' means made together: "Both" for a pair, "Together" otherwise, and
+// not offered to a scene of one. 'anon' is unsigned, which zines always were.
+function authorIds() { return (people.length > 1 ? personIds().concat('both') : personIds()).concat('anon'); }
 function personById(id) {
   return people.filter(function (p) { return p.id === id; })[0] || null;
 }
 function nameOf(id) {
-  if (id === 'both') return 'Both';
+  if (id === 'both') return people.length === 2 ? 'Both' : 'Together';
+  if (id === 'anon') return 'Anonymous';
   var p = personById(id);
   return p ? p.name : 'Someone';
 }
@@ -61,7 +68,16 @@ function addPerson(name) {
   return p;
 }
 
-var currentAuthor = localStorage.getItem(AUTHOR_KEY) || 'a';
+// Storage can throw (private windows, blocked site data).
+var currentAuthor = (function () {
+  try { return localStorage.getItem(AUTHOR_KEY) || 'a'; } catch (e) { return 'a'; }
+})();
+function rememberAuthor() {
+  try { localStorage.setItem(AUTHOR_KEY, currentAuthor); } catch (e) {}
+}
+function authorChosen() {
+  try { return localStorage.getItem(AUTHOR_KEY) !== null; } catch (e) { return false; }
+}
 
 // Every byline in the store must belong to somebody on the roster, or a name
 // is lost the moment a piece arrives from another copy of the app.
@@ -69,7 +85,7 @@ function ensurePeople() {
   var seen = {};
   personIds().forEach(function (id) { seen[id] = 1; });
   var found = {};
-  function note(id) { if (id && id !== 'both' && !seen[id]) found[id] = 1; }
+  function note(id) { if (id && id !== 'both' && id !== 'anon' && !seen[id]) found[id] = 1; }
   (state.logs || []).forEach(function (l) { note(l.author); });
   (state.pieces || []).forEach(function (p) { note(p.byline); });
   (state.issues || []).forEach(function (i) {
@@ -116,13 +132,21 @@ function fmtStamp(ts) {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric' }) + ' · ' +
     d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-function toast(msg) {
+function toast(msg, undo) {
   var t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
+  // A delete is done at once and can be taken back while the toast is up.
+  if (undo) {
+    var b = document.createElement('button');
+    b.className = 'toast-undo';
+    b.textContent = 'UNDO';
+    b.onclick = function () { t.style.display = 'none'; undo(); };
+    t.appendChild(b);
+  }
   t.style.display = 'block';
   clearTimeout(t._h);
-  t._h = setTimeout(function () { t.style.display = 'none'; }, 2400);
+  t._h = setTimeout(function () { t.style.display = 'none'; }, undo ? 6000 : 2400);
 }
 
 // ---------- seed ----------
@@ -179,20 +203,30 @@ function migrate(data) {
   });
   data.journal = [];
   data.projects = [];
-  (data.pieces || []).forEach(function (pc) { pc.byline = fixAuthor(pc.byline); fixTs(pc); });
+  (data.pieces || []).forEach(function (pc) {
+    pc.byline = fixAuthor(pc.byline);
+    pc.title = typeof pc.title === 'string' && pc.title ? pc.title : 'Untitled';
+    pc.body = typeof pc.body === 'string' ? pc.body : '';
+    fixTs(pc);
+  });
   (data.issues || []).forEach(fixTs);
   return data;
 }
 
 // Accept anything shaped like a backup; fill in what is missing rather than
 // rejecting the file, so a partial import cannot leave the app unrenderable.
+// A null record must not sink the store.
+function records(list) {
+  return Array.isArray(list) ? list.filter(function (x) { return x && typeof x === 'object'; }) : [];
+}
+
 function normalize(raw) {
   var out = {
-    logs: Array.isArray(raw && raw.logs) ? raw.logs : [],
-    projects: Array.isArray(raw && raw.projects) ? raw.projects : [],
-    journal: Array.isArray(raw && raw.journal) ? raw.journal : [],
-    pieces: Array.isArray(raw && raw.pieces) ? raw.pieces : [],
-    issues: Array.isArray(raw && raw.issues) ? raw.issues : [],
+    logs: records(raw && raw.logs),
+    projects: records(raw && raw.projects),
+    journal: records(raw && raw.journal),
+    pieces: records(raw && raw.pieces),
+    issues: records(raw && raw.issues),
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
@@ -201,6 +235,8 @@ function normalize(raw) {
   return migrate(out);
 }
 
+// True when this device's work came out of the file it was opened from.
+var stateFromSeed = false;
 var state = (function () {
   try {
     var raw = localStorage.getItem(STORAGE_KEY);
@@ -215,6 +251,7 @@ var state = (function () {
   // work, the seed merges later rather than replacing anything.
   var seed = readSeed();
   if (seed) {
+    stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
       cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE'

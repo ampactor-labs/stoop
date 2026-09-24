@@ -38,8 +38,11 @@ function isDisplayVoice(voice) {
   return voice === 'head' || voice === 'marker' || voice === 'stencil';
 }
 
+// The marker has a face of its own; the other display voices share Anton.
 function faceOf(el) {
   var voice = voiceOf(el);
+  var m = markerFaceLoaded();
+  if (voice === 'marker' && m) return { f: 'F8', w: m.widths, face: m };
   if (isDisplayVoice(voice)) return displayFace();
   return FACES[voice] || FACES.type;
 }
@@ -47,7 +50,7 @@ function faceOf(el) {
 // Where the first baseline sits below the top of the box: for the page's own
 // face, exactly where the browser puts it; for a standard face, an em down.
 function firstBaseline(voice, size, lead) {
-  var f = pressFaceLoaded();
+  var f = voice === 'marker' && markerFaceLoaded() ? markerFaceLoaded() : pressFaceLoaded();
   return f && isDisplayVoice(voice) ? faceBaseline(f, size, lead) : size;
 }
 
@@ -256,8 +259,8 @@ function pdfEl(el, box, images) {
   return ops + 'Q\n';
 }
 
-function pdfPasteup(panel, box, images) {
-  return elsOf(panel).slice()
+function pdfPasteup(panel, box, images, ghosts) {
+  return elsOf(panel).concat(ghosts || [])
     .sort(function (a, b) { return (a.z || 0) - (b.z || 0); })
     .map(function (el) { return pdfEl(el, box, images); })
     .join('');

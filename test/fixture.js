@@ -52,4 +52,34 @@ function makePng(w = 240, h = 240) {
   ]);
 }
 
-module.exports = { makePng, photoFile: () => ({ name: 'fixture.png', mimeType: 'image/png', buffer: makePng() }) };
+// A cut-out: a black square on a fully transparent ground, the kind of PNG
+// somebody makes to collage with. It has to come in as a square, not a blob.
+function makeCutout(w = 200, h = 200) {
+  const raw = Buffer.alloc(h * (w * 4 + 1));
+  let p = 0;
+  for (let y = 0; y < h; y++) {
+    raw[p++] = 0;
+    for (let x = 0; x < w; x++) {
+      const ink = x >= 80 && x < 120 && y >= 80 && y < 120;
+      raw[p++] = 0; raw[p++] = 0; raw[p++] = 0;
+      raw[p++] = ink ? 255 : 0;
+    }
+  }
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8;  // bit depth
+  ihdr[9] = 6;  // truecolour with alpha
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk('IHDR', ihdr),
+    chunk('IDAT', zlib.deflateSync(raw, { level: 9 })),
+    chunk('IEND', Buffer.alloc(0))
+  ]);
+}
+
+module.exports = {
+  makePng,
+  photoFile: () => ({ name: 'fixture.png', mimeType: 'image/png', buffer: makePng() }),
+  cutoutFile: () => ({ name: 'cutout.png', mimeType: 'image/png', buffer: makeCutout() })
+};

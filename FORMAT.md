@@ -42,7 +42,7 @@ A conforming reader finds that element, parses it, and renders the issue. A conf
 - `version` is this specification's version. A reader that does not know a version SHOULD refuse rather than misread.
 - `issues` carries every issue up to and including `no`, oldest first. A reader handed issue three gets issues one and two with it, because an archive that only holds its newest entry is a stream with extra steps.
 - `cycle` describes the issue the recipient would make next. `no` is `no + 1`, zero-padded to at least two digits; `editor` follows the parity rule in §4. It is computed from the issue in the file, never inherited from the sender's own shelf.
-- `photos` maps photo ids to data URIs. Every id referenced by any panel or piece in the file MUST appear here; a file that references a photo it does not carry is malformed. Writers SHOULD store each photograph as a 1-bit greyscale PNG — the image is dithered to two tones on intake, and encoding it at any greater depth multiplies the size of every file it travels in by about six for no visible difference. Readers MUST accept any image data URI a browser can display.
+- `photos` maps photo ids to data URIs. Every id referenced by the issue named in `no` — its panels and its pieces — MUST appear here. Earlier issues SHOULD carry only their covers' photographs: each has its own file with the rest, and a file that carried every photograph on the shelf would grow with every issue until nobody could send it. A reader MUST show a photograph it does not have as an empty place, never fail over it. Writers SHOULD store each photograph as a 1-bit greyscale PNG — the image is dithered to two tones on intake, and encoding it at any greater depth multiplies the size of every file it travels in by about six for no visible difference. Readers MUST accept any image data URI a browser can display.
 - `open` and `read` are hints about what to show first. Readers MAY ignore both.
 
 - `people` is the scene's roster, in order. Authorship is stored as an `id`, never as a spelling, so renaming somebody does not orphan their past work. A scene is however many people it is; two is not a limit.
@@ -94,12 +94,13 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
 
 - `kind` is `text`, `photo`, `rule`, `box` or `stamp`. A reader MUST ignore an element whose kind it does not know rather than refusing the issue. A `stamp` names one of `free`, `takeone`, `copy`, `no`, `arrow`, `star`, `tape`, `staple` or `barcode` in `stamp`; it is a fixed drawing at the element's box and angle, and a reader that does not know the name SHOULD draw nothing there rather than a placeholder.
 - **`x`, `y`, `w` and `h` are fractions of the panel, not lengths.** A panel is a different size in every format, and the same issue re-imposed from an eight-page fold to a sixteen-page signature must carry its collage with it. Writers MUST NOT store points or pixels here. Values outside 0–1 are legal: a cutting may hang over the edge, and the panel clips it.
+- An element on an inner page that runs past the gutter into the facing page is drawn on both: the facing page shows the overhang as though the two pages were one sheet, which on the one-sheet fold they are. It is stored once, on the page it was placed on.
 - `rot` is degrees clockwise about the element's own centre, matching CSS. A page printed upside down by the imposition rotates the whole panel; `rot` is relative to the panel, never to the sheet.
 - `z` orders elements within one panel and nothing else.
-- `voice` applies to `text` and is `type`, `head`, `marker`, `stencil` or `ransom`. `ransom` renders each character separately in a mixed face, size and tilt, and `marker` turns each word by its own small angle; both MUST be derived from the text and the position rather than drawn at random, so the same issue cuts the same letters on every machine and on paper. `stencil` is a heavy capital face with horizontal bridges cut through it at a fixed interval of the type size. Older files carry `hand`; readers SHOULD treat it as `marker`. `size` is the type size in points at the panel's true printed size.
+- `voice` applies to `text` and is `type`, `head`, `marker`, `stencil` or `ransom`. `ransom` renders each character separately in a mixed face, size and tilt, and `marker` turns each word by its own small angle; both MUST be derived from the text and the position rather than drawn at random, so the same issue cuts the same letters on every machine and on paper. `stencil` is a heavy capital face with horizontal bridges cut through it at a fixed interval of the type size. Older files carry `hand`; readers SHOULD treat it as `marker`. `size` is the type size in CSS pixels — ninety-sixths of an inch — at the panel's true printed size, so a writer working in points multiplies it by 0.75.
 - `lines` is optional: the lines of `text` as the writer's own layout broke them, in order. A reader that can lay the text out itself MAY ignore it, but a writer rendering to a fixed medium — paper, a PDF — SHOULD draw these breaks rather than re-wrapping, because it cannot know which faces the machine that made the issue had. `text` remains the source of truth; `lines` is a record of one rendering of it.
 - `ink` is `black` or `white`. On `text` it knocks the type out of a filled block; on `box` it fills the box instead of outlining it.
-- `photo` on a `photo` element names an id in `photos`. `crop` true fills the box and clips the overflow; absent or false fits the whole frame inside it.
+- `photo` on a `photo` element names an id in `photos`. `crop` true fills the box and clips the overflow; absent or false fits the whole frame inside it. `alt`, when present, says what is in the photograph, for anyone who cannot see it; a reader SHOULD give it to assistive technology and MAY print it under the photograph in a text view.
 
 An issue is **immutable once published**. `panels` is what shipped, and a reader reprinting issue three MUST use issue three's own `format` and `hand`, not whatever the reader is currently set to. Implementations that merge archives MUST keep the copy already held and discard the incoming one when both carry the same `no`.
 
@@ -117,6 +118,8 @@ An issue is **immutable once published**. `panels` is what shipped, and a reader
   "ts": 1787900000000
 }
 ```
+
+`byline` is a person's `id`, `"both"` for work made together, or `"anon"` for work nobody signed. A reader SHOULD show `"both"` as "Both" when the roster is a pair and as "Together" otherwise, SHOULD NOT offer it as a byline to a scene of one, and MUST NOT seat `"anon"` on the roster as somebody. `from`, when present, lists the ids of the scraps a piece was drawn from; a writer uses it to avoid drawing the same scrap into a second piece, and readers MAY ignore it.
 
 `kind` is one of `essay`, `photos`, `log`, `mix`, `recipe`, `letters`. Implementations MAY add kinds; readers MUST treat an unknown kind as `essay` rather than dropping the piece.
 
@@ -173,9 +176,11 @@ One letter sheet folded to eight panels holds roughly twelve hundred words. An i
 ```
 <host>/stoop/<scene>/          the scene's public door, and its shelf
 <host>/stoop/<scene>/03/       issue three, reading view
-<host>/stoop/<scene>/03/sheet  the same issue, imposed for a printer
+<host>/stoop/<scene>/03/sheet.pdf  the same issue, imposed for a printer
 <host>/stoop/<scene>/latest/   an alias for the newest issue
 ```
+
+The reference press writes this folder itself, as a zip: the newest issue's file at the root and at `latest/`, each issue's file at its number, a PDF of each beside it, and a note on where to put it.
 
 Numbers, not slugs: titles get argued about and change, the number is the spine, and zero-padding makes the shelf sort itself.
 

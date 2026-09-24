@@ -20,6 +20,14 @@ function inspectorButtons(el) {
   }
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
+  if (el.kind === 'photo' && photoMeta[el.photo]) {
+    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
+  }
+  var at = findEl(el.id);
+  var pages = pressState().panels.length;
+  if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
+  if (at && at.page < pages) b.push(['elnextpage', 'PAGE ' + (at.page + 1) + ' \u25b6']);
+  b.push(['eldup', 'DUPLICATE']);
   b.push(['elfront', 'FRONT']);
   b.push(['elback', 'BACK']);
   b.push(['elstraight', 'STRAIGHTEN']);
@@ -38,6 +46,18 @@ function renderInspector() {
   }
 
   var el = selectedEl();
+  var page = panelOfPage(pastePage);
+  if (!el && page && page.photo && photoMeta[page.photo]) {
+    // The page's own photograph, the one a piece brought or the cover's.
+    var m = photoMeta[page.photo];
+    box.className = 'inspector on';
+    box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
+      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', SCREEN_LABEL[m.style]]]
+        .map(function (pair) {
+          return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
+        }).join('') + '</div>';
+    return;
+  }
   if (!el) {
     box.className = 'inspector';
     box.innerHTML = '';
@@ -53,6 +73,10 @@ function renderInspector() {
       ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
         '">' + esc(el.text || '') + '</textarea>'
+      : '') +
+    (el.kind === 'photo'
+      ? '<input class="text-input" id="alttext" maxlength="200" placeholder="What is in it, for anyone who cannot see it" value="' +
+        esc(el.alt || '') + '">'
       : '');
 }
 
@@ -90,16 +114,91 @@ document.addEventListener('click', function (ev) {
     renderPress();
     return;
   }
-  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); }
+  if ((el = hit('[data-eldrop]'))) { removeEl(el.getAttribute('data-eldrop')); return; }
+  if ((el = hit('[data-eldup]'))) { duplicateEl(el.getAttribute('data-eldup')); return; }
+  if ((el = hit('[data-elprevpage]'))) { moveElToPage(el.getAttribute('data-elprevpage'), -1); return; }
+  if ((el = hit('[data-elnextpage]'))) { moveElToPage(el.getAttribute('data-elnextpage'), 1); return; }
+  var shot = hit('[data-elphlight],[data-elphdark],[data-elphscreen],[data-pgphlight],[data-pgphdark],[data-pgphscreen]');
+  if (shot) rescreenFrom(shot);
+});
+
+// A second of the same cutting, a little down and to the right, on top.
+function duplicateEl(id) {
+  var hit = findEl(id);
+  if (!hit) return;
+  pasteMark();
+  var copy = JSON.parse(JSON.stringify(hit.el));
+  copy.id = uid('el');
+  copy.x = hit.el.x + 0.04;
+  copy.y = hit.el.y + 0.04;
+  copy.z = topZ(hit.panel) + 1;
+  hit.panel.els.push(copy);
+  pasteSel = copy.id;
+  savePress();
+  renderPress();
+  toast('Duplicated');
+}
+
+// The same place on the next or previous page.
+function moveElToPage(id, dir) {
+  var hit = findEl(id);
+  var ps = pressState();
+  var to = hit && hit.page + dir;
+  if (!hit || to < 1 || to > ps.panels.length) return;
+  pasteMark();
+  hit.panel.els.splice(hit.at, 1);
+  hit.el.z = topZ(ps.panels[to - 1]) + 1;
+  elsOf(ps.panels[to - 1]).push(hit.el);
+  pastePage = to;
+  pasteSel = hit.el.id;
+  savePress();
+  renderPress();
+  toast('Moved to page ' + to);
+}
+
+// Lighter, darker, or the next screen, for a photo cutting or a page's photo.
+function rescreenFrom(btn) {
+  var a = Array.prototype.filter.call(btn.attributes, function (x) { return /^data-(elph|pgph)/.test(x.name); })[0];
+  var kind = a.name.replace('data-', '');
+  var onPage = kind.indexOf('pgph') === 0;
+  var hitEl = onPage ? null : findEl(a.value);
+  var panel = onPage ? panelOfPage(Number(a.value)) : null;
+  var photo = onPage ? panel && panel.photo : hitEl && hitEl.el.photo;
+  var meta = photo && photoMeta[photo];
+  if (!meta) return;
+  var change = /light$/.test(kind) ? { exp: 1 } : /dark$/.test(kind) ? { exp: -1 }
+    : { style: SCREENS[(SCREENS.indexOf(meta.style) + 1) % SCREENS.length] };
+  toast('Screening\u2026');
+  rescreen(photo, change).then(function (id) {
+    if (!id) return;
+    pasteMark();
+    if (onPage) panel.photo = id; else hitEl.el.photo = id;
+    savePress();
+    renderPress();
+    var m = photoMeta[id];
+    toast(SCREEN_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
+  }).catch(function (e) { toast('Could not screen it again: ' + e.message); });
+}
+
+// Repaint as it is typed, so the cutting grows and records its breaks.
+// A photograph's description: read aloud by screen readers, and printed
+// under it in the text view.
+document.addEventListener('input', function (ev) {
+  if (ev.target.id !== 'alttext' || !pasteSel) return;
+  updateEl(pasteSel, { alt: ev.target.value.trim() });
+  var node = liveEl(pasteSel);
+  var img = node && node.querySelector('img');
+  if (img) img.alt = ev.target.value.trim();
 });
 
 document.addEventListener('input', function (ev) {
   if (ev.target.id !== 'ransomtext' || !pasteSel) return;
   updateEl(pasteSel, { text: ev.target.value });
-  var zone = document.getElementById('sheetzone');
-  var node = zone && zone.querySelector('[data-el="' + pasteSel + '"] .eltext');
-  var el = selectedEl();
-  if (node && el) node.innerHTML = voiceOf(el) === 'marker' ? markerHtml(ev.target.value) : ransomHtml(ev.target.value);
+  // The panel only: rebuilding the inspector would destroy this very field.
+  var node = liveEl(pasteSel);
+  var panelEl = node && node.closest('.panel');
+  var panel = panelEl && panelOfPage(Number(panelEl.getAttribute('data-page')));
+  if (panel) paintPasteup(panelEl, panel);
 });
 
 // Which panel a new cutting lands on is simply the last one touched.

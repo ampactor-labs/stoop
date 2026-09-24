@@ -75,8 +75,10 @@ function elBody(el, pics, editable, editing) {
   if (el.kind === 'stamp') return stampHtml(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
-    if (!src) return '<div class="elmissing">photo</div>';
-    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="">';
+    // A back issue's photographs ride in that issue's own file, not in every
+    // later one; the place they were glued still shows.
+    if (!src) return '<div class="elmissing">' + (editable ? 'photo' : 'photo in its own issue file') + '</div>';
+    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '">';
   }
   var voice = voiceOf(el);
   var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
@@ -98,7 +100,7 @@ function elBody(el, pics, editable, editing) {
 
 function elHtml(el, pics, editable, selected) {
   var editing = editable && el.id === pasteEditing;
-  return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') +
+  return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
     (selected ? ' sel' : '') + (editing ? ' editing' : '') +
     '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + '">' +
     elBody(el, pics, editable, editing) +
@@ -107,12 +109,44 @@ function elHtml(el, pics, editable, selected) {
     '</div>';
 }
 
-function pasteupHtml(panel, pics, editable) {
-  var els = elsOf(panel).slice().sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
+function pasteupHtml(panel, pics, editable, ghosts) {
+  var els = elsOf(panel).concat(ghosts || []).sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
   if (!els.length && !editable) return '';
   return '<div class="pasteup">' + els.map(function (e) {
-    return elHtml(e, pics || photoCache, editable, editable && e.id === pasteSel);
+    return elHtml(e, pics || photoCache, editable && !e.ghost, editable && !e.ghost && e.id === pasteSel);
   }).join('') + '</div>';
+}
+
+// A cutting run over the gutter of a facing pair shows on both pages, each
+// drawing its neighbour's overhang as though the two were one sheet, which on
+// the one-sheet fold they are. aspect is a page's height over its width.
+function facingPage(page, pages) {
+  if (page <= 1 || page >= pages) return 0;
+  var other = page % 2 === 0 ? page + 1 : page - 1;
+  return other > 1 && other < pages ? other : 0;
+}
+
+function spreadGhosts(panels, page, aspect) {
+  var other = facingPage(page, panels.length);
+  var from = other && panels[other - 1];
+  if (!from || !Array.isArray(from.els)) return [];
+  var onLeft = other < page;
+  return from.els.filter(function (e) {
+    var t = (e.rot || 0) * Math.PI / 180;
+    var half = (Math.abs(e.w * Math.cos(t)) + Math.abs(e.h * aspect * Math.sin(t))) / 2;
+    var cx = e.x + e.w / 2;
+    return onLeft ? cx + half > 1 : cx - half < 0;
+  }).map(function (e) {
+    var g = JSON.parse(JSON.stringify(e));
+    g.x = e.x + (onLeft ? -1 : 1);
+    g.ghost = true;
+    return g;
+  });
+}
+
+function pressAspect() {
+  var size = pageSize(pressState().format);
+  return size.ph / size.pw;
 }
 
 // A cutting is a piece of paper with words on it: it is as tall as the words.
@@ -120,10 +154,8 @@ function pasteupHtml(panel, pics, editable) {
 // exists to prevent for flowed text, and the paste-up owes the same honesty.
 // The height is measured from the layout the browser actually performed and
 // written back, so the model, the screen and the PDF agree on one number.
-// Where the browser actually broke the lines. The paper cannot know what
-// fonts this machine has — Impact on one, a fallback on the next — so it does
-// not guess: it draws the breaks the screen made. Ransom is per character and
-// flows on its own; everything else records words.
+// Where the browser actually broke the lines, recorded so any reader of the
+// file breaks where the maker saw it break. Ransom flows per character.
 function measureLines(node, voice) {
   if (!node || node.contains(document.activeElement)) return null;
   var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;
@@ -177,7 +209,8 @@ function growTextEls(panelEl, panel) {
 // on every keystroke would drop the caret out of whatever is being typed into,
 // so a layer whose shape has not changed is left alone.
 function paintPasteup(panelEl, panel) {
-  var want = pasteupHtml(panel, photoCache, true);
+  var ghosts = spreadGhosts(pressState().panels, Number(panelEl.getAttribute('data-page')), pressAspect());
+  var want = pasteupHtml(panel, photoCache, true, ghosts);
   var layer = panelEl.querySelector('.pasteup');
   var typing = document.activeElement;
   if (layer && typing && layer.contains(typing)) {

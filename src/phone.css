@@ -48,3 +48,11 @@
     .wordmark{display:none}
     .barzine{font-size:1.15rem}
   }
+
+/* Handles a fingertip can hit. */
+@media (pointer: coarse) {
+  .h { width: 22px; height: 22px; }
+  .h-size { right: -12px; bottom: -12px; }
+  .h-rot { top: -30px; margin-left: -11px; }
+  .h-rot::after { top: 20px; }
+}
