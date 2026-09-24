@@ -88,7 +88,10 @@ function pageWithSeed(seed) {
 }
 
 function download(name, html) {
-  var blob = new Blob([html], { type: 'text/html' });
+  downloadBlob(name, new Blob([html], { type: 'text/html' }));
+}
+
+function downloadBlob(name, blob) {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
@@ -110,16 +113,20 @@ function copierFlash() {
 }
 
 function exportIssueFile(no) {
-  var iss = issueByNo(no);
-  if (!iss) { toast('No such issue on the shelf'); return; }
+  if (!issueByNo(no)) { toast('No such issue on the shelf'); return; }
   copierFlash();
+  download(sceneSlug() + '-' + no + '.html', issueFileHtml(no));
+  toast('\u2116' + no + ' is a file now. It is also the press.');
+}
+
+function issueFileHtml(no) {
   // The shelf travels up to and including this issue: a reader who is handed
   // №03 gets №01 and №02 with it, because a zine you cannot read back is a
   // stream with extra steps.
   var upTo = state.issues.filter(function (i) {
     return (parseInt(i.no, 10) || 0) <= (parseInt(no, 10) || 0);
   });
-  var html = pageWithSeed({
+  return pageWithSeed({
     stoop: 'issue', version: 1, no: no,
     people: people, address: state.address || '', zine: state.zine || '',
     issues: upTo,
@@ -130,8 +137,6 @@ function exportIssueFile(no) {
     photos: photosForFile(upTo, no),
     open: '#shelf', read: no
   });
-  download(sceneSlug() + '-' + no + '.html', html);
-  toast('\u2116' + no + ' is a file now. It is also the press.');
 }
 
 // The verb on the bar. Whatever was published last is what you hand on; a

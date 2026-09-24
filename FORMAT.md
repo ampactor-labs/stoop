@@ -176,9 +176,11 @@ One letter sheet folded to eight panels holds roughly twelve hundred words. An i
 ```
 <host>/stoop/<scene>/          the scene's public door, and its shelf
 <host>/stoop/<scene>/03/       issue three, reading view
-<host>/stoop/<scene>/03/sheet  the same issue, imposed for a printer
+<host>/stoop/<scene>/03/sheet.pdf  the same issue, imposed for a printer
 <host>/stoop/<scene>/latest/   an alias for the newest issue
 ```
+
+The reference press writes this folder itself, as a zip: the newest issue's file at the root and at `latest/`, each issue's file at its number, a PDF of each beside it, and a note on where to put it.
 
 Numbers, not slugs: titles get argued about and change, the number is the spine, and zero-padding makes the shelf sort itself.
 
