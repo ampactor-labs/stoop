@@ -1,111 +1,194 @@
 # stoop
 
-Stoop is a press for a periodical: a zine for the few people who already write to each other. They submit pieces, whoever has the desk this cycle assembles an issue, and the press lays it out and imposes it for paper, as a folded sheet, a stapled signature, or an exact PDF for a copy shop. Every issue stays on the shelf, and the file it hands on is the issue and a working press in one. It is one HTML file with no server, no accounts and no feed.
+[![check](https://github.com/ampactor-labs/stoop/actions/workflows/check.yml/badge.svg)](https://github.com/ampactor-labs/stoop/actions/workflows/check.yml)
+[![License: AGPL-3.0-or-later](https://img.shields.io/badge/license-AGPL--3.0--or--later-blue.svg)](#license)
 
-**Status: Shipping.** Live at [ampactor.dev/stoop](https://ampactor.dev/stoop/), and everything `PLAN.md` calls for is built. What is missing is the one measure this project keeps: a scene it did not found shipping its Issue #2.
+A one-file web app that gathers pieces from a small group, lays out an issue and prints it as a folded zine or an exact PDF for a copy shop. A zine is a small self-published magazine, usually photocopied and folded by hand. Each issue it exports is one HTML file holding the issue, its back issues and a working copy of the app for the next one. It needs no server or account: the app is one page of plain HTML and JavaScript that makes no network requests.
 
-Folk media. The third form: mass media was made by industries for audiences; social media promised to invert that and instead industrialized us, one tiny broadcaster each, optimized by somebody else's engagement machine. Folk media is made by the people in it, for the people in it, owned like a commons, small like a scene, periodic like a zine, and pointed at the physical world. Folk music stood in the same relation to the record industry.
+**Status: shipping.** Everything [PLAN.md](PLAN.md) calls for is built and live; the one measure the project keeps, a scene it did not found shipping its Issue #2, has not happened yet.
 
-Stoop is a working name for a system with that shape. Where you sit with your people, facing the street. The wedge is one sentence: **your group chat deserves a zine.**
+Live: https://ampactor.dev/stoop/
 
-There is no feed anywhere in this system. That is not a missing feature; it is the load-bearing refusal.
+## Quick start
 
-## Why now
+The app runs at https://ampactor.dev/stoop/. To run your own copy:
 
-Each of these is a measured fact from mid-2026, not a mood:
+```sh
+git clone https://github.com/ampactor-labs/stoop.git
+cd stoop
+```
 
-- The For You page is now a literal sovereign asset. TikTok's US operation closed into an [Oracle / Silver Lake / MGX joint venture](https://www.npr.org/2026/01/22/nx-s1-5685456/nx-s1-5685456) in January 2026, algorithm retrained under new ownership.
-- The open internet is majority fake: the going estimates run [51% bot traffic, most X accounts of uncertain humanity, over half of LinkedIn long-form AI-generated](https://medium.com/@ceylinzoi14/is-the-dead-internet-theory-coming-true-the-cost-of-ai-slop-a0b28c1abc42). Verified humanity is the scarce good; "everyone here is a vouched human" is a product now.
-- Skin hunger is measurable: [SpaceHey passed 2M accounts](https://profiletree.com/what-is-myspace/) recreating 2005 MySpace, then had to go invite-only against the slop siege. VCs put [$19M into noplace](https://techcrunch.com/2024/07/03/noplace-a-mashup-of-twitter-and-myspace-for-gen-z-hits-no-1-on-the-app-store/) for the same hunger.
-- Decentralization solved ownership, not warmth: [Bluesky ~34M accounts, ~1.6M daily; Mastodon sliding](https://fediview.com/articles/mastodon-vs-bluesky-vs-nostr-2026/). The rails work and the reason-to-be-there is missing. [Free Our Feeds](https://freeourfeeds.com/) is independently raising $30M to billionaire-proof the AT Protocol; we build on rails someone else is already defending.
-- The finite, human-moderated, real-name digest is proven at twenty years' scale by [Front Porch Forum](https://en.wikipedia.org/wiki/Front_Porch_Forum), and the anti-corporate island with corporate-scale costs is disproven by [Cohost: 30K users, 2,630 payers, $17K monthly deficit, dead](https://tedium.co/2024/09/12/cohost-social-networking-postmortem/). Both lessons are structural here.
-- The energy politics arrived: [70% of Americans oppose a local data center](https://time.com/article/2026/07/22/community-backlash-ai-data-centers/), electricity up 267% where they concentrate, while [Low-tech Magazine's solar server](https://solar.lowtechmagazine.com/about/the-solar-website/) proves a beloved publication runs on 1 to 2.5 watts.
-- The kids are being evicted: [Australia's under-16 ban](https://www.techpolicy.press/early-lessons-from-australias-teen-social-media-ban-for-the-rest-of-the-world/) targets engagement mechanics by name. A system with none of those mechanics is a place the evicted cohort can legally exist.
-- Gen Z already left for the group chat: detox rates near two-thirds, Discord and iMessage as the real social layer, [offline clubs in 19 cities](https://www.axios.com/2026/04/24/phone-free-spaces-digital-detox-retreats-gen-z). The demand side is sitting there, unserved by anything with a constitution.
+Open `index.html` in a browser; there is nothing to install or build. It opens on the press, which shows the cover of issue №01 followed by seven blank pages, and two sample pieces wait in the desk's tray. Open **desk**, press **FLOW ONTO THE PAGES**, then press **RING THE BELL**. Issue №01 moves to the shelf, where **PDF** saves the sheet ready to print and fold, and **EXPORT** saves the issue as a single HTML file.
 
-## What is in this repo
+## Usage
 
-A working press, and the documents that argue for it.
+The press is the one surface, and it shows the issue as pages. Everything else opens as a drawer over it: **desk**, **shelf**, **scraps**, **scene** and **paper**. The last button, **hand it on**, saves the latest issue as a file.
 
-### The app
+### Writing and the desk
 
-[`index.html`](index.html) is the whole thing: one file, zero external requests, no accounts, no server, nothing uploaded anywhere. One surface — **the press**, showing the issue as pages — with four drawers off it (**the desk**, **the shelf**, **the scraps** you wrote down, and **the scene** for who writes and how it travels) and two verbs: **paper** and **hand it on**.
+**scraps** keeps anything worth keeping: a line, a page or a photograph. Once a cycle, **PULL IN THE NEW SCRAPS** at the desk draws in whatever was written since the last issue shipped, so issue two cannot reprint issue one. A scrap with a title, or one over 280 characters, becomes a piece of its own, and the shorter ones run together as one SCRAPS column. The desk also takes a piece typed straight into it: a title, a kind (essay, photos, log, mix, recipe or letters) and a body, bylined to whoever is writing. Anything can go in unsigned.
 
-Writing goes in at two of them. **The scraps** keep anything worth keeping, a line, a page or a photograph, and once a cycle the desk pulls in whatever is new since the last issue: a scrap with a title, or a long one, becomes a piece of its own, and the short ones run together as one log column. The desk also takes a piece submitted straight to it. A piece is a title, a byline, a kind and a body. A scene is however many people it is — the roster in the scene drawer takes as many as write for you, and a byline arriving in a piece file from somebody else's copy keeps their name.
+A scene is however many people it is. The roster under **scene** takes as many names as write for the zine, and a byline that arrives in a piece file from somebody else's copy keeps its name. Whoever has the desk this cycle reads the tray, cuts what will not run and can add an editor's note. A cut piece stays in the tray, struck through, and can run next cycle. **RING THE BELL** puts the issue on the shelf as it stands and hands the desk to the next person on the roster, so a pair alternates and a scene of four sees it come back every fourth issue. The bell has a date, and **ADD TO A CALENDAR** saves it as a calendar file with a reminder the day before.
 
-Anything can go in unsigned, which zines always allowed. At **the desk**, whoever has it this cycle reads the tray, cuts what will not run, writes the editor's note, and rings the bell. A cut is not a deletion: the piece stays with its maker and can run next cycle. The bell puts the issue on the shelf whole and hands the desk to the next person on the roster: alone it is always yours, at two it alternates, at four it comes back every fourth issue. The bell can go in anybody's calendar as a file with a reminder the day before, and the shelf says when this browser was last backed up, because until then it is the only copy.
+### The press and the paste-up
 
-**The press** shows the issue as pages — cover, facing spreads, back cover — right way up, the way it will read and not the way the printer needs it. Paper gets the imposition: one sheet of eight panels with a single cut, at Letter or A4, or a saddle-stitch signature at eight, twelve or sixteen pages, computed rather than hardcoded, so changing format re-flows the same pieces without a word being retyped. A panel clips what will not fit, because a printer will too, and the fit meter says how many words that is rather than letting them vanish.
+The press shows the pages right way up, in reading order. A page clips what does not fit, as a printer would, and the fit meter counts the words that will not print. A piece too long for its page runs on to the next, with a line saying where it went.
 
-On top of that sits **the paste-up**, because a zine is not a document — it is a board somebody glued things onto and then photocopied. Drop a cutting on any panel and drag it anywhere, at any angle, over anything: text in five voices (typewriter, headline, a fat felt-tip marker, stencil with the bridges cut through it, and a ransom note cut letter by letter from four faces), photographs, rules, blocks, and stamps — FREE, TAKE ONE, PHOTOCOPY THIS, a №, an arrow, a star, tape, a staple, a barcode that scans nothing — black on white or knocked out. GENERATION says how many times the issue has been through the copier, from master to laundromat, and the wear it draws is seeded so it prints the same everywhere. Everything is held as a fraction of its panel rather than as a measurement, so a collage survives a change of format the same way a paragraph does. Drag to move, double-click to type, arrow keys to nudge, Ctrl-D to duplicate, and undo the whole way back; a cutting dragged across the gutter lands on both pages of the spread, on screen and on paper, and a faint line on each page shows where a home printer stops reaching. A piece too long for its page runs on to the next with a line saying where it went. All of it prints, and it prints where you put it: a cutting records the lines its own browser broke it into, and the PDF sets them in the same face, because the press carries its two faces inside itself — Anton for headlines and Knewave for the marker, both under the Open Font License, cut down to Latin and embedded in every issue file and every PDF it writes — so a line on paper is the line on screen, glyph for glyph, on a machine that has never had the fonts.
+On top of the pages sits the paste-up: cuttings placed by hand, the way a zine is glued together before it goes through a photocopier. A cutting dropped on a page can be dragged anywhere and turned to any angle, over whatever is already there. Text comes in five voices: typewriter, headline, a felt-tip marker, stencil with bridges cut through the letters, and a ransom note cut letter by letter from four faces. Photographs, boxes, rules and nine stamps (FREE, TAKE ONE, PHOTOCOPY THIS, №, an arrow, a star, tape, a staple and a barcode that scans nothing) complete the kit, in black on white or knocked out to white on black. Drag to move, double-click to type, use the arrow keys to nudge and Ctrl-D to duplicate; undo and redo keep 50 steps. A cutting dragged across the gutter lands on both pages of the spread, and a faint line on each page shows where a home printer stops reaching. **GEN** sets how many times the issue has been through a copier, from GEN 0 (the master) to GEN 3 (a laundromat copy of a copy). Its wear comes from fixed seeds, so it prints the same everywhere. Cuttings are stored as fractions of their page, never in points, so a collage survives a change of format the same way a paragraph does.
 
-**The shelf** keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly however the current draft happens to be set. The desk only pulls in scraps written since the last issue shipped, so issue two cannot reprint issue one.
+Photographs are dithered on intake: turned into a pattern of pure black and white dots, the form a photocopier reproduces well. Each is scaled to at most 1000 pixels on its long edge and stored at one bit per pixel. The device also keeps a small greyscale original, so a dark photo can be lightened later or re-screened as halftone dots or hard copier contrast. The original never leaves the device. A photograph can carry a description for screen readers, which the text view also prints.
 
-Paper comes out four ways: a browser print, a hand-written PDF at exact paper size with nothing for a print dialog to negotiate, a flyer with tear-off tabs, or a single HTML file that is the issue, the archive behind it, and a working press for the next one. That last file is the point: open it on a machine that has never seen this app and you see the issue as it was made, page by page, with the text one tap away; you can make the next one and hand it on. It carries every back issue too, each with its cover, so the file does not grow with the shelf until nobody can send it. And the shelf makes the site the back covers point at: every issue as the page its code leads to, a PDF of each beside it, zipped for Neocities, Netlify Drop, any static host or a thumb drive.
+### Paper
 
-Photos dither to 1-bit on intake, so a page-sized photo costs tens of kilobytes and is already in the form a photocopier reproduces. The device keeps a small greyscale original, so a dark phone photo can be made lighter afterwards, or screened as halftone dots or hard copier contrast instead of grain; the original never leaves the device. The back cover carries the scene's address as text and as a QR code generated on the page. Sync is a file that merges by id, and a published issue is never overwritten by a merge.
+Imposition is the arrangement of pages on a printed sheet so that they come out in order once the sheet is folded and cut. The press imposes the same pages in six formats. One sheet of eight panels with a single cut prints on Letter or A4. A saddle-stitched booklet runs to 8, 12 or 16 pages on Letter, or 16 pages on A4. Saddle stitch nests folded sheets inside each other and staples them through the fold. The nested sheets form one signature, the printer's word for a group of pages printed together and folded as a unit. Changing the format re-flows the same pieces with nothing retyped.
+
+**paper** asks for a test sheet first and offers **SWAP FOLD** when the page numbers come out shuffled. **SAVE PDF** writes an exact PDF at the paper's size, with nothing left for a print dialog to change, so it can go straight to a copy shop. **PRINT FROM THE BROWSER** uses the browser's own dialog, and **FLYER + TEAR TABS** writes a PDF flyer whose tear-off tabs carry the scene's address. When the scene has an address, the back cover carries it as text and as a QR code the page draws itself.
+
+### The shelf and handing it on
+
+The shelf keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly whatever the current draft is set to. Each issue has **READ**, **REPRINT**, **PDF** and **EXPORT**.
+
+**hand it on** saves the latest issue as one HTML file named for the scene and the issue, such as `stoop-zine-01.html`. Opened on a machine that has never seen the app, it shows the issue page by page, with the text one tap away, and then offers the press it rode in for the next issue. It carries every back issue too, each with only its cover photograph, so the file does not grow with the shelf until nobody can send it. **SEND** in the tray saves a single piece as its own file, which carries the press as well, and **TAKE IN** under **scene** takes in a piece or an issue somebody sent; taking the same file twice does nothing.
+
+**MAKE THE SITE (.ZIP)** on the shelf writes the folder the back covers point at: every issue as the page its QR code leads to, with a PDF beside each and the newest at the root. It works on any host that serves plain files, such as Neocities, Netlify Drop or GitHub Pages, or from a thumb drive.
+
+**BACKUP** under **scene** saves everything, photographs included, as one JSON file. **MERGE ONE IN** merges another device's backup by id and keeps the newer copy of anything both hold, and a merge never overwrites a published issue. The shelf says when this browser was last backed up, because until then the browser holds the only copy.
+
+## How it works
+
+The app is one HTML page. `build.sh` assembles it from the parts in `src/`: the views, the stylesheets, two fonts and one script file per concern, each under 300 lines. It concatenates the scripts inside a single function, so they share one scope with no module system, the way SQLite ships its many source files as one amalgamation. It drops whole-line comments from the shipped script and all comments from the stylesheet, because every issue file carries the page.
+
+State lives in the browser. The roster, the scraps, the pieces, the draft and every published issue sit in `localStorage`, and photographs sit in IndexedDB; both are the browser's own storage for a site. An exported issue is the same page with the issue, its back issues, the roster and the photographs it needs embedded in one `<script type="application/json" id="stoop-seed">` element. [FORMAT.md](FORMAT.md) specifies that file, the imposition and the address, so that somebody can write another press that reads and writes the same files without reading this source.
+
+Two decisions shape the rest:
+
+- **The issue carries the press.** A file that is also a working press means the next issue needs no server and no address, only the file. None of the tools surveyed in [PLAN.md](PLAN.md) do this. It also means the press's size is paid again in every file anyone sends, so `check.sh` holds the built page to 256 KB and `test/08-weight.js` publishes issues and weighs them.
+- **Paper matches the screen.** The page carries its two typefaces, Anton for headlines and Knewave for the marker, cut down to Latin characters and embedded in the page itself. The hand-written PDF writer reads the same font bytes back out of the stylesheet and embeds them, and a cutting records the line breaks its browser made. A line on paper is therefore the line on screen, letter for letter, even on a machine that has never had the fonts.
+
+### What a file weighs
+
+`test/08-weight.js` publishes two issues through the app and measures the exported files. From a run on 27 September 2026:
+
+| Measured | Size |
+| --- | --- |
+| The press, carried by every issue file | 252 KB |
+| One photograph (a generated 1600 by 1200 test image), dithered to 1000 px on its long edge | 82 KB |
+| A full 8-page issue with a photograph on every page | 911 KB (ceiling 1,024 KB) |
+
+The cost falls hardest on small issues: an issue of plain text is almost all press, and the two sample pieces, published and exported, made a 260,237-byte file. The built page is 257,024 bytes, or 90,420 bytes gzipped (`wc -c artifact/index.html` and `gzip -c artifact/index.html | wc -c`).
 
 ### One cycle
 
+```text
+the scraps     lines, pages, photos: everything you wrote down
+     |
+the desk       SUBMIT a piece, or PULL IN THE NEW SCRAPS
+     |         CUT what does not run, write the editor's note
+     |         FLOW ONTO THE PAGES
+     |         RING THE BELL: onto the shelf, and the desk moves on
+     |
+the press      paste it up, then PAPER: test sheet, swap fold, SAVE PDF, fold
+     |
+HAND IT ON     the latest issue as one file that is also a press
+     |
+the shelf      MAKE THE SITE: every issue where its back cover points
 ```
-the scraps                 lines, pages, photos — everything you wrote down
-     |
-the desk                   SUBMIT a piece, or PULL IN THE NEW SCRAPS
-     |                     CUT what does not run, write the editor's note
-     |                     FLOW ONTO THE PAGES
-     |                     RING THE BELL: onto the shelf, and the desk moves on
-     |
-the press                  paste it up, then PAPER: test sheet, swap fold, SAVE PDF, fold
-     |
-HAND IT ON                 the latest issue as one file that is also a press
-     |
-the shelf                  MAKE THE SITE: every issue where its back cover points
+
+Then the cycle starts again with the next issue.
+
+### Why it exists
+
+The project starts from an argument about media: that a small group making a periodical for itself, owned in common and aimed at paper, is a third form beside mass media and social media. [docs/FOLK-MEDIA.md](docs/FOLK-MEDIA.md) makes that argument and sets out the evidence behind its timing. There is no minimum scene size: the desk goes round whoever is on the roster, and a scene with no running costs has no dues to collect. The project expects its first scene to be two people and a copier, because two people ship on a deadline and eight people with no habit miss the first bell.
+
+The hand kit at [press/](press/index.html) is the same one-sheet layout with fold diagrams and starter prompts, printable with no app at all.
+
+## Project layout
+
+```text
+index.html         the app, built from src/ (the page GitHub Pages serves)
+press/index.html   the hand print kit, built from src/press.html
+artifact/          both pages as fragments for the claude.ai artifact publisher
+src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
+test/              fifteen browser suites and their runner, run.js
+build.sh           assembles src/ into the four built files
+check.sh           the repository's laws, run by CI and the pre-commit hook
+docs/              longer write-ups linked from this README
 ```
 
-Then again next cycle. The second issue is the whole project.
+The documents beside the code:
 
-### The documents
+- [FORMAT.md](FORMAT.md) specifies the issue file, the imposition and the address, so somebody can implement a stoop press without reading this source.
+- [PLAN.md](PLAN.md) is the route in seven phases, each with a gate the build can check. Phases 0 through 5 are built and phase 6 is written; its gate is a scene the project did not found shipping its second issue.
+- [DESIGN.md](DESIGN.md) is the machine as imagined before anything shipped. Its objects and loops still describe the app, and PLAN.md supersedes its staging.
+- [CHARTER.md](CHARTER.md) is the constitution of a federation that was never built, kept as a template a scene may adopt. Its Article III still binds, through the licence and `check.sh`.
+- [CONTRIBUTING.md](CONTRIBUTING.md) explains the source layout, the workflow and why each law in `check.sh` exists.
+- [tool/SPEC.md](tool/SPEC.md) specified a scene tool before PLAN.md existed. It is superseded: its desk and shelf now exist in the app, and its federation half is struck.
+- [docs/FOLK-MEDIA.md](docs/FOLK-MEDIA.md) is the argument the project was built on.
 
-- [`FORMAT.md`](FORMAT.md): the specification. The issue file, the imposition, the address, written so somebody can implement a stoop press without reading our source.
-- [`PLAN.md`](PLAN.md): the route, in seven phases with gates the build can check. Phases 0 through 5 are built and phase 6 is written; its gate is not ours to close.
-- [`DESIGN.md`](DESIGN.md): the machine as it was imagined before anything shipped. Its objects and loops still describe the app; its staging is superseded by `PLAN.md`.
-- [`CHARTER.md`](CHARTER.md): a constitution in the box. Written as the law of a federation that was never built, kept as a template a scene may adopt if it ever needs one. Article III still binds, through the license and through `check.sh`.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md): how to work on it, and why each law in `check.sh` exists.
-- [`press/`](press/index.html): the hand kit. The same one-sheet layout with fold diagrams and starter prompts, printable with no app involved at all.
-- [`tool/SPEC.md`](tool/SPEC.md): superseded. It specified a scene tool before `PLAN.md`; the desk and the shelf it describes now exist in the app, and the federation half is struck.
+## Deploy
 
-### The build
+GitHub Pages serves the repository from `main`: the app at https://ampactor.dev/stoop/ and the hand print kit at https://ampactor.dev/stoop/press/. Both are static files, with no backend to run and nothing to sign in to. There is no deploy workflow. The built files are committed, so a change reaches the site when its rebuilt `index.html` and `press/index.html` land on `main`. On 27 September 2026 both live pages were byte-identical to the files on `main`.
 
-[`src/`](src/) with [`build.sh`](build.sh) and [`check.sh`](check.sh). Parts under 300 lines, split at view and concern boundaries, assembled into the shipped one-file artifacts the way SQLite's hundred source files ship as one amalgamation. `check.sh` makes the laws mechanical: outputs reproducible from source, zero external requests, an honest page-weight badge, both presses folding the same way, a ratchet on the press's own size because every issue file carries it, no absolute URL in built output, and the page carrying its own typefaces. What an issue actually weighs is held separately in `test/08-weight.js`, which publishes one and measures it instead of asserting a number. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Hosting the page does not publish what anyone writes in it. The words and photographs stay in the browser that holds them, and the page makes no network requests. `check.sh` guards that by failing on any `http` link or `@import` in `src/` and any absolute URL in the built pages. Local storage and no accounts are the whole of its privacy policy.
 
-## Where it lives
+The `artifact/` copies are the same two pages without a doctype, because the claude.ai artifact publisher wraps them in its own.
 
-The app is at **[ampactor.dev/stoop/](https://ampactor.dev/stoop/)** and the hand print kit at **[ampactor.dev/stoop/press/](https://ampactor.dev/stoop/press/)**, served by GitHub Pages from `main`. Both are static; there is no backend to run and nothing to sign into.
+## Testing
 
-Storage is per-origin, which is worth knowing before writing anything you want to keep: notes made against a local copy of `index.html` do not appear at the hosted address, and the other way round. Export and merge carries them across.
+`check.sh` enforces the repository's laws in under a second. It needs bash, `perl`, and the GNU versions of `sed` and `base64`:
 
-Hosting the page publicly does not publish what you write in it. The page is public; the words and photos are in your browser, and the zero-external-requests law is what makes that a fact about the software rather than a promise about its operators.
+```sh
+bash check.sh
+```
 
-## Weak spots
+It prints `check: all laws hold` when all nine of these hold:
 
-Everything lives in the browser that made it. There is no server to fall back on and storage is per-origin, so a backup file is the only copy that outlives a cleared cache, and moving between a phone and a laptop means exporting and merging by hand.
+1. the committed built files rebuild byte for byte from `src/`;
+2. no file in `src/` is over 300 lines;
+3. nothing in `src/` loads anything over `http` or through `@import`;
+4. the page weight printed in the footer is within 3 KB of the built page;
+5. the app's two one-cut folds match the hand kit's;
+6. the built page is at most 256 KB, since every issue file carries it;
+7. `LICENSE`, `LICENSE-docs` and both font licences are present;
+8. the built pages contain no absolute URL;
+9. the built page carries both typefaces.
 
-- **The PDF speaks Latin-1.** The typefaces are cut down to Latin and the PDF writer encodes text as WinAnsi, so a letter outside Latin-1 (ł, ş, Greek, Cyrillic, any emoji) comes out of SAVE PDF as a question mark.
-- **Sync is a file, not a connection.** Two people on two devices see each other's work only when one hands the other a file (a backup, a piece or an issue) and it is taken in.
-- **Printers and hands differ.** The page asks for a test sheet before a print run, and offers the other fold when the page numbers come out shuffled.
+GitHub Actions runs it on every push and pull request ([check.yml](.github/workflows/check.yml), with no third-party actions). `git config core.hooksPath .githooks` makes a pre-commit hook run it before each commit.
 
-## Status
+The browser suites in `test/` check that the app behaves. They drive the built `index.html` in Chromium through Playwright:
 
-The app is a working press. Two people can submit pieces, assemble an issue, publish it, print it as a folded sheet or a stapled signature, keep every back issue, and hand the whole thing on as one file that is also a press. It is local-first and account-free by construction, which is the honest version of a privacy policy.
+```sh
+npm install playwright
+npx playwright install chromium
+node test/run.js
+```
 
-The browser suites in `test/` check the parts that would be easy to fake: that two issues coexist and keep their own words, that the same pieces re-flow into another format untouched, that the fit meter names what will not print, that an exported issue opens on a machine with no storage of its own and produces the next issue, that the QR encoder matches an independent implementation module for module, and that the PDF survives being parsed back byte by byte.
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The fifteen suites cover the parts that would be easy to fake, among them:
 
-The federation is not being built. `PLAN.md` struck it: no rooms, no vouching, no protocol, no cooperative, no court. If the format spreads, that is somebody else's to build, and `DESIGN.md` is there for them.
+- two issues on the shelf, each keeping its own words;
+- the same pieces re-flowing into another format with nothing retyped;
+- the fit meter naming the words that will not print;
+- an exported issue opening on a machine with no storage of its own and making the next issue;
+- the back-cover QR code matching an independent encoder square for square;
+- the PDF surviving a parse of its bytes and embedding the same fonts as the page.
 
-The gate is unchanged, and it is not signups or retention: it is whether the first scene ships **Issue #2**. Publication continuity is the only measure this project keeps.
+On 27 September 2026, in a cloud container with Playwright 1.63 and Chromium 153, a full run passed 258 of 259 checks in 4 minutes 55 seconds. The failure was "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`. It inspects the print zone while the app's 800 ms clean-up timer is running, so on a slow machine the timer can empty the zone before the check reads it. The suite passed on three reruns.
 
-Two people are a scene. There is no minimum size anywhere in this design: the desk goes round whoever is on the roster, so at two it simply alternates, and a scene with no costs owes no dues. The first scene is expected to be two people and a copier, because two people ship on a deadline and eight people with no habit miss the first bell.
+CI runs `check.sh` and nothing else, the same check the pre-commit hook runs. [CONTRIBUTING.md](CONTRIBUTING.md) asks for the browser suites before any commit that touches `src/js/` or the press. Nothing tests printing on real paper, folding and cutting, a copy shop's output, a real phone (the suites use a phone-sized window), browsers other than Chromium, or scanning the QR code with a camera.
 
-The name is provisional. Naming it is an argument to have with the people who will live in it.
+## Limitations
 
-Licenses, landed: software under AGPL-3.0-or-later ([LICENSE](LICENSE)), per Charter Article III; prose and design documents under CC BY-SA 4.0 ([LICENSE-docs](LICENSE-docs)). Copy this repo; that is what it is for.
+Everything lives in the browser that made it. There is no server to fall back on, and the browser keeps this data for one web address only, so a backup file is the only copy that outlives a cleared cache, and moving between a phone and a laptop means exporting and merging by hand.
+
+- **The PDF only handles Western European letters.** The typefaces are cut down to Latin, and the PDF writer encodes text as WinAnsi, the Windows character set for Western European languages. A letter outside it (ł, ş, Greek, Cyrillic, any emoji) comes out of SAVE PDF as a question mark.
+- **Sync is a file handed over.** Two people on two devices see each other's work only when one hands the other a file (a backup, a piece or an issue) and it is taken in.
+- **A local copy and the hosted page keep their work apart.** Work done in `index.html` opened from disk does not appear at https://ampactor.dev/stoop/, and the other way round. Export and merge carries it across.
+- **Back issues travel with their covers only.** A handed-on file carries each back issue's cover photograph; its other photographs show as marked places that say which issue file holds them.
+- **A photograph that arrives in a file cannot be lightened or re-screened.** Its greyscale original stays on the device that took it in.
+- **A text-only issue is mostly press.** Every issue file carries the 252 KB press, however little the issue holds.
+- **Printers and hands differ.** The page asks for a test sheet before a print run and offers the other fold when the page numbers come out shuffled. Nothing checks a real printer.
+- **Some things are left out on purpose.** There is no feed, the first of the refusals in [DESIGN.md](DESIGN.md#refusals). [PLAN.md](PLAN.md#what-never-gets-built) rules out accounts, cloud sync, a hosted service and any surface that counts anything. It also struck the federation DESIGN.md imagined: rooms, vouching, a protocol, a cooperative and a court. If the format spreads, that federation is somebody else's to build.
+
+## License
+
+The software is under the GNU Affero General Public License, version 3 or any later version (AGPL-3.0-or-later); [LICENSE](LICENSE) holds the text. The prose and design documents are under Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0), in [LICENSE-docs](LICENSE-docs). The two typefaces the page carries, Anton and Knewave, are under the SIL Open Font License 1.1, with their licences in [src/fonts/](src/fonts/). The AGPL follows Article III of [CHARTER.md](CHARTER.md). Copy this repository; that is what it is for.
