@@ -69,6 +69,12 @@ function elGeom(el) {
     'transform:rotate(' + (el.rot || 0) + 'deg);z-index:' + (el.z || 0) + ';';
 }
 
+// Where it sits, and in what ink. Kept as one string, because the repaint
+// while somebody types compares it to decide whether anything moved.
+function elStyle(el) {
+  return elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '');
+}
+
 function elBody(el, pics, editable, editing) {
   if (el.kind === 'rule') return '<div class="elrule"></div>';
   if (el.kind === 'box') return '';
@@ -82,7 +88,7 @@ function elBody(el, pics, editable, editing) {
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '"' + tint + '>';
   }
   var voice = voiceOf(el);
-  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
+  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
   var style = 'font-size:' + (el.size || 12) + 'px';
   if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
@@ -102,8 +108,8 @@ function elBody(el, pics, editable, editing) {
 function elHtml(el, pics, editable, selected) {
   var editing = editable && el.id === pasteEditing;
   return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
-    (selected ? ' sel' : '') + (editing ? ' editing' : '') +
-    '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '') + '">' +
+    (inkOf(el) === '#ffffff' ? ' inkpaper' : '') + (selected ? ' sel' : '') + (editing ? ' editing' : '') +
+    '" data-el="' + esc(el.id) + '" style="' + elStyle(el) + '">' +
     elBody(el, pics, editable, editing) +
     (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
                 '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
@@ -218,7 +224,7 @@ function paintPasteup(panelEl, panel) {
     // Geometry can still move under the caret; text cannot be touched.
     elsOf(panel).forEach(function (el) {
       var node = layer.querySelector('[data-el="' + el.id + '"]');
-      if (node && node.getAttribute('style') !== elGeom(el)) node.setAttribute('style', elGeom(el));
+      if (node && node.getAttribute('style') !== elStyle(el)) node.setAttribute('style', elStyle(el));
       if (node) node.classList.toggle('sel', el.id === pasteSel);
     });
     return;

@@ -6,7 +6,7 @@
 // a print shop is likely to have; a file from anywhere else may name any
 // colour, and is checked here because it goes straight into a style.
 var INKS = [['BLACK', ''], ['RED', '#e8403b'], ['PINK', '#ff48b0'], ['ORANGE', '#ff6c2f'],
-  ['YELLOW', '#ffd200'], ['GREEN', '#00a95c'], ['BLUE', '#0078bf'], ['PURPLE', '#765ba7']];
+  ['YELLOW', '#ffd200'], ['GREEN', '#00a95c'], ['BLUE', '#0078bf'], ['PURPLE', '#765ba7'], ['WHITE', '#ffffff']];
 
 function inkOf(el) {
   var c = el && el.colour;
@@ -92,7 +92,10 @@ function inkable(el) {
 function inkSwatches(el) {
   if (!inkable(el)) return '';
   var now = inkOf(el);
-  return '<div class="swatches"><span class="sub">INK</span>' + INKS.map(function (ink) {
+  // White is for type and rules laid over a photograph; a screen printed
+  // in white would be a white rectangle.
+  var inks = el.kind === 'photo' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
+  return '<div class="swatches"><span class="sub">INK</span>' + inks.map(function (ink) {
     return '<button class="swatch' + (ink[1] === now ? ' on' : '') + '" data-elcolour="' + esc(el.id) +
       '" data-c="' + ink[1] + '" title="' + ink[0] + '" aria-label="' + ink[0] + ' ink" style="background:' +
       (ink[1] || '#000') + '"></button>';

@@ -242,7 +242,7 @@ module.exports = async function edges(browser, ok) {
   await p5.click({ position: { x: 6, y: 6 } });
   await page.click('[data-addel="text"]');
   await page.waitForTimeout(200);
-  await page.click('[data-elvoice]'); await page.click('[data-elvoice]');   // marker
+  await page.selectOption('[data-elvoicesel]', 'marker');
   await page.waitForTimeout(150);
   const before = await page.locator('[data-page="5"] .el').count();
   await page.click('#ransomtext');

@@ -191,6 +191,7 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
     var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
+      '/F9 ' + std('Helvetica') + ' 0 R/F10 ' + std('Times-Roman') + ' 0 R' +
       (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
 

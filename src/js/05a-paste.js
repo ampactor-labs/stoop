@@ -11,9 +11,10 @@
 // nothing. Fractions move with the panel, so a collage survives the change the
 // same way a paragraph does.
 
-var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom'];
-var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15 };
-var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM' };
+var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom', 'sans', 'serif'];
+var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15, sans: 12, serif: 12.5 };
+var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM',
+  sans: 'SANS', serif: 'SERIF' };
 // Issues made before the marker existed called their pen voice "hand".
 function voiceOf(el) { return el.voice === 'hand' ? 'marker' : (el.voice || 'type'); }
 var pasteSel = null;
@@ -219,15 +220,6 @@ function raiseEl(id, toFront) {
   }
   savePress();
   renderPress();
-}
-
-function cycleVoice(id) {
-  var hit = findEl(id);
-  if (!hit || hit.el.kind !== 'text') return;
-  var next = VOICES[(VOICES.indexOf(voiceOf(hit.el)) + 1) % VOICES.length];
-  updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
-  renderPress();
-  toast(VOICE_LABEL[next]);
 }
 
 function resizeText(id, by) {

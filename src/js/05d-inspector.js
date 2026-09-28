@@ -13,10 +13,10 @@ function pasteTargetLabel() {
 function inspectorButtons(el) {
   var b = [];
   if (el.kind === 'text') {
-    b.push(['elvoice', VOICE_LABEL[voiceOf(el)]]);
     b.push(['elsmaller', 'A−']);
     b.push(['elbigger', 'A+']);
-    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'BLACK ON WHITE']);
+    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'ON THE PAGE']);
+    b = b.concat(typeButtons(el));
   }
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
@@ -70,7 +70,8 @@ function renderInspector() {
   box.innerHTML = '<div class="insp-head"><b>' + esc(el.kind.toUpperCase()) + '</b>' +
     '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
     Math.round(el.h * 100) + ' of the panel</span></div>' +
-    '<div class="press-actions">' + inspectorButtons(el) + '</div>' + inkSwatches(el) +
+    '<div class="press-actions">' + (el.kind === 'text' ? voiceSelect(el) : '') + inspectorButtons(el) + '</div>' +
+    inkSwatches(el) +
     (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
       ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
@@ -104,7 +105,6 @@ document.addEventListener('click', function (ev) {
   if ((el = hit('[data-addel]'))) { addToPasteup(el.getAttribute('data-addel')); return; }
   if (hit('#undobtn')) { pasteUndoStep(); return; }
   if (hit('#redobtn')) { pasteRedoStep(); return; }
-  if ((el = hit('[data-elvoice]'))) { cycleVoice(el.getAttribute('data-elvoice')); return; }
   if ((el = hit('[data-elsmaller]'))) { resizeText(el.getAttribute('data-elsmaller'), -2); return; }
   if ((el = hit('[data-elbigger]'))) { resizeText(el.getAttribute('data-elbigger'), 2); return; }
   if ((el = hit('[data-elink]'))) { toggleInk(el.getAttribute('data-elink')); return; }

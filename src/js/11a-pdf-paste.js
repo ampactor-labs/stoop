@@ -17,8 +17,12 @@ var FACES = {
   marker: { f: 'F2', w: HELV_BOLD_W },
   stencil: { f: 'F2', w: HELV_BOLD_W },
   hand: { f: 'F6', w: TIMES_ITALIC_W },
-  ransom: { f: 'F2', w: HELV_BOLD_W }
+  ransom: { f: 'F2', w: HELV_BOLD_W },
+  sans: { f: 'F9', w: HELV_W },
+  serif: { f: 'F10', w: TIMES_W }
 };
+// Line height as a multiple of the size, as the stylesheet sets each voice.
+var VOICE_LEAD = { type: 1.45, head: 1.0, stencil: 1.0, sans: 1.3, serif: 1.35 };
 var RANSOM_FACES = [
   { f: 'F2', w: HELV_BOLD_W },
   { f: 'F3', w: TIMES_BOLD_W },
@@ -152,11 +156,15 @@ function pdfElRansom(el, g) {
   var x = g.x;
   var y = g.top - size;
   var lead = size * 1.5;
+  var caps = capsOf(el);
   ransomSpec(el.text).forEach(function (c) {
     if (c.ch === '\n') { x = g.x; y -= lead; return; }
+    // The jitter comes from the letter as typed, as on screen; the capital
+    // is only what is drawn.
+    var ch = caps ? c.ch.toUpperCase() : c.ch;
     var s = size * c.scale;
     var face = c.face === 0 ? displayFace() : RANSOM_FACES[c.face] || RANSOM_FACES[0];
-    var cw = glyphWidth(face, c.ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
+    var cw = glyphWidth(face, ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
     if (x + cw > g.x + g.w && c.ch !== ' ') { x = g.x; y -= lead; }
     if (y < g.y - size) return;
     if (c.ch !== ' ') {
@@ -165,10 +173,10 @@ function pdfElRansom(el, g) {
       ops += 'q\n' + spin(c.tilt, ccx, ccy);
       if (c.inv) {
         ops += pdfInk(el) + (x - 1).toFixed(2) + ' ' + (y - s * 0.22).toFixed(2) + ' ' +
-          (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n1 g\n';
+          (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n' + knockLetters(el);
       }
-      ops += 'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
-        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, c.ch)) + ') Tj ET\nQ\n';
+      ops += 'BT ' + textMode(el) + '/' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
+        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, ch)) + ') Tj ET\nQ\n';
     }
     x += cw;
   });
@@ -188,18 +196,24 @@ function pdfElMarker(el, g, face, size) {
   // the whole text rather than in its line, so the two agree word for word.
   var spec = markerSpec(el.text).filter(function (w) { return !w.space; });
   var at = 0;
-  linesOf(el, face, size, g.w - 4, false).forEach(function (line) {
-    var x = g.x + 2;
-    line.split(/\s+/).filter(Boolean).forEach(function (word) {
+  linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
+    // Each word at its own size, measured first, so the line can be placed
+    // for the way the cutting lines up.
+    var words = line.split(/\s+/).filter(Boolean).map(function (word) {
       var w = spec[at++] || { tilt: 0, scale: 1 };
       var s = size * w.scale;
-      var ww = runWidth(face, word, s);
+      return { word: word, w: w, s: s, ww: runWidth(face, word, s) };
+    });
+    var gap = glyphWidth(face, ' ', size);
+    var total = words.reduce(function (a, k) { return a + k.ww; }, 0) + gap * Math.max(0, words.length - 1);
+    var x = alignX(el, g, total);
+    words.forEach(function (k) {
       if (y >= g.y - g.h * 0.6 - size) {
-        ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * mid) +
-          'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
-          ' Tm (' + pdfEsc(faceText(face, word)) + ') Tj ET\nQ\n';
+        ops += 'q\n' + spin(k.w.tilt, x + k.ww / 2, y + k.s * mid) +
+          'BT ' + textMode(el) + '/' + face.f + ' ' + k.s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
+          ' Tm (' + pdfEsc(faceText(face, k.word)) + ') Tj ET\nQ\n';
       }
-      x += ww + glyphWidth(face, ' ', size);
+      x += k.ww + gap;
     });
     y -= lead;
   });
@@ -212,17 +226,18 @@ function pdfElText(el, g) {
   var face = faceOf(el);
   var size = ptSize(el);
   var ops = '';
-  if (el.ink === 'white') ops += rect(g) + ' f\n1 g\n';
+  if (el.ink === 'white') ops += rect(g) + ' f\n' + knockLetters(el);
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size);
-  var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
+  var lead = size * (VOICE_LEAD[voice] || 1.45);
   var y = g.top - firstBaseline(voice, size, lead);
   var draw = '';
   // A cutting hangs over its box rather than losing a line, up to a little
   // more than half its height; a glued cutting overhangs anyway.
-  linesOf(el, face, size, g.w - 4, voice === 'stencil' || voice === 'head').forEach(function (line) {
+  linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      draw += 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+      draw += 'BT ' + textMode(el) + '/' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' +
+        alignX(el, g, runWidth(face, line, size)).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, line)) + ') Tj ET\n';
     }
     y -= lead;
@@ -245,7 +260,7 @@ function pdfEl(el, box, images) {
   var g = elBoxPdf(box, el);
   // The cutting's ink, fill and stroke, for everything it draws; a
   // knocked-out line sets its own white and the Q below undoes it.
-  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el);
+  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el) + (el.kind === 'text' ? strokeFor(el) : '');
   if (el.kind === 'rule') {
     ops += g.x.toFixed(2) + ' ' + g.y.toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
       Math.max(1.5, g.h).toFixed(2) + ' re f\n';

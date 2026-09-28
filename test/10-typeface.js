@@ -109,8 +109,7 @@ module.exports = async function typeface(browser, ok) {
   await p3.click({ position: { x: 6, y: 6 } });
   await page.click('[data-addel="text"]');
   await page.waitForTimeout(200);
-  await page.click('[data-elvoice]');
-  await page.click('[data-elvoice]');
+  await page.selectOption('[data-elvoicesel]', 'marker');
   await page.fill('#ransomtext', 'ask Dee');
   await page.waitForTimeout(300);
   await go('#paper');

@@ -90,24 +90,23 @@ module.exports = async function pasteup(browser, ok) {
   // ---- voices, and the ransom note
   await page.click('[data-page="1"] .el');
   await page.waitForTimeout(200);
-  // Five voices, in order. Walk them and check the two new ones on the way.
-  await page.click('[data-elvoice]'); await page.waitForTimeout(200);   // head
-  await page.click('[data-elvoice]'); await page.waitForTimeout(250);   // marker
+  // The voices, picked from the list. Walk them and check the drawn ones on the way.
+  await page.selectOption('[data-elvoicesel]', 'head'); await page.waitForTimeout(200);
+  await page.selectOption('[data-elvoicesel]', 'marker'); await page.waitForTimeout(250);
   await page.fill('#ransomtext', 'no gods no masters'); await page.waitForTimeout(300);
   const markerWords = await page.evaluate(() => [...document.querySelectorAll('[data-page="1"] .v-marker .rm')]
     .map(s => s.style.transform));
   ok('MARKER TURNS EVERY WORD BY ITS OWN SMALL ANGLE',
      markerWords.length === 4 && new Set(markerWords).size > 1, markerWords.join(' '));
-  await page.click('[data-elvoice]'); await page.waitForTimeout(250);   // stencil
+  await page.selectOption('[data-elvoicesel]', 'stencil'); await page.waitForTimeout(250);
   ok('STENCIL CUTS BRIDGES THROUGH THE LETTERS',
      /repeating-linear-gradient/.test(await page.evaluate(() => {
        const s = getComputedStyle(document.querySelector('[data-page="1"] .v-stencil'));
        return s.maskImage || s.webkitMaskImage || '';
      })));
-  await page.click('[data-elvoice]'); await page.waitForTimeout(250);   // ransom
-  ok('the voice cycles to the ransom note',
-     (await page.locator('[data-elvoice]').innerText()).trim() === 'RANSOM',
-     await page.locator('[data-elvoice]').innerText());
+  await page.selectOption('[data-elvoicesel]', 'ransom'); await page.waitForTimeout(250);
+  ok('the voice list reaches the ransom note',
+     (await page.inputValue('[data-elvoicesel]')) === 'ransom', await page.inputValue('[data-elvoicesel]'));
   await page.fill('#ransomtext', 'SPLIT LIP');
   await page.waitForTimeout(400);
   const cut = await page.evaluate(() => [...document.querySelectorAll('[data-page="1"] .rn')]
@@ -212,7 +211,7 @@ module.exports = async function pasteup(browser, ok) {
   await page.click('[data-page="4"]');
   await page.click('[data-addel="text"]');
   await page.waitForTimeout(250);
-  await page.click('[data-elvoice]');            // typewriter -> headline
+  await page.selectOption('[data-elvoicesel]', 'head');
   await page.waitForTimeout(200);
   await page.dblclick('[data-page="4"] .el.sel');
   await page.keyboard.press('Control+A');

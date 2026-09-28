@@ -28,6 +28,20 @@
 .v-stencil { font-family: Anton, Impact, sans-serif; line-height: 1; text-transform: uppercase;
   -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); }
 .v-ransom { line-height: 1.5; }
+/* A magazine's two faces, the ones every machine already has. */
+.v-sans { font-family: Arial, Helvetica, 'Liberation Sans', sans-serif; line-height: 1.3; }
+.v-serif { font-family: 'Times New Roman', Times, 'Liberation Serif', serif; line-height: 1.35; }
+.eltext.caps { text-transform: uppercase; }
+.eltext.nocaps { text-transform: none; }
+.eltext.al-center { text-align: center; }
+.eltext.al-right { text-align: right; }
+/* Outlined letters: the stroke is the ink, the inside is whatever is under it. */
+.eltext.outline, .eltext.outline .rn { color: transparent; -webkit-text-stroke: .045em var(--ink); }
+.eltext.knock.outline, .eltext.outline .rn.inv { -webkit-text-stroke-color: #fff; }
+/* White ink: a knocked-out block in white has black letters. */
+.el.inkpaper .eltext.knock, .el.inkpaper .rn.inv { color: #000; }
+.el.inkpaper .eltext.knock.outline, .el.inkpaper .eltext.outline .rn.inv { color: transparent; -webkit-text-stroke-color: #000; }
+.voicesel { font: inherit; font-size: .8rem; border: 2px solid var(--fg); background: #fff; color: var(--fg); padding: .3rem .4rem; cursor: pointer; }
 
 /* Stamps */
 /* The stamp's box is the query container, so its lettering is sized by the

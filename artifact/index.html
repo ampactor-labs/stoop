@@ -401,6 +401,20 @@ body.landing main { padding-top: 2.4rem; }
   -webkit-mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); mask-image: repeating-linear-gradient(180deg, #000 0 .42em, transparent .42em .5em); }
 .v-ransom { line-height: 1.5; }
 
+.v-sans { font-family: Arial, Helvetica, 'Liberation Sans', sans-serif; line-height: 1.3; }
+.v-serif { font-family: 'Times New Roman', Times, 'Liberation Serif', serif; line-height: 1.35; }
+.eltext.caps { text-transform: uppercase; }
+.eltext.nocaps { text-transform: none; }
+.eltext.al-center { text-align: center; }
+.eltext.al-right { text-align: right; }
+
+.eltext.outline, .eltext.outline .rn { color: transparent; -webkit-text-stroke: .045em var(--ink); }
+.eltext.knock.outline, .eltext.outline .rn.inv { -webkit-text-stroke-color: #fff; }
+
+.el.inkpaper .eltext.knock, .el.inkpaper .rn.inv { color: #000; }
+.el.inkpaper .eltext.knock.outline, .el.inkpaper .eltext.outline .rn.inv { color: transparent; -webkit-text-stroke-color: #000; }
+.voicesel { font: inherit; font-size: .8rem; border: 2px solid var(--fg); background: #fff; color: var(--fg); padding: .3rem .4rem; cursor: pointer; }
+
 
 
 .elstamp { width: 100%; height: 100%; position: relative; color: var(--ink); container-type: size; }
@@ -773,7 +787,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 259 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 264 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1913,9 +1927,10 @@ function clearSheet() {
   toast('Cleared the pages');
 }
 
-var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom'];
-var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15 };
-var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM' };
+var VOICES = ['type', 'head', 'marker', 'stencil', 'ransom', 'sans', 'serif'];
+var VOICE_SIZE = { type: 11.5, head: 20, marker: 18, stencil: 22, ransom: 15, sans: 12, serif: 12.5 };
+var VOICE_LABEL = { type: 'TYPEWRITER', head: 'HEADLINE', marker: 'MARKER', stencil: 'STENCIL', ransom: 'RANSOM',
+  sans: 'SANS', serif: 'SERIF' };
 function voiceOf(el) { return el.voice === 'hand' ? 'marker' : (el.voice || 'type'); }
 var pasteSel = null;
 var pasteEditing = null;
@@ -2103,15 +2118,6 @@ function raiseEl(id, toFront) {
   renderPress();
 }
 
-function cycleVoice(id) {
-  var hit = findEl(id);
-  if (!hit || hit.el.kind !== 'text') return;
-  var next = VOICES[(VOICES.indexOf(voiceOf(hit.el)) + 1) % VOICES.length];
-  updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
-  renderPress();
-  toast(VOICE_LABEL[next]);
-}
-
 function resizeText(id, by) {
   var hit = findEl(id);
   if (!hit || hit.el.kind !== 'text') return;
@@ -2188,6 +2194,10 @@ function elGeom(el) {
     'transform:rotate(' + (el.rot || 0) + 'deg);z-index:' + (el.z || 0) + ';';
 }
 
+function elStyle(el) {
+  return elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '');
+}
+
 function elBody(el, pics, editable, editing) {
   if (el.kind === 'rule') return '<div class="elrule"></div>';
   if (el.kind === 'box') return '';
@@ -2199,7 +2209,7 @@ function elBody(el, pics, editable, editing) {
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '"' + tint + '>';
   }
   var voice = voiceOf(el);
-  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
+  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
   var style = 'font-size:' + (el.size || 12) + 'px';
   if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
@@ -2216,8 +2226,8 @@ function elBody(el, pics, editable, editing) {
 function elHtml(el, pics, editable, selected) {
   var editing = editable && el.id === pasteEditing;
   return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
-    (selected ? ' sel' : '') + (editing ? ' editing' : '') +
-    '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '') + '">' +
+    (inkOf(el) === '#ffffff' ? ' inkpaper' : '') + (selected ? ' sel' : '') + (editing ? ' editing' : '') +
+    '" data-el="' + esc(el.id) + '" style="' + elStyle(el) + '">' +
     elBody(el, pics, editable, editing) +
     (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
                 '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
@@ -2318,7 +2328,7 @@ function paintPasteup(panelEl, panel) {
   if (layer && typing && layer.contains(typing)) {
     elsOf(panel).forEach(function (el) {
       var node = layer.querySelector('[data-el="' + el.id + '"]');
-      if (node && node.getAttribute('style') !== elGeom(el)) node.setAttribute('style', elGeom(el));
+      if (node && node.getAttribute('style') !== elStyle(el)) node.setAttribute('style', elStyle(el));
       if (node) node.classList.toggle('sel', el.id === pasteSel);
     });
     return;
@@ -2579,10 +2589,10 @@ function pasteTargetLabel() {
 function inspectorButtons(el) {
   var b = [];
   if (el.kind === 'text') {
-    b.push(['elvoice', VOICE_LABEL[voiceOf(el)]]);
     b.push(['elsmaller', 'A−']);
     b.push(['elbigger', 'A+']);
-    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'BLACK ON WHITE']);
+    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'ON THE PAGE']);
+    b = b.concat(typeButtons(el));
   }
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
@@ -2634,7 +2644,8 @@ function renderInspector() {
   box.innerHTML = '<div class="insp-head"><b>' + esc(el.kind.toUpperCase()) + '</b>' +
     '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
     Math.round(el.h * 100) + ' of the panel</span></div>' +
-    '<div class="press-actions">' + inspectorButtons(el) + '</div>' + inkSwatches(el) +
+    '<div class="press-actions">' + (el.kind === 'text' ? voiceSelect(el) : '') + inspectorButtons(el) + '</div>' +
+    inkSwatches(el) +
     (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
       ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
@@ -2667,7 +2678,6 @@ document.addEventListener('click', function (ev) {
   if ((el = hit('[data-addel]'))) { addToPasteup(el.getAttribute('data-addel')); return; }
   if (hit('#undobtn')) { pasteUndoStep(); return; }
   if (hit('#redobtn')) { pasteRedoStep(); return; }
-  if ((el = hit('[data-elvoice]'))) { cycleVoice(el.getAttribute('data-elvoice')); return; }
   if ((el = hit('[data-elsmaller]'))) { resizeText(el.getAttribute('data-elsmaller'), -2); return; }
   if ((el = hit('[data-elbigger]'))) { resizeText(el.getAttribute('data-elbigger'), 2); return; }
   if ((el = hit('[data-elink]'))) { toggleInk(el.getAttribute('data-elink')); return; }
@@ -3048,7 +3058,7 @@ document.addEventListener('click', function (ev) {
   if (ev.target.closest && ev.target.closest('#genbtn')) cycleGen();
 });
 var INKS = [['BLACK', ''], ['RED', '#e8403b'], ['PINK', '#ff48b0'], ['ORANGE', '#ff6c2f'],
-  ['YELLOW', '#ffd200'], ['GREEN', '#00a95c'], ['BLUE', '#0078bf'], ['PURPLE', '#765ba7']];
+  ['YELLOW', '#ffd200'], ['GREEN', '#00a95c'], ['BLUE', '#0078bf'], ['PURPLE', '#765ba7'], ['WHITE', '#ffffff']];
 
 function inkOf(el) {
   var c = el && el.colour;
@@ -3127,7 +3137,8 @@ function inkable(el) {
 function inkSwatches(el) {
   if (!inkable(el)) return '';
   var now = inkOf(el);
-  return '<div class="swatches"><span class="sub">INK</span>' + INKS.map(function (ink) {
+  var inks = el.kind === 'photo' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
+  return '<div class="swatches"><span class="sub">INK</span>' + inks.map(function (ink) {
     return '<button class="swatch' + (ink[1] === now ? ' on' : '') + '" data-elcolour="' + esc(el.id) +
       '" data-c="' + ink[1] + '" title="' + ink[0] + '" aria-label="' + ink[0] + ' ink" style="background:' +
       (ink[1] || '#000') + '"></button>';
@@ -3154,6 +3165,79 @@ document.addEventListener('click', function (ev) {
   var name = INKS.filter(function (ink) { return ink[1] === c; })[0];
   toast((name ? name[0] : 'BLACK') + ' ink');
 });
+var ALIGNS = ['left', 'center', 'right'];
+var ALIGN_LABEL = { left: 'ALIGN LEFT', center: 'CENTRED', right: 'ALIGN RIGHT' };
+
+function alignOf(el) { return el && (el.align === 'center' || el.align === 'right') ? el.align : 'left'; }
+
+function capsOf(el) {
+  if (el && typeof el.caps === 'boolean') return el.caps;
+  var v = voiceOf(el || {});
+  return v === 'head' || v === 'stencil';
+}
+
+function outlined(el) { return !!el && el.outline === true; }
+
+function typeClass(el) {
+  return (voiceOf(el) !== 'ransom' && alignOf(el) !== 'left' ? ' al-' + alignOf(el) : '') +
+    (capsOf(el) ? ' caps' : ' nocaps') + (outlined(el) ? ' outline' : '');
+}
+
+function typeButtons(el) {
+  var b = [];
+  if (voiceOf(el) !== 'ransom') b.push(['elalign', ALIGN_LABEL[alignOf(el)]]);
+  b.push(['elcaps', capsOf(el) ? 'CAPITALS' : 'AS TYPED']);
+  b.push(['eloutline', outlined(el) ? 'OUTLINE' : 'SOLID LETTERS']);
+  return b;
+}
+
+function voiceSelect(el) {
+  return '<select class="voicesel" data-elvoicesel="' + esc(el.id) + '" aria-label="Voice">' + VOICES.map(function (v) {
+    return '<option value="' + v + '"' + (voiceOf(el) === v ? ' selected' : '') + '>' + VOICE_LABEL[v] + '</option>';
+  }).join('') + '</select>';
+}
+
+function setVoice(id, next) {
+  var hit = findEl(id);
+  if (!hit || hit.el.kind !== 'text' || VOICES.indexOf(next) < 0) return;
+  updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
+  renderPress();
+  toast(VOICE_LABEL[next]);
+}
+
+document.addEventListener('change', function (ev) {
+  var s = ev.target.closest && ev.target.closest('[data-elvoicesel]');
+  if (s) setVoice(s.getAttribute('data-elvoicesel'), s.value);
+});
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target.closest && ev.target.closest('[data-elalign],[data-elcaps],[data-eloutline]');
+  if (!t) return;
+  var hit;
+  if (t.hasAttribute('data-elalign')) {
+    hit = findEl(t.getAttribute('data-elalign'));
+    if (hit) updateEl(hit.el.id, { align: ALIGNS[(ALIGNS.indexOf(alignOf(hit.el)) + 1) % ALIGNS.length] }, true);
+  } else if (t.hasAttribute('data-elcaps')) {
+    hit = findEl(t.getAttribute('data-elcaps'));
+    if (hit) updateEl(hit.el.id, { caps: !capsOf(hit.el) }, true);
+  } else {
+    hit = findEl(t.getAttribute('data-eloutline'));
+    if (hit) updateEl(hit.el.id, { outline: outlined(hit.el) ? undefined : true }, true);
+  }
+  if (hit) renderPress();
+});
+
+function alignX(el, g, lw) {
+  var a = alignOf(el);
+  if (a === 'center') return g.x + (g.w - lw) / 2;
+  if (a === 'right') return g.x + g.w - 2 - lw;
+  return g.x + 2;
+}
+
+function textMode(el) { return outlined(el) ? '1 Tr ' : ''; }
+function strokeFor(el) { return outlined(el) ? (ptSize(el) * 0.045).toFixed(2) + ' w\n' : ''; }
+
+function knockLetters(el) { return inkOf(el) === '#ffffff' ? '0 g 0 G\n' : '1 g 1 G\n'; }
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -4206,6 +4290,9 @@ var HELV_BOLD_W = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 2
   556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556,
   333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
 
+var HELV_W = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+var TIMES_W = [250,333,408,500,500,833,778,180,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,564,444,921,722,667,667,722,611,556,722,722,333,389,722,611,889,722,722,556,722,667,556,611,722,722,944,722,722,611,333,278,333,469,500,333,444,500,444,500,444,333,500,500,278,278,500,278,778,500,500,500,500,333,389,278,500,500,722,500,500,444,480,200,480,541];
+
 function wrapMono(text, size, width) {
   var cols = Math.max(4, Math.floor(width / (size * COURIER_W)));
   var lines = [];
@@ -4674,6 +4761,7 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
     var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
+      '/F9 ' + std('Helvetica') + ' 0 R/F10 ' + std('Times-Roman') + ' 0 R' +
       (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
 
@@ -4716,8 +4804,11 @@ var FACES = {
   marker: { f: 'F2', w: HELV_BOLD_W },
   stencil: { f: 'F2', w: HELV_BOLD_W },
   hand: { f: 'F6', w: TIMES_ITALIC_W },
-  ransom: { f: 'F2', w: HELV_BOLD_W }
+  ransom: { f: 'F2', w: HELV_BOLD_W },
+  sans: { f: 'F9', w: HELV_W },
+  serif: { f: 'F10', w: TIMES_W }
 };
+var VOICE_LEAD = { type: 1.45, head: 1.0, stencil: 1.0, sans: 1.3, serif: 1.35 };
 var RANSOM_FACES = [
   { f: 'F2', w: HELV_BOLD_W },
   { f: 'F3', w: TIMES_BOLD_W },
@@ -4830,11 +4921,13 @@ function pdfElRansom(el, g) {
   var x = g.x;
   var y = g.top - size;
   var lead = size * 1.5;
+  var caps = capsOf(el);
   ransomSpec(el.text).forEach(function (c) {
     if (c.ch === '\n') { x = g.x; y -= lead; return; }
+    var ch = caps ? c.ch.toUpperCase() : c.ch;
     var s = size * c.scale;
     var face = c.face === 0 ? displayFace() : RANSOM_FACES[c.face] || RANSOM_FACES[0];
-    var cw = glyphWidth(face, c.ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
+    var cw = glyphWidth(face, ch, s) + 2 * PT;   // the screen pads each letter a pixel a side
     if (x + cw > g.x + g.w && c.ch !== ' ') { x = g.x; y -= lead; }
     if (y < g.y - size) return;
     if (c.ch !== ' ') {
@@ -4843,10 +4936,10 @@ function pdfElRansom(el, g) {
       ops += 'q\n' + spin(c.tilt, ccx, ccy);
       if (c.inv) {
         ops += pdfInk(el) + (x - 1).toFixed(2) + ' ' + (y - s * 0.22).toFixed(2) + ' ' +
-          (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n1 g\n';
+          (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n' + knockLetters(el);
       }
-      ops += 'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
-        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, c.ch)) + ') Tj ET\nQ\n';
+      ops += 'BT ' + textMode(el) + '/' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
+        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, ch)) + ') Tj ET\nQ\n';
     }
     x += cw;
   });
@@ -4860,18 +4953,22 @@ function pdfElMarker(el, g, face, size) {
   var mid = firstBaseline('marker', size, lead) / size - 0.65;
   var spec = markerSpec(el.text).filter(function (w) { return !w.space; });
   var at = 0;
-  linesOf(el, face, size, g.w - 4, false).forEach(function (line) {
-    var x = g.x + 2;
-    line.split(/\s+/).filter(Boolean).forEach(function (word) {
+  linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
+    var words = line.split(/\s+/).filter(Boolean).map(function (word) {
       var w = spec[at++] || { tilt: 0, scale: 1 };
       var s = size * w.scale;
-      var ww = runWidth(face, word, s);
+      return { word: word, w: w, s: s, ww: runWidth(face, word, s) };
+    });
+    var gap = glyphWidth(face, ' ', size);
+    var total = words.reduce(function (a, k) { return a + k.ww; }, 0) + gap * Math.max(0, words.length - 1);
+    var x = alignX(el, g, total);
+    words.forEach(function (k) {
       if (y >= g.y - g.h * 0.6 - size) {
-        ops += 'q\n' + spin(w.tilt, x + ww / 2, y + s * mid) +
-          'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
-          ' Tm (' + pdfEsc(faceText(face, word)) + ') Tj ET\nQ\n';
+        ops += 'q\n' + spin(k.w.tilt, x + k.ww / 2, y + k.s * mid) +
+          'BT ' + textMode(el) + '/' + face.f + ' ' + k.s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) +
+          ' Tm (' + pdfEsc(faceText(face, k.word)) + ') Tj ET\nQ\n';
       }
-      x += ww + glyphWidth(face, ' ', size);
+      x += k.ww + gap;
     });
     y -= lead;
   });
@@ -4884,15 +4981,16 @@ function pdfElText(el, g) {
   var face = faceOf(el);
   var size = ptSize(el);
   var ops = '';
-  if (el.ink === 'white') ops += rect(g) + ' f\n1 g\n';
+  if (el.ink === 'white') ops += rect(g) + ' f\n' + knockLetters(el);
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size);
-  var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
+  var lead = size * (VOICE_LEAD[voice] || 1.45);
   var y = g.top - firstBaseline(voice, size, lead);
   var draw = '';
-  linesOf(el, face, size, g.w - 4, voice === 'stencil' || voice === 'head').forEach(function (line) {
+  linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      draw += 'BT /' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' + (g.x + 2).toFixed(2) + ' ' +
+      draw += 'BT ' + textMode(el) + '/' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' +
+        alignX(el, g, runWidth(face, line, size)).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, line)) + ') Tj ET\n';
     }
     y -= lead;
@@ -4910,7 +5008,7 @@ function pdfElText(el, g) {
 
 function pdfEl(el, box, images) {
   var g = elBoxPdf(box, el);
-  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el);
+  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el) + (el.kind === 'text' ? strokeFor(el) : '');
   if (el.kind === 'rule') {
     ops += g.x.toFixed(2) + ' ' + g.y.toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
       Math.max(1.5, g.h).toFixed(2) + ' re f\n';

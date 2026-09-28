@@ -54,9 +54,9 @@ module.exports = async function colour(browser, ok) {
   await p2.click({ position: { x: 6, y: 6 } });
   await page.click('[data-addel="text"]');
   await page.waitForTimeout(150);
-  ok('A CUTTING OFFERS ITS INKS', (await page.locator('#inspector .swatch').count()) === 8,
+  ok('A CUTTING OFFERS ITS INKS', (await page.locator('#inspector .swatch').count()) === 9,
      (await page.locator('#inspector .swatch').count()) + ' swatches');
-  await page.click('[data-elvoice]');
+  await page.selectOption('[data-elvoicesel]', 'head');
   await ink('PINK');
   ok('A HEADLINE IN PINK IS PINK', (await style('[data-page="2"] .el-text .eltext', 'color')) === 'rgb(255, 72, 176)',
      await style('[data-page="2"] .el-text .eltext', 'color'));
@@ -123,7 +123,7 @@ module.exports = async function colour(browser, ok) {
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
   const pdf = fs.readFileSync(await dl.path(), 'latin1');
   ok('THE PDF SETS THE HEADLINE IN PINK', /1\.000 0\.282 0\.690 rg[^Q]*?\/F7 [\d.]+ Tf[^\n]*Tj/.test(pdf));
-  ok('and the knocked-out block in blue with white letters', /0\.000 0\.471 0\.749 rg [^Q]*? re f\n1 g\n/.test(pdf));
+  ok('and the knocked-out block in blue with white letters', /0\.000 0\.471 0\.749 rg [^Q]*? re f\n1 g 1 G\n/.test(pdf));
   ok('THE SCREENED PHOTOGRAPH RIDES AS A STENCIL, POURED IN BLUE OVER WHITE',
      /\/ImageMask true\/BitsPerComponent 1/.test(pdf) &&
      /cm 1 g 0 0 1 1 re f 0\.000 0\.471 0\.749 rg 0\.000 0\.471 0\.749 RG\n\/Im\d+ Do/.test(pdf));
