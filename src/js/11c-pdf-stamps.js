@@ -6,7 +6,7 @@ function pdfElStamp(el, g) {
   if (!st) return '';
   var X = function (v) { return (g.x + v * g.w).toFixed(2); };
   var Y = function (v) { return (g.top - v * g.h).toFixed(2); };
-  var ops = '0 g 0 G\n';
+  var ops = '';
   st.ops.forEach(function (op) {
     if (op.p) {
       ops += op.p.map(function (pt, i) { return X(pt[0]) + ' ' + Y(pt[1]) + (i ? ' l' : ' m'); }).join(' ') + ' f\n';

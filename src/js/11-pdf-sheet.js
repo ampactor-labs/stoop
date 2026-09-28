@@ -80,7 +80,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var cap = box.h * 0.46;
     if (ih > cap) { ih = cap; iw = ih * (pic.w / pic.h); }
     ops += 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + box.x.toFixed(2) + ' ' +
-      (y - ih).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
+      (y - ih).toFixed(2) + ' cm ' + pdfImageOps(pic) + ' Q\n';
     y -= ih + 3.75;
   }
 
@@ -99,7 +99,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var qr = images['__qr'];
     var qy = box.top - box.h + PAD_Y;
     if (qr) {
-      ops += 'q 48 0 0 48 ' + box.x.toFixed(2) + ' ' + qy.toFixed(2) + ' cm /Im' + qr.num + ' Do Q\n';
+      ops += 'q 48 0 0 48 ' + box.x.toFixed(2) + ' ' + qy.toFixed(2) + ' cm ' + pdfImageOps(qr) + ' Q\n';
     }
     var tx = box.x + (qr ? 54 : 0);
     var shown = url.replace(/^https?:\/\//, '');

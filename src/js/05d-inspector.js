@@ -1,8 +1,8 @@
 // ---------- the inspector ----------
 // Geometry is done by hand on the sheet. Everything that is not geometry —
-// which voice, how big, black or knocked out, what order things stack in —
-// lives here, in one strip, rather than in a popover floating over a panel
-// that might itself be upside down.
+// which voice, how big, knocked out or not, which ink, what order things
+// stack in — lives here, in one strip, rather than in a popover floating
+// over a panel that might itself be upside down.
 var pastePage = 1;
 
 function pasteTargetLabel() {
@@ -68,7 +68,7 @@ function renderInspector() {
   box.innerHTML = '<div class="insp-head"><b>' + esc(el.kind.toUpperCase()) + '</b>' +
     '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
     Math.round(el.h * 100) + ' of the panel</span></div>' +
-    '<div class="press-actions">' + inspectorButtons(el) + '</div>' +
+    '<div class="press-actions">' + inspectorButtons(el) + '</div>' + inkSwatches(el) +
     (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
       ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +

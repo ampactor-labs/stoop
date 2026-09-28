@@ -30,7 +30,7 @@ function pdfFlyerContent(title, issue, url, photo, images) {
     if (ih > room) { ih = room; iw = ih * (pic.w / pic.h); }
     if (ih > 40) {
       ops += 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + F.pad + ' ' +
-        (y - ih).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
+        (y - ih).toFixed(2) + ' cm ' + pdfImageOps(pic) + ' Q\n';
       y -= ih + 20;
     }
   }
@@ -38,7 +38,7 @@ function pdfFlyerContent(title, issue, url, photo, images) {
   var qr = images['__qr'];
   var stripTop = F.pad + F.strip;
   if (qr) {
-    ops += 'q 96 0 0 96 ' + F.pad + ' ' + (stripTop + 16).toFixed(2) + ' cm /Im' + qr.num + ' Do Q\n';
+    ops += 'q 96 0 0 96 ' + F.pad + ' ' + (stripTop + 16).toFixed(2) + ' cm ' + pdfImageOps(qr) + ' Q\n';
   }
   if (url) {
     var shown = url.replace(/^https?:\/\//, '');

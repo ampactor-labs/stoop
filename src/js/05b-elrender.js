@@ -78,7 +78,8 @@ function elBody(el, pics, editable, editing) {
     // A back issue's photographs ride in that issue's own file, not in every
     // later one; the place they were glued still shows.
     if (!src) return '<div class="elmissing">' + (editable ? 'photo' : 'photo in its own issue file') + '</div>';
-    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '">';
+    var tint = inkOf(el) && twoTonePhoto(src) ? ' style="' + inkFilter(inkOf(el)) + '"' : '';
+    return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '"' + tint + '>';
   }
   var voice = voiceOf(el);
   var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '');
@@ -102,7 +103,7 @@ function elHtml(el, pics, editable, selected) {
   var editing = editable && el.id === pasteEditing;
   return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
     (selected ? ' sel' : '') + (editing ? ' editing' : '') +
-    '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + '">' +
+    '" data-el="' + esc(el.id) + '" style="' + elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '') + '">' +
     elBody(el, pics, editable, editing) +
     (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
                 '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +

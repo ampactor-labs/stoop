@@ -30,7 +30,8 @@ const suites = [
   ['the loop', require('./12-loop.js')],
   ['pages as made', require('./13-pages.js')],
   ['the site', require('./14-site.js')],
-  ['making things', require('./15-craft.js')]
+  ['making things', require('./15-craft.js')],
+  ['colour', require('./16-colour.js')]
 ];
 
 (async () => {

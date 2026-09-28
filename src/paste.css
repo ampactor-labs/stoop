@@ -65,6 +65,12 @@
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Anton, Impact, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
+/* The ink drums, as swatches. */
+.swatches { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin-top: .5rem; }
+.swatches .sub { margin-right: .2rem; }
+.swatch { width: 26px; height: 26px; border: 2px solid var(--paper); outline: 1px solid var(--fg); padding: 0; cursor: pointer; }
+.swatch.on { outline: 3px solid var(--fg); }
+@media (pointer: coarse) { .swatch { width: 34px; height: 34px; } }
 
 /* Nothing that only exists to be grabbed may reach the paper. */
 @media print {

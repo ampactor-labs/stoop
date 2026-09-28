@@ -125,7 +125,7 @@ function pdfDoc() {
 // reader decodes JPEG itself, so the colour on paper is the colour on screen
 // with nothing re-encoded on the way. Anything else is drawn and read back.
 // Two tones pack eight to a byte, the same black and white the photocopier
-// will make; colour goes in as red, green and blue, with its transparency
+// will make, as a stencil the ink is poured through; colour goes in as red, green and blue, with its transparency
 // beside it as a mask, so a cut-out stays cut out on paper too.
 function deflate(bytes) {
   if (typeof CompressionStream === 'undefined') return Promise.resolve(null);
@@ -214,14 +214,23 @@ function pdfAddJpeg(doc, dataUrl) {
   return { num: num, w: info.w, h: info.h };
 }
 
+// Drawing an image into the unit square its cm has placed. A stencil is
+// laid over white, because a cutting is opaque paper, then poured in its ink.
+function pdfImageOps(pic, ink) {
+  return (pic.mask ? '1 g 0 0 1 1 re f ' + (ink || '0 g ') : '') + '/Im' + pic.num + ' Do';
+}
+
 function pdfAddImage(doc, dataUrl, gen) {
   if (/^data:image\/jpeg;/.test(dataUrl || '')) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
   return rasterOf(dataUrl).then(function (r) {
     if (!r) return null;
-    var made = twoTone(r.d)
+    // Two tones ride as a stencil: black is where the ink goes, in whatever
+    // ink is set when it is drawn, so one photograph can print in any drum.
+    var mask = twoTone(r.d);
+    var made = mask
       ? pdfImageStream(doc, '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h +
-          '/ColorSpace/DeviceGray/BitsPerComponent 1', packBitmap(r, gen))
+          '/ImageMask true/BitsPerComponent 1', packBitmap(r, gen))
       : pdfAddColour(doc, r);
-    return made.then(function (num) { return { num: num, w: r.w, h: r.h }; });
+    return made.then(function (num) { return { num: num, w: r.w, h: r.h, mask: mask }; });
   });
 }

@@ -139,11 +139,11 @@ function pdfElPhoto(el, g, images) {
     // Fill the box and clip the overflow, which is what object-fit: cover does.
     if (g.w / g.h < ar) { ih = g.h; iw = ih * ar; } else { iw = g.w; ih = iw / ar; }
     return 'q ' + rect(g) + ' W n ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' +
-      (g.cx - iw / 2).toFixed(2) + ' ' + (g.cy - ih / 2).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
+      (g.cx - iw / 2).toFixed(2) + ' ' + (g.cy - ih / 2).toFixed(2) + ' cm ' + pdfImageOps(pic, pdfInk(el)) + ' Q\n';
   }
   if (g.w / g.h > ar) { ih = g.h; iw = ih * ar; } else { iw = g.w; ih = iw / ar; }
   return 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + (g.cx - iw / 2).toFixed(2) + ' ' +
-    (g.cy - ih / 2).toFixed(2) + ' cm /Im' + pic.num + ' Do Q\n';
+    (g.cy - ih / 2).toFixed(2) + ' cm ' + pdfImageOps(pic, pdfInk(el)) + ' Q\n';
 }
 
 function pdfElRansom(el, g) {
@@ -164,11 +164,11 @@ function pdfElRansom(el, g) {
       var ccy = y + s * 0.32;
       ops += 'q\n' + spin(c.tilt, ccx, ccy);
       if (c.inv) {
-        ops += '0 g ' + (x - 1).toFixed(2) + ' ' + (y - s * 0.22).toFixed(2) + ' ' +
+        ops += pdfInk(el) + (x - 1).toFixed(2) + ' ' + (y - s * 0.22).toFixed(2) + ' ' +
           (cw + 1).toFixed(2) + ' ' + (s * 1.12).toFixed(2) + ' re f\n1 g\n';
       }
       ops += 'BT /' + face.f + ' ' + s.toFixed(2) + ' Tf 1 0 0 1 ' + x.toFixed(2) + ' ' +
-        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, c.ch)) + ') Tj ET\n0 g\nQ\n';
+        y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, c.ch)) + ') Tj ET\nQ\n';
     }
     x += cw;
   });
@@ -212,8 +212,8 @@ function pdfElText(el, g) {
   var face = faceOf(el);
   var size = ptSize(el);
   var ops = '';
-  if (el.ink === 'white') ops += '0 g ' + rect(g) + ' f\n1 g\n';
-  if (voice === 'marker') return ops + pdfElMarker(el, g, face, size) + '0 g\n';
+  if (el.ink === 'white') ops += rect(g) + ' f\n1 g\n';
+  if (voice === 'marker') return ops + pdfElMarker(el, g, face, size);
   var lead = size * ((voice === 'head' || voice === 'stencil') ? 1.0 : 1.45);
   var y = g.top - firstBaseline(voice, size, lead);
   var draw = '';
@@ -236,19 +236,21 @@ function pdfElText(el, g) {
       ops += 'q ' + g.x.toFixed(2) + ' ' + (b - band).toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
         band.toFixed(2) + ' re W n\n' + draw + 'Q\n';
     }
-    return ops + '0 g\n';
+    return ops;
   }
-  return ops + draw + '0 g\n';
+  return ops + draw;
 }
 
 function pdfEl(el, box, images) {
   var g = elBoxPdf(box, el);
-  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy);
+  // The cutting's ink, fill and stroke, for everything it draws; a
+  // knocked-out line sets its own white and the Q below undoes it.
+  var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el);
   if (el.kind === 'rule') {
-    ops += '0 g ' + g.x.toFixed(2) + ' ' + g.y.toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
+    ops += g.x.toFixed(2) + ' ' + g.y.toFixed(2) + ' ' + g.w.toFixed(2) + ' ' +
       Math.max(1.5, g.h).toFixed(2) + ' re f\n';
   } else if (el.kind === 'box') {
-    ops += el.ink === 'white' ? '0 g ' + rect(g) + ' f\n' : 'q 2 w 0 G ' + rect(g) + ' S Q\n';
+    ops += el.ink === 'white' ? rect(g) + ' f\n' : 'q 2 w ' + rect(g) + ' S Q\n';
   } else if (el.kind === 'photo') {
     ops += pdfElPhoto(el, g, images);
   } else if (el.kind === 'stamp') {
