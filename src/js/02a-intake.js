@@ -15,8 +15,8 @@ var PHOTO_MAX_EDGE = 2400;
 var SCREEN_MAX_EDGE = 1000;
 var PHOTO_QUALITY = 0.9;
 var PHOTO_CONTRAST = 1.15;
-var LOOKS = ['colour', 'grey', 'grain', 'dots', 'hard'];
-var LOOK_LABEL = { colour: 'COLOUR', grey: 'B&W', grain: 'GRAIN', dots: 'DOTS', hard: 'HARD' };
+var LOOKS = ['colour', 'grey', 'grain', 'dots', 'hard', 'scan'];
+var LOOK_LABEL = { colour: 'COLOUR', grey: 'B&W', grain: 'GRAIN', dots: 'DOTS', hard: 'HARD', scan: 'CLEAN SCAN' };
 
 function isScreen(look) { return look === 'grain' || look === 'dots' || look === 'hard'; }
 
@@ -71,16 +71,43 @@ function toneCurve(exp) {
   return lut;
 }
 
+// A drawing or a page put through a scanner or photographed on a table
+// comes in cream or grey where the paper was white and brown where the pen
+// was black. Its paper is the brightest tone it has plenty of and its ink the
+// darkest, channel by channel: stretching each channel's two to white and
+// black takes the tint out of the paper and leaves a marker its colour.
+function scanLevels(d) {
+  var hist = [new Uint32Array(256), new Uint32Array(256), new Uint32Array(256)], n = 0;
+  for (var i = 0; i < d.length; i += 16) {
+    hist[0][d[i]]++; hist[1][d[i + 1]]++; hist[2][d[i + 2]]++;
+    n++;
+  }
+  return hist.map(function (h) {
+    var at = function (share) {
+      var want = n * share, run = 0;
+      for (var v = 0; v < 256; v++) { run += h[v]; if (run >= want) return v; }
+      return 255;
+    };
+    var lo = at(0.02), hi = at(0.85);
+    var lut = new Uint8ClampedArray(256);
+    for (var k = 0; k < 256; k++) lut[k] = hi - lo < 40 ? k : Math.round((k - lo) * 255 / (hi - lo));
+    return lut;
+  });
+}
+
 function tonePhoto(img, exp, look) {
   var c = canvasAt(img, PHOTO_MAX_EDGE, false);
   var clear = hasClear(c);
-  if (exp || look === 'grey') {
+  if (exp || look === 'grey' || look === 'scan') {
     var data = c.ctx.getImageData(0, 0, c.w, c.h);
     var d = data.data;
     var lut = toneCurve(exp);
+    var lv = look === 'scan' ? scanLevels(d) : null;
     for (var i = 0; i < d.length; i += 4) {
       if (look === 'grey') {
         d[i] = d[i + 1] = d[i + 2] = lut[Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])];
+      } else if (lv) {
+        d[i] = lut[lv[0][d[i]]]; d[i + 1] = lut[lv[1][d[i + 1]]]; d[i + 2] = lut[lv[2][d[i + 2]]];
       } else {
         d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]];
       }

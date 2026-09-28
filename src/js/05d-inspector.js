@@ -19,10 +19,8 @@ function inspectorButtons(el) {
     b = b.concat(typeButtons(el));
   }
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
-  if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
-  if (el.kind === 'photo' && photoMeta[el.photo]) {
-    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', LOOK_LABEL[photoMeta[el.photo].style]]);
-  }
+  if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME'], ['elfillpage', 'FILL THE PAGE']);
+  if (el.kind === 'photo' && photoMeta[el.photo]) b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER']);
   var at = findEl(el.id);
   var pages = pressState().panels.length;
   if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
@@ -53,11 +51,11 @@ function renderInspector() {
     var m = page.photo && photoMeta[page.photo];
     box.className = 'inspector on';
     box.innerHTML = '<div class="insp-head"><b>PAGE ' + pastePage + '</b><span class="sub">' +
-      (m ? 'and its photo' : 'click a cutting to change it') + '</span></div>' +
-      (m ? '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
+      (page.photo ? 'and its photo' : 'click a cutting to change it') + '</span></div>' +
+      '<div class="press-actions">' + (m ? lookSelect('pglook', pastePage, m.style) + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER']]
         .map(function (pair) {
           return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
-        }).join('') + '</div>' : '') + fillSwatches(pastePage);
+        }).join('') : '') + pageButtons(pastePage) + '</div>' + fillSwatches(pastePage);
     return;
   }
   if (!el) {
@@ -70,7 +68,9 @@ function renderInspector() {
   box.innerHTML = '<div class="insp-head"><b>' + esc(el.kind.toUpperCase()) + '</b>' +
     '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
     Math.round(el.h * 100) + ' of the panel</span></div>' +
-    '<div class="press-actions">' + (el.kind === 'text' ? voiceSelect(el) : '') + inspectorButtons(el) + '</div>' +
+    '<div class="press-actions">' + (el.kind === 'text' ? voiceSelect(el) : '') +
+    (el.kind === 'photo' && photoMeta[el.photo] ? lookSelect('ellook', el.id, photoMeta[el.photo].style) : '') +
+    inspectorButtons(el) + '</div>' +
     inkSwatches(el) +
     (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
       ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
@@ -120,7 +120,7 @@ document.addEventListener('click', function (ev) {
   if ((el = hit('[data-eldup]'))) { duplicateEl(el.getAttribute('data-eldup')); return; }
   if ((el = hit('[data-elprevpage]'))) { moveElToPage(el.getAttribute('data-elprevpage'), -1); return; }
   if ((el = hit('[data-elnextpage]'))) { moveElToPage(el.getAttribute('data-elnextpage'), 1); return; }
-  var shot = hit('[data-elphlight],[data-elphdark],[data-elphscreen],[data-pgphlight],[data-pgphdark],[data-pgphscreen]');
+  var shot = hit('[data-elphlight],[data-elphdark],[data-pgphlight],[data-pgphdark]');
   if (shot) rescreenFrom(shot);
 });
 
@@ -158,18 +158,33 @@ function moveElToPage(id, dir) {
   toast('Moved to page ' + to);
 }
 
-// Lighter, darker, or the next look, for a photo cutting or a page's photo.
+// The looks a photograph can take, as a list, for a cutting or a page.
+function lookSelect(kind, key, now) {
+  return '<select class="voicesel" data-' + kind + '="' + esc(String(key)) + '" aria-label="Look">' + LOOKS.map(function (l) {
+    return '<option value="' + l + '"' + (l === now ? ' selected' : '') + '>' + LOOK_LABEL[l] + '</option>';
+  }).join('') + '</select>';
+}
+
+document.addEventListener('change', function (ev) {
+  var s = ev.target.closest && ev.target.closest('[data-ellook],[data-pglook]');
+  if (!s || LOOKS.indexOf(s.value) < 0) return;
+  var onPage = s.hasAttribute('data-pglook');
+  rescreenOn(onPage, s.getAttribute(onPage ? 'data-pglook' : 'data-ellook'), { style: s.value });
+});
+
+// Lighter or darker, for a photo cutting or a page's photo.
 function rescreenFrom(btn) {
   var a = Array.prototype.filter.call(btn.attributes, function (x) { return /^data-(elph|pgph)/.test(x.name); })[0];
   var kind = a.name.replace('data-', '');
-  var onPage = kind.indexOf('pgph') === 0;
-  var hitEl = onPage ? null : findEl(a.value);
-  var panel = onPage ? panelOfPage(Number(a.value)) : null;
+  rescreenOn(kind.indexOf('pgph') === 0, a.value, /light$/.test(kind) ? { exp: 1 } : { exp: -1 });
+}
+
+function rescreenOn(onPage, key, change) {
+  var hitEl = onPage ? null : findEl(key);
+  var panel = onPage ? panelOfPage(Number(key)) : null;
   var photo = onPage ? panel && panel.photo : hitEl && hitEl.el.photo;
   var meta = photo && photoMeta[photo];
   if (!meta) return;
-  var change = /light$/.test(kind) ? { exp: 1 } : /dark$/.test(kind) ? { exp: -1 }
-    : { style: LOOKS[(LOOKS.indexOf(meta.style) + 1) % LOOKS.length] };
   toast('Redoing the photo\u2026');
   rescreen(photo, change).then(function (id) {
     if (!id) return;

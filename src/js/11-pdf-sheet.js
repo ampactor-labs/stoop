@@ -52,7 +52,9 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
 }
 
 function pdfPanel(panel, page, pages, box, images, url, ghosts) {
-  var ops = '';
+  var ops = pdfPhotoFill(panel, box, images);
+  var letters = whiteLetters(panel) ? '1' : '0';
+  ops += letters + ' g ' + letters + ' G\n';
   var y = box.y;
   var isCover = page === 1;
   var isBack = page === pages;
@@ -68,12 +70,12 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var no = pdfHeading('\u2116' + (panel.issue || ''), box.x, y - 1.5, box.cw, 51, 0.9, true);
     ops += no.op;
     y -= no.drop + 3;
-    ops += 'q 2.25 w 0 G ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
+    ops += 'q 2.25 w ' + letters + ' G ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
       (box.x + box.cw).toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' l S Q\n';
     y -= 11.25;
   }
 
-  var pic = panel.photo && images[panel.photo];
+  var pic = !photoFills(panel) && panel.photo && images[panel.photo];
   if (pic) {
     var iw = box.cw;
     var ih = iw * (pic.h / pic.w);
@@ -118,7 +120,11 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
-    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, fill: panel.fill, issue: issue };
+    if (slot.page === 1) {
+      var cover = { issue: issue };
+      Object.keys(panel).forEach(function (k) { if (k !== 'issue') cover[k] = panel[k]; });
+      panel = cover;
+    }
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
       spreadGhosts(panels, slot.page, box.h / box.w));
     // The panel clips what hangs over its edge, as it does on screen and in

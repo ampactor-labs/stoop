@@ -18,7 +18,7 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
       '<div class="sheet" data-sheet="' + i + '" data-gen="' + (gen || 0) + '" style="width:' + paper.w + ';height:' + paper.h +
       ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
       sheet.slots.map(function (slot) {
-        var cover = slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '');
+        var cover = (slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '')) + pageClass(panels[slot.page - 1]);
         return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '"' +
           fillAttr(panels[slot.page - 1]) + '>' +
           panelFaceHtml(panels, slot.page, pics, url, issue, size.ph / size.pw) +

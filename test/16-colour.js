@@ -93,10 +93,8 @@ module.exports = async function colour(browser, ok) {
   await page.waitForTimeout(1500);
   ok('a colour photograph brings its own colours and offers no ink',
      (await page.locator('#inspector .swatch').count()) === 0);
-  await page.click('[data-elphscreen]');
-  await page.waitForTimeout(1000);
-  await page.click('[data-elphscreen]');
-  await page.waitForTimeout(1000);
+  await page.selectOption('[data-ellook]', 'grain');
+  await page.waitForTimeout(1200);
   ok('screened to grain, it does', (await page.locator('#inspector .swatch').count()) === 8);
   await ink('BLUE');
   await page.waitForTimeout(300);

@@ -103,7 +103,8 @@ function runOnAt(page, panel, text) {
   var el = zone && zone.offsetParent && zone.querySelector('[data-page="' + page + '"]');
   var body = el && el.querySelector('.body');
   if (!body) return -1;
-  paintFace(el, { h: panel.h, body: '', photo: panel.photo, fill: panel.fill }, page, null);
+  paintFace(el, { h: panel.h, body: '', photo: panel.photo, fill: panel.fill, photoFill: panel.photoFill,
+    letters: panel.letters }, page, null);
   var fits = function (t) {
     body.innerText = t;
     return body.scrollHeight <= body.clientHeight + 1;

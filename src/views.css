@@ -87,6 +87,11 @@
 }
 .panel { border: 1px dashed #bbb; padding: .28in .3in; overflow: hidden; position: relative; background: #fff; box-sizing: border-box; display: flex; flex-direction: column; }
 .panel.flip { transform: rotate(180deg); }
+/* A page's own photograph over the whole page, its words on top. */
+.panel.photofill .panel-photo { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; object-fit: cover; margin: 0; }
+.panel.photofill > h3, .panel.photofill > .no, .panel.photofill > .rule, .panel.photofill > .body, .panel.photofill > .addr { position: relative; z-index: 1; }
+.panel.letterswhite > h3, .panel.letterswhite > .body, .panel.letterswhite > .no, .panel.letterswhite .addr span { color: #fff; }
+.panel.letterswhite > .rule { border-top-color: #fff; }
 /* A browser prints backgrounds only when asked, and a page colour, a
    knocked-out block and a solid box are all backgrounds. */
 .panel, .panel * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

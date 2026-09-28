@@ -32,7 +32,8 @@ const suites = [
   ['the site', require('./14-site.js')],
   ['making things', require('./15-craft.js')],
   ['colour', require('./16-colour.js')],
-  ['type', require('./17-type.js')]
+  ['type', require('./17-type.js')],
+  ['photographs', require('./18-photo.js')]
 ];
 
 (async () => {

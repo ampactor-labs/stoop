@@ -46,7 +46,7 @@ module.exports = async function craft(browser, ok) {
   const first = await photoId();
   const before = await dark();
   ok('a photograph can be lightened, darkened or given another look, and starts in colour',
-     /LIGHTER/.test(await page.locator('#inspector').innerText()) && /COLOUR/.test(await page.locator('#inspector').innerText()) &&
+     /LIGHTER/.test(await page.locator('#inspector').innerText()) && (await page.inputValue('[data-ellook]')) === 'colour' &&
      before.colour > 1000, 'colour pixels ' + before.colour);
   await page.click('[data-elphlight]');
   await page.waitForTimeout(1200);
@@ -57,30 +57,30 @@ module.exports = async function craft(browser, ok) {
   await page.click('[data-elphdark]');
   await page.waitForTimeout(1200);
   ok('darker again gives back the photograph already made', (await photoId()) === first);
-  await page.click('[data-elphscreen]');
+  await page.selectOption('[data-ellook]', 'grey');
   await page.waitForTimeout(1200);
   const grey = await dark();
   ok('B&W IS THE PHOTOGRAPH IN GREYS, ITS TONES KEPT',
-     /B&W/.test(await page.locator('[data-elphscreen]').innerText()) && grey.colour === 0 && grey.mid > 1000,
+     (await page.inputValue('[data-ellook]')) === 'grey' && grey.colour === 0 && grey.mid > 1000,
      'colour ' + grey.colour + ', grey ' + grey.mid);
-  await page.click('[data-elphscreen]');
+  await page.selectOption('[data-ellook]', 'grain');
   await page.waitForTimeout(1200);
-  ok('grain is the copier\'s dither', /GRAIN/.test(await page.locator('[data-elphscreen]').innerText()) &&
+  ok('grain is the copier\'s dither', (await page.inputValue('[data-ellook]')) === 'grain' &&
      (await dark()).mid === 0);
-  await page.click('[data-elphscreen]');
+  await page.selectOption('[data-ellook]', 'dots');
   await page.waitForTimeout(1200);
   const dots = await dark();
   const depth = (url) => Buffer.from(url.split(',')[1], 'base64')[24];
   ok('DOTS IS A HALFTONE, AND STILL ONLY TWO TONES, STORED AT ONE BIT A PIXEL',
-     /DOTS/.test(await page.locator('[data-elphscreen]').innerText()) && dots.mid === 0 &&
+     (await page.inputValue('[data-ellook]')) === 'dots' && dots.mid === 0 &&
      /^data:image\/png/.test(dots.src) && depth(dots.src) === 1, 'grey pixels ' + dots.mid + ', ' + dots.src.slice(0, 22));
-  await page.click('[data-elphscreen]');
+  await page.selectOption('[data-ellook]', 'hard');
   await page.waitForTimeout(1200);
-  ok('hard is the copier with the contrast up', /HARD/.test(await page.locator('[data-elphscreen]').innerText()));
+  ok('hard is the copier with the contrast up', (await page.inputValue('[data-ellook]')) === 'hard');
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
   await page.keyboard.press('Control+z');
   await page.waitForTimeout(400);
-  ok('and undo steps back through them', /DOTS/.test(await page.locator('[data-elphscreen]').innerText()));
+  ok('and undo steps back through them', (await page.inputValue('[data-ellook]')) === 'dots');
 
   // A photograph can say what is in it.
   await page.locator('[data-page="2"] .el-photo').click();

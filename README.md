@@ -36,7 +36,7 @@ The press shows the pages right way up, in reading order. A page clips what does
 
 On top of the pages sits the paste-up: cuttings placed by hand, the way a zine is glued together before it goes through a photocopier. A cutting dropped on a page can be dragged anywhere and turned to any angle, over whatever is already there. Text comes in seven voices: typewriter, headline, a felt-tip marker, stencil with bridges cut through the letters, a ransom note cut letter by letter from four faces, and a plain sans and serif for the parts of a zine that read like a magazine. A line can sit left, centred or right, be set in capitals or as typed, and be drawn as outlines. Photographs, boxes, rules and nine stamps (FREE, TAKE ONE, PHOTOCOPY THIS, №, an arrow, a star, tape, a staple and a barcode that scans nothing) complete the kit, in black or in any of seven inks a print shop is likely to have loaded (red, pink, orange, yellow, green, blue and purple), on the page or knocked out of a block. A page can be printed on a colour, pink, yellow, blue, green, orange, lavender or kraft, as a flood under everything on it. Drag to move, double-click to type, use the arrow keys to nudge and Ctrl-D to duplicate; undo and redo keep 50 steps. A cutting dragged across the gutter lands on both pages of the spread, and a faint line on each page shows where a home printer stops reaching. **GEN** sets how many times the issue has been through a copier, from GEN 0 (the master) to GEN 3 (a laundromat copy of a copy). Its wear comes from fixed seeds, so it prints the same everywhere. Cuttings are stored as fractions of their page, never in points, so a collage survives a change of format the same way a paragraph does.
 
-Photographs go on the page as they were taken, in colour, at up to 2400 pixels on the long edge, and reach the PDF as the same JPEG, so the colour on paper is the colour on screen. A cut-out PNG keeps its transparency. The camera's own file is never kept: the photo is redrawn on the way in, which leaves behind where it was taken and everything else a phone writes into a picture. The device keeps the redrawn original, so a photo can be lightened or darkened later, turned black and white, or screened the way a photocopier would: dithered to grain, halftone dots or hard contrast, which a screened photo can then print in any of the inks. Every look can be turned back. A photograph can carry a description for screen readers, which the text view also prints.
+Photographs go on the page as they were taken, in colour, at up to 2400 pixels on the long edge, and reach the PDF as the same JPEG, so the colour on paper is the colour on screen. A cut-out PNG keeps its transparency. The camera's own file is never kept: the photo is redrawn on the way in, which leaves behind where it was taken and everything else a phone writes into a picture. The device keeps the redrawn original, so a photo can be lightened or darkened later, turned black and white, or screened the way a photocopier would: dithered to grain, halftone dots or hard contrast, which a screened photo can then print in any of the inks. A clean scan, for a drawing or a page photographed on a table, turns its tinted paper white and its ink black and keeps the colour of whatever was drawn in colour. Every look can be turned back. A photograph can fill its page edge to edge, as a cutting under everything glued on it or as the page's own photograph behind its heading and words, which can be set in white over it. A photograph can carry a description for screen readers, which the text view also prints.
 
 ### Paper
 
@@ -109,7 +109,7 @@ index.html         the app, built from src/ (the page GitHub Pages serves)
 press/index.html   the hand print kit, built from src/press.html
 artifact/          both pages as fragments for the claude.ai artifact publisher
 src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
-test/              seventeen browser suites and their runner, run.js
+test/              eighteen browser suites and their runner, run.js
 build.sh           assembles src/ into the four built files
 check.sh           the repository's laws, run by CI and the pre-commit hook
 docs/              longer write-ups linked from this README
@@ -164,7 +164,7 @@ npx playwright install chromium
 node test/run.js
 ```
 
-`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The seventeen suites cover the parts that would be easy to fake, among them:
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The eighteen suites cover the parts that would be easy to fake, among them:
 
 - two issues on the shelf, each keeping its own words;
 - the same pieces re-flowing into another format with nothing retyped;
