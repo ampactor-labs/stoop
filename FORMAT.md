@@ -160,7 +160,7 @@ Print both sides, nest the sheets in order, staple twice through the spine. No r
 
 ### Format names
 
-`format` in an issue is one of `fold8`, `fold8a4` (one sheet, eight panels, one cut) or `saddle8`, `saddle12`, `saddle16`, `saddle16a4` (a stitched signature of that many pages). `hand` is `"A"` or `"B"` and is meaningful only for the one-cut formats. An implementation MAY define others; a reader that does not know a format SHOULD say so rather than impose the pages wrongly.
+`format` in an issue is one of `fold8`, `fold8a4` (one sheet, eight panels, one cut) or `saddle` followed by a page count, a multiple of four from 8 to 32, for a stitched signature of that many pages on Letter, with `a4` after it for the same on A4: `saddle8`, `saddle20a4`, `saddle32`. `hand` is `"A"` or `"B"` and is meaningful only for the one-cut formats. An implementation MAY define others; a reader that does not know a format SHOULD say so rather than impose the pages wrongly.
 
 ### Paper
 
@@ -168,7 +168,7 @@ Letter is 11 × 8.5 inches, A4 is 297 × 210 mm, both landscape. An implementati
 
 ### On PDF
 
-An implementation MAY write the imposed sheet as a PDF, and the reference one does, because a print dialog negotiates margins and scale somewhere the press cannot see and a zine that comes out at 94% does not fold. Nothing in this specification requires it: the imposition above is the contract, and a sheet is a sheet however it reaches the paper. An implementation that does write PDF SHOULD embed the typeface its screen showed, as the reference one embeds its subset of Anton; a substituted face reflows a headline, and a headline that reflows is a different zine.
+An implementation MAY write the imposed sheet as a PDF, and the reference one does, because a print dialog negotiates margins and scale somewhere the press cannot see and a zine that comes out at 94% does not fold. Nothing in this specification requires it: the imposition above is the contract, and a sheet is a sheet however it reaches the paper. An implementation that does write PDF SHOULD embed the typeface its screen showed, as the reference one embeds its subset of Anton; a substituted face reflows a headline, and a headline that reflows is a different zine. It MAY also write the pages one to a sheet of the PDF, in reading order, for a shop that imposes its own; the reference one gives each page an eighth of an inch of bleed, which page colours, full-page photographs and cuttings over the edge run into, sets its TrimBox and BleedBox, and marks the trim at each corner.
 
 ### The budget
 

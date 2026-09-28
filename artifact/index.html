@@ -769,10 +769,11 @@ body.landing main { padding-top: 2.4rem; }
   <div class="paper">
     <div class="press-actions">
       <button class="btn done" id="pdfzinebtn">SAVE PDF</button>
+      <button class="btn" id="pdfshopbtn">PDF FOR A PRINT SHOP</button>
       <button class="btn" id="printzinebtn">PRINT FROM THE BROWSER</button>
       <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
     </div>
-    <p class="sub">The PDF is exact — hand it to a copy shop. Browser print: 100%, no margins. The flyer has tear-off tabs.</p>
+    <p class="sub">The PDF is the sheet, exact: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the other one: every page on its own, with bleed and crop marks. Browser print: 100%, no margins. The flyer has tear-off tabs.</p>
   </div>
 
   <div class="paper fold-guide">
@@ -796,7 +797,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 276 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 280 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1646,26 +1647,20 @@ var FORMATS = {
   fold8a4: {
     label: 'One sheet · 8 panels · one cut · A4',
     kind: 'onecut', pages: 8, paper: 'a4', folds: true
-  },
-  saddle8: {
-    label: 'Saddle-stitch · 8 pages · 2 sheets · Letter',
-    kind: 'saddle', pages: 8, paper: 'letter', folds: false
-  },
-  saddle12: {
-    label: 'Saddle-stitch · 12 pages · 3 sheets · Letter',
-    kind: 'saddle', pages: 12, paper: 'letter', folds: false
-  },
-  saddle16: {
-    label: 'Saddle-stitch · 16 pages · 4 sheets · Letter',
-    kind: 'saddle', pages: 16, paper: 'letter', folds: false
-  },
-  saddle16a4: {
-    label: 'Saddle-stitch · 16 pages · 4 sheets · A4',
-    kind: 'saddle', pages: 16, paper: 'a4', folds: false
   }
 };
 
-var FORMAT_IDS = ['fold8', 'fold8a4', 'saddle8', 'saddle12', 'saddle16', 'saddle16a4'];
+var FORMAT_IDS = ['fold8', 'fold8a4'];
+[8, 12, 16, 20, 24, 28, 32].forEach(function (n) {
+  ['letter', 'a4'].forEach(function (paper) {
+    var id = 'saddle' + n + (paper === 'a4' ? 'a4' : '');
+    FORMATS[id] = {
+      label: 'Saddle-stitch \u00b7 ' + n + ' pages \u00b7 ' + n / 4 + ' sheets \u00b7 ' + PAPER[paper].label,
+      kind: 'saddle', pages: n, paper: paper, folds: false
+    };
+    FORMAT_IDS.push(id);
+  });
+});
 
 function formatOf(id) { return FORMATS[id] || FORMATS.fold8; }
 function paperOf(id) { return PAPER[formatOf(id).paper]; }
@@ -3177,8 +3172,9 @@ function fillSwatches(page) {
 function pdfFill(panel, box) {
   var hex = fillOf(panel);
   if (!hex) return '';
-  return inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ') + ' rg ' + box.left.toFixed(2) + ' ' +
-    (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' + box.h.toFixed(2) + ' re f 0 g\n';
+  var b = box.bleed || 0;
+  return inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ') + ' rg ' + (box.left - b).toFixed(2) + ' ' +
+    (box.top - box.h - b).toFixed(2) + ' ' + (box.w + 2 * b).toFixed(2) + ' ' + (box.h + 2 * b).toFixed(2) + ' re f 0 g\n';
 }
 
 function pdfInk(el) {
@@ -3352,8 +3348,9 @@ function pdfPhotoFill(panel, box, images) {
   var pic = photoFills(panel) && images[panel.photo];
   if (!pic) return '';
   var ar = pic.w / pic.h;
-  var iw = box.w, ih = box.w / ar;
-  if (ih < box.h) { ih = box.h; iw = ih * ar; }
+  var b = box.bleed || 0;
+  var iw = box.w + 2 * b, ih = iw / ar;
+  if (ih < box.h + 2 * b) { ih = box.h + 2 * b; iw = ih * ar; }
   var cx = box.left + box.w / 2, cy = box.top - box.h / 2;
   return 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + (cx - iw / 2).toFixed(2) + ' ' +
     (cy - ih / 2).toFixed(2) + ' cm ' + pdfImageOps(pic) + ' Q\n';
@@ -3974,6 +3971,7 @@ function renderShelf() {
         '<button class="btn quiet" data-readissue="' + esc(iss.no) + '">READ</button>' +
         '<button class="btn quiet" data-reprintissue="' + esc(iss.no) + '">REPRINT</button>' +
         '<button class="btn quiet" data-pdfissue="' + esc(iss.no) + '">PDF</button>' +
+        '<button class="btn quiet" data-shopissue="' + esc(iss.no) + '">SHOP PDF</button>' +
         '<button class="btn quiet" data-exportissue="' + esc(iss.no) + '">EXPORT</button>' +
         '</div>';
     }).join('');
@@ -5010,12 +5008,8 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   return loadFaces().then(function () { return writeSheetPdf(panels, formatId, hand, url, issue, gen); });
 }
 
-function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
-  var doc = pdfDoc();
-  var plan = impose(formatId, hand);
-  var geom = pdfLayout(formatId);
+function pdfPrepare(doc, panels, url, gen) {
   var wanted = [];
-
   var want = function (id) {
     if (id && photoCache[id] && wanted.indexOf(id) < 0) wanted.push(id);
   };
@@ -5051,26 +5045,40 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
     var std = function (name) {
       return doc.obj(['<</Type/Font/Subtype/Type1/BaseFont/' + name + '/Encoding/WinAnsiEncoding>>']);
     };
-    var courier = std('Courier');
-    var helv = std('Helvetica-Bold');
-    var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
+    var resources = '/Font<</F1 ' + std('Courier') + ' 0 R/F2 ' + std('Helvetica-Bold') + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
       '/F9 ' + std('Helvetica') + ' 0 R/F10 ' + std('Times-Roman') + ' 0 R' +
       (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
+    return { images: images, resources: resources };
+  });
+}
 
-    var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
-    var kids = plan.sheets.map(function (sheet) {
-      var content = doc.stream('', pdfBytes(pdfSheetContent(sheet, panels, geom, images, url, issue, gen)));
-      return doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R/MediaBox[0 0 ' +
-        geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']/Resources<<' + resources +
-        '>>/Contents ' + content + ' 0 R>>']);
-    });
-    doc.replace(pagesNum, ['<</Type/Pages/Count ' + kids.length + '/Kids[' +
-      kids.map(function (k) { return k + ' 0 R'; }).join(' ') + ']>>']);
-    var root = doc.obj(['<</Type/Catalog/Pages ' + pagesNum + ' 0 R>>']);
-    return doc.build(root);
+function pdfFinish(doc, pages, resources) {
+  var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
+  var kids = pages.map(function (pg) {
+    var content = doc.stream('', pdfBytes(pg.ops));
+    return doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R' + pg.boxes + '/Resources<<' + resources +
+      '>>/Contents ' + content + ' 0 R>>']);
+  });
+  doc.replace(pagesNum, ['<</Type/Pages/Count ' + kids.length + '/Kids[' +
+    kids.map(function (k) { return k + ' 0 R'; }).join(' ') + ']>>']);
+  var root = doc.obj(['<</Type/Catalog/Pages ' + pagesNum + ' 0 R>>']);
+  return doc.build(root);
+}
+
+function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
+  var doc = pdfDoc();
+  var plan = impose(formatId, hand);
+  var geom = pdfLayout(formatId);
+  return pdfPrepare(doc, panels, url, gen).then(function (got) {
+    return pdfFinish(doc, plan.sheets.map(function (sheet) {
+      return {
+        ops: pdfSheetContent(sheet, panels, geom, got.images, url, issue, gen),
+        boxes: '/MediaBox[0 0 ' + geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']'
+      };
+    }), got.resources);
   });
 }
 
@@ -5481,6 +5489,83 @@ function pdfSpeckle(gen, box, seed) {
       d.s.toFixed(2) + ' ' + d.s.toFixed(2) + ' re';
   }).join(' ') + (gen ? ' f\n' : '');
 }
+var BLEED = 9;
+var MARKS = 18;
+
+function shopBox(pw, ph) {
+  var left = MARKS + BLEED, top = MARKS + BLEED + ph;
+  return {
+    left: left, top: top, w: pw, h: ph, bleed: BLEED,
+    cx: left + pw / 2, cy: top - ph / 2,
+    x: left + PAD_X, y: top - PAD_Y,
+    cw: pw - PAD_X * 2, ch: ph - PAD_Y * 2
+  };
+}
+
+function cropMarks(box) {
+  var ops = 'q 0.25 w 0 G\n';
+  var x0 = box.left, x1 = box.left + box.w, y0 = box.top - box.h, y1 = box.top;
+  var near = BLEED + 3, far = BLEED + MARKS - 2;
+  [[x0, y0, -1, -1], [x1, y0, 1, -1], [x0, y1, -1, 1], [x1, y1, 1, 1]].forEach(function (c) {
+    ops += (c[0] + c[2] * near).toFixed(2) + ' ' + c[1].toFixed(2) + ' m ' + (c[0] + c[2] * far).toFixed(2) + ' ' +
+      c[1].toFixed(2) + ' l S ' + c[0].toFixed(2) + ' ' + (c[1] + c[3] * near).toFixed(2) + ' m ' +
+      c[0].toFixed(2) + ' ' + (c[1] + c[3] * far).toFixed(2) + ' l S\n';
+  });
+  return ops + 'Q\n';
+}
+
+function writeShopPdf(panels, formatId, url, issue, gen) {
+  var doc = pdfDoc();
+  var size = pageSize(formatId);
+  var pw = Number(size.pw), ph = Number(size.ph);
+  var mw = pw + 2 * (BLEED + MARKS), mh = ph + 2 * (BLEED + MARKS);
+  var box = shopBox(pw, ph);
+  var n = panels.length;
+  var r = function (x0, y0, x1, y1) { return '[' + [x0, y0, x1, y1].map(function (v) { return v.toFixed(2); }).join(' ') + ']'; };
+  return pdfPrepare(doc, panels, url, gen).then(function (got) {
+    var pages = panels.map(function (p, i) {
+      var page = i + 1;
+      var panel = p || { h: '', body: '', photo: null };
+      if (page === 1) {
+        var cover = { issue: issue };
+        Object.keys(panel).forEach(function (k) { if (k !== 'issue') cover[k] = panel[k]; });
+        panel = cover;
+      }
+      var inner = pdfPanel(panel, page, n, box, got.images, url, spreadGhosts(panels, page, ph / pw));
+      return {
+        ops: 'q ' + (box.left - BLEED).toFixed(2) + ' ' + (box.top - box.h - BLEED).toFixed(2) + ' ' +
+          (pw + 2 * BLEED).toFixed(2) + ' ' + (ph + 2 * BLEED).toFixed(2) + ' re W n\n' + pdfFill(panel, box) + inner +
+          'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + page) + cropMarks(box),
+        boxes: '/MediaBox' + r(0, 0, mw, mh) +
+          '/BleedBox' + r(MARKS, MARKS, mw - MARKS, mh - MARKS) +
+          '/TrimBox' + r(MARKS + BLEED, MARKS + BLEED, mw - MARKS - BLEED, mh - MARKS - BLEED)
+      };
+    });
+    return pdfFinish(doc, pages, got.resources);
+  });
+}
+
+function saveShopPdf(panels, formatId, url, issue, name, gen) {
+  toast('Writing the pages for a print shop…');
+  return loadFaces().then(function () { return writeShopPdf(panels, formatId, url, issue, gen); }).then(function (blob) {
+    downloadBlob(name, blob);
+    toast('Saved: one page to a sheet, with bleed and crop marks, in reading order');
+  }).catch(function (e) { toast('Could not write the PDF: ' + e.message); });
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target.closest && ev.target.closest('#pdfshopbtn,[data-shopissue]');
+  if (!t) return;
+  if (t.id === 'pdfshopbtn') {
+    capturePanels();
+    if (!confirmSheet('Save a PDF for a print shop')) return;
+    var ps = pressState();
+    saveShopPdf(ps.panels, ps.format, issueUrl(ps.issue), ps.issue, sceneSlug() + '-' + ps.issue + '-shop.pdf', genOf(ps));
+    return;
+  }
+  var iss = issueByNo(t.getAttribute('data-shopissue'));
+  if (iss) saveShopPdf(iss.panels || [], iss.format, issueUrl(iss.no), iss.no, sceneSlug() + '-' + iss.no + '-shop.pdf', iss.gen);
+});
 
 function sceneSlug() {
   var a = (state.address || '').replace(/\/+$/, '');

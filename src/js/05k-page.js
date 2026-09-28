@@ -62,8 +62,9 @@ function pdfPhotoFill(panel, box, images) {
   var pic = photoFills(panel) && images[panel.photo];
   if (!pic) return '';
   var ar = pic.w / pic.h;
-  var iw = box.w, ih = box.w / ar;
-  if (ih < box.h) { ih = box.h; iw = ih * ar; }
+  var b = box.bleed || 0;
+  var iw = box.w + 2 * b, ih = iw / ar;
+  if (ih < box.h + 2 * b) { ih = box.h + 2 * b; iw = ih * ar; }
   var cx = box.left + box.w / 2, cy = box.top - box.h / 2;
   return 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + (cx - iw / 2).toFixed(2) + ' ' +
     (cy - ih / 2).toFixed(2) + ' cm ' + pdfImageOps(pic) + ' Q\n';

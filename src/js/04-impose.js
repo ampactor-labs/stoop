@@ -52,26 +52,24 @@ var FORMATS = {
   fold8a4: {
     label: 'One sheet · 8 panels · one cut · A4',
     kind: 'onecut', pages: 8, paper: 'a4', folds: true
-  },
-  saddle8: {
-    label: 'Saddle-stitch · 8 pages · 2 sheets · Letter',
-    kind: 'saddle', pages: 8, paper: 'letter', folds: false
-  },
-  saddle12: {
-    label: 'Saddle-stitch · 12 pages · 3 sheets · Letter',
-    kind: 'saddle', pages: 12, paper: 'letter', folds: false
-  },
-  saddle16: {
-    label: 'Saddle-stitch · 16 pages · 4 sheets · Letter',
-    kind: 'saddle', pages: 16, paper: 'letter', folds: false
-  },
-  saddle16a4: {
-    label: 'Saddle-stitch · 16 pages · 4 sheets · A4',
-    kind: 'saddle', pages: 16, paper: 'a4', folds: false
   }
 };
 
-var FORMAT_IDS = ['fold8', 'fold8a4', 'saddle8', 'saddle12', 'saddle16', 'saddle16a4'];
+// Saddle-stitched signatures from eight pages to thirty-two, on either paper:
+// saddle8, saddle8a4, and so on. Past thirty-two a desk stapler no longer
+// reaches through the fold, and the middle pages creep out far enough that a
+// shop has to trim them.
+var FORMAT_IDS = ['fold8', 'fold8a4'];
+[8, 12, 16, 20, 24, 28, 32].forEach(function (n) {
+  ['letter', 'a4'].forEach(function (paper) {
+    var id = 'saddle' + n + (paper === 'a4' ? 'a4' : '');
+    FORMATS[id] = {
+      label: 'Saddle-stitch \u00b7 ' + n + ' pages \u00b7 ' + n / 4 + ' sheets \u00b7 ' + PAPER[paper].label,
+      kind: 'saddle', pages: n, paper: paper, folds: false
+    };
+    FORMAT_IDS.push(id);
+  });
+});
 
 function formatOf(id) { return FORMATS[id] || FORMATS.fold8; }
 function paperOf(id) { return PAPER[formatOf(id).paper]; }

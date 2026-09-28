@@ -40,13 +40,13 @@ Photographs go on the page as they were taken, in colour, at up to 2400 pixels o
 
 ### Paper
 
-Imposition is the arrangement of pages on a printed sheet so that they come out in order once the sheet is folded and cut. The press imposes the same pages in six formats. One sheet of eight panels with a single cut prints on Letter or A4. A saddle-stitched booklet runs to 8, 12 or 16 pages on Letter, or 16 pages on A4. Saddle stitch nests folded sheets inside each other and staples them through the fold. The nested sheets form one signature, the printer's word for a group of pages printed together and folded as a unit. Changing the format re-flows the same pieces with nothing retyped.
+Imposition is the arrangement of pages on a printed sheet so that they come out in order once the sheet is folded and cut. The press imposes the same pages in sixteen formats. One sheet of eight panels with a single cut prints on Letter or A4. A saddle-stitched booklet runs from 8 to 32 pages, four at a time, on Letter or A4; past 32 a desk stapler no longer reaches through the fold. Saddle stitch nests folded sheets inside each other and staples them through the fold. The nested sheets form one signature, the printer's word for a group of pages printed together and folded as a unit. Changing the format re-flows the same pieces with nothing retyped.
 
-**paper** asks for a test sheet first and offers **SWAP FOLD** when the page numbers come out shuffled. **SAVE PDF** writes an exact PDF at the paper's size, with nothing left for a print dialog to change, so it can go straight to a copy shop. **PRINT FROM THE BROWSER** uses the browser's own dialog, and **FLYER + TEAR TABS** writes a PDF flyer whose tear-off tabs carry the scene's address. When the scene has an address, the back cover carries it as text and as a QR code the page draws itself.
+**paper** asks for a test sheet first and offers **SWAP FOLD** when the page numbers come out shuffled. **SAVE PDF** writes an exact PDF at the paper's size, with nothing left for a print dialog to change, so it can go straight to a copy shop. **PDF FOR A PRINT SHOP** is for a shop that folds and trims its own: every page on a sheet of its own, in reading order, with an eighth of an inch of bleed that page colours, full-page photographs and cuttings over the edge run into, and crop marks. **PRINT FROM THE BROWSER** uses the browser's own dialog, and **FLYER + TEAR TABS** writes a PDF flyer whose tear-off tabs carry the scene's address. When the scene has an address, the back cover carries it as text and as a QR code the page draws itself.
 
 ### The shelf and handing it on
 
-The shelf keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly whatever the current draft is set to. Each issue has **READ**, **REPRINT**, **PDF** and **EXPORT**.
+The shelf keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly whatever the current draft is set to. Each issue has **READ**, **REPRINT**, **PDF**, **SHOP PDF** and **EXPORT**.
 
 **hand it on** saves the latest issue as one HTML file named for the scene and the issue, such as `stoop-zine-01.html`. Opened on a machine that has never seen the app, it shows the issue page by page, with the text one tap away, and then offers the press it rode in for the next issue. It carries every back issue too, each with only its cover photograph, so the file does not grow with the shelf until nobody can send it. **SEND** in the tray saves a single piece as its own file, which carries the press as well, and **TAKE IN** under **scene** takes in a piece or an issue somebody sent; taking the same file twice does nothing.
 
@@ -109,7 +109,7 @@ index.html         the app, built from src/ (the page GitHub Pages serves)
 press/index.html   the hand print kit, built from src/press.html
 artifact/          both pages as fragments for the claude.ai artifact publisher
 src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
-test/              twenty browser suites and their runner, run.js
+test/              twenty-two browser suites and their runner, run.js
 build.sh           assembles src/ into the four built files
 check.sh           the repository's laws, run by CI and the pre-commit hook
 docs/              longer write-ups linked from this README
@@ -164,7 +164,7 @@ npx playwright install chromium
 node test/run.js
 ```
 
-`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty suites cover the parts that would be easy to fake, among them:
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-two suites cover the parts that would be easy to fake, among them:
 
 - two issues on the shelf, each keeping its own words;
 - the same pieces re-flowing into another format with nothing retyped;
@@ -189,7 +189,7 @@ Everything lives in the browser that made it. There is no server to fall back on
 - **A photograph that arrives in a file cannot be lightened or given another look.** Its original stays on the device that took it in.
 - **A text-only issue is mostly press.** Every issue file carries the press, about 260 KB, however little the issue holds.
 - **Photographs make heavy files.** An issue with a colour photograph on every page is about 3 MB, which is the photographs. Screening a photo to grain or dots makes it several times lighter.
-- **Colour runs to the edge only at a print shop.** A page colour floods the whole page, and most home printers stop about a quarter inch short of the paper's edge, which is what the faint line on each page shows.
+- **Colour runs to the edge only at a print shop.** A page colour floods the whole page, and most home printers stop about a quarter inch short of the paper's edge, which is what the faint line on each page shows. **PDF FOR A PRINT SHOP** carries the bleed a shop needs to trim it clean.
 - **Printers and hands differ.** The page asks for a test sheet before a print run and offers the other fold when the page numbers come out shuffled. Nothing checks a real printer.
 - **Some things are left out on purpose.** There is no feed, the first of the refusals in [DESIGN.md](DESIGN.md#refusals). [PLAN.md](PLAN.md#what-never-gets-built) rules out accounts, cloud sync, a hosted service and any surface that counts anything. It also struck the federation DESIGN.md imagined: rooms, vouching, a protocol, a cooperative and a court. If the format spreads, that federation is somebody else's to build.
 

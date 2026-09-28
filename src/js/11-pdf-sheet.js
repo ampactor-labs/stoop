@@ -149,12 +149,11 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   return loadFaces().then(function () { return writeSheetPdf(panels, formatId, hand, url, issue, gen); });
 }
 
-function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
-  var doc = pdfDoc();
-  var plan = impose(formatId, hand);
-  var geom = pdfLayout(formatId);
+// Every photograph the pages need, the address's code, the two faces and the
+// standard fonts, gathered once into a document; the imposed sheet and the
+// shop's single pages are two ways of laying the same pages onto it.
+function pdfPrepare(doc, panels, url, gen) {
   var wanted = [];
-
   var want = function (id) {
     if (id && photoCache[id] && wanted.indexOf(id) < 0) wanted.push(id);
   };
@@ -192,26 +191,41 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
     var std = function (name) {
       return doc.obj(['<</Type/Font/Subtype/Type1/BaseFont/' + name + '/Encoding/WinAnsiEncoding>>']);
     };
-    var courier = std('Courier');
-    var helv = std('Helvetica-Bold');
-    var resources = '/Font<</F1 ' + courier + ' 0 R/F2 ' + helv + ' 0 R' +
+    var resources = '/Font<</F1 ' + std('Courier') + ' 0 R/F2 ' + std('Helvetica-Bold') + ' 0 R' +
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
       '/F9 ' + std('Helvetica') + ' 0 R/F10 ' + std('Times-Roman') + ' 0 R' +
       (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
+    return { images: images, resources: resources };
+  });
+}
 
-    var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
-    var kids = plan.sheets.map(function (sheet) {
-      var content = doc.stream('', pdfBytes(pdfSheetContent(sheet, panels, geom, images, url, issue, gen)));
-      return doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R/MediaBox[0 0 ' +
-        geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']/Resources<<' + resources +
-        '>>/Contents ' + content + ' 0 R>>']);
-    });
-    doc.replace(pagesNum, ['<</Type/Pages/Count ' + kids.length + '/Kids[' +
-      kids.map(function (k) { return k + ' 0 R'; }).join(' ') + ']>>']);
-    var root = doc.obj(['<</Type/Catalog/Pages ' + pagesNum + ' 0 R>>']);
-    return doc.build(root);
+// Pages as [content ops, page dictionary extras] into a finished document.
+function pdfFinish(doc, pages, resources) {
+  var pagesNum = doc.obj(['']);          // reserved: the page tree needs its kids first
+  var kids = pages.map(function (pg) {
+    var content = doc.stream('', pdfBytes(pg.ops));
+    return doc.obj(['<</Type/Page/Parent ' + pagesNum + ' 0 R' + pg.boxes + '/Resources<<' + resources +
+      '>>/Contents ' + content + ' 0 R>>']);
+  });
+  doc.replace(pagesNum, ['<</Type/Pages/Count ' + kids.length + '/Kids[' +
+    kids.map(function (k) { return k + ' 0 R'; }).join(' ') + ']>>']);
+  var root = doc.obj(['<</Type/Catalog/Pages ' + pagesNum + ' 0 R>>']);
+  return doc.build(root);
+}
+
+function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
+  var doc = pdfDoc();
+  var plan = impose(formatId, hand);
+  var geom = pdfLayout(formatId);
+  return pdfPrepare(doc, panels, url, gen).then(function (got) {
+    return pdfFinish(doc, plan.sheets.map(function (sheet) {
+      return {
+        ops: pdfSheetContent(sheet, panels, geom, got.images, url, issue, gen),
+        boxes: '/MediaBox[0 0 ' + geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']'
+      };
+    }), got.resources);
   });
 }
 

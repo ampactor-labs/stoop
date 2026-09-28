@@ -69,11 +69,13 @@ function fillSwatches(page) {
   }).join('') + '</div>';
 }
 
+// Out into the bleed, when the page has one.
 function pdfFill(panel, box) {
   var hex = fillOf(panel);
   if (!hex) return '';
-  return inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ') + ' rg ' + box.left.toFixed(2) + ' ' +
-    (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' + box.h.toFixed(2) + ' re f 0 g\n';
+  var b = box.bleed || 0;
+  return inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ') + ' rg ' + (box.left - b).toFixed(2) + ' ' +
+    (box.top - box.h - b).toFixed(2) + ' ' + (box.w + 2 * b).toFixed(2) + ' ' + (box.h + 2 * b).toFixed(2) + ' re f 0 g\n';
 }
 
 // The PDF sets the ink once for the whole cutting, fill and stroke.
