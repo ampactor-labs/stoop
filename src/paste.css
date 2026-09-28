@@ -12,6 +12,7 @@
 .elrule { width: 100%; height: 100%; background: var(--ink); min-height: 2px; }
 .elphoto { width: 100%; height: 100%; object-fit: contain; display: block; }
 .elphoto.fill { object-fit: cover; }
+.elqr { width: 100%; height: 100%; display: block; color: var(--ink); }
 .elmissing { width: 100%; height: 100%; border: 1px dashed #999; color: #999; font: 9px 'Courier New', monospace; display: flex; align-items: center; justify-content: center; }
 
 .eltext { width: 100%; height: 100%; overflow: hidden; outline: none; color: var(--ink); white-space: pre-wrap; }

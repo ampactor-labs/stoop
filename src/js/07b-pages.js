@@ -58,7 +58,7 @@ function panelFaceHtml(panels, page, pics, url, issue, aspect) {
     (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt=""' +
       (imageSize(pics[p.photo]) ? ' style="aspect-ratio:' + imageSize(pics[p.photo]).w + ' / ' + imageSize(pics[p.photo]).h + '"' : '') + '>' : '') +
     '<div class="body">' + esc(p.body || '') + '</div>' +
-    pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
+    pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect), page) +
     (page === pages ? addrHtml(url) : '');
 }
 

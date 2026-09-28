@@ -56,7 +56,7 @@ function photosForFile(issues, no) {
 // app as built plus a seed. Rendered lists are rebuilt on boot, so carrying
 // them would only add weight and staleness.
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
-  'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'roster',
+  'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
 
 function pageWithSeed(seed) {

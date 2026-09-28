@@ -220,7 +220,13 @@ function pdfElMarker(el, g, face, size) {
   return ops;
 }
 
-function pdfElText(el, g) {
+function pdfElText(el, g, page) {
+  // A page number is set as the page it is on, whatever it last recorded.
+  if (isFolio(el) && page) {
+    var n = { text: String(page) };
+    Object.keys(el).forEach(function (k) { if (k !== 'text' && k !== 'lines') n[k] = el[k]; });
+    el = n;
+  }
   var voice = voiceOf(el);
   if (voice === 'ransom') return pdfElRansom(el, g);
   var face = faceOf(el);
@@ -256,7 +262,7 @@ function pdfElText(el, g) {
   return ops + draw;
 }
 
-function pdfEl(el, box, images) {
+function pdfEl(el, box, images, page) {
   var g = elBoxPdf(box, el);
   // The cutting's ink, fill and stroke, for everything it draws; a
   // knocked-out line sets its own white and the Q below undoes it.
@@ -270,15 +276,17 @@ function pdfEl(el, box, images) {
     ops += pdfElPhoto(el, g, images);
   } else if (el.kind === 'stamp') {
     ops += pdfElStamp(el, g);
+  } else if (el.kind === 'qr') {
+    ops += pdfElQr(el, g);
   } else {
-    ops += pdfElText(el, g);
+    ops += pdfElText(el, g, page);
   }
   return ops + 'Q\n';
 }
 
-function pdfPasteup(panel, box, images, ghosts) {
+function pdfPasteup(panel, box, images, ghosts, page) {
   return elsOf(panel).concat(ghosts || [])
     .sort(function (a, b) { return (a.z || 0) - (b.z || 0); })
-    .map(function (el) { return pdfEl(el, box, images); })
+    .map(function (el) { return pdfEl(el, box, images, page); })
     .join('');
 }

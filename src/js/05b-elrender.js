@@ -75,10 +75,11 @@ function elStyle(el) {
   return elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '');
 }
 
-function elBody(el, pics, editable, editing) {
+function elBody(el, pics, editable, editing, page) {
   if (el.kind === 'rule') return '<div class="elrule"></div>';
   if (el.kind === 'box') return '';
   if (el.kind === 'stamp') return stampHtml(el);
+  if (el.kind === 'qr') return qrSvg(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
     // A back issue's photographs ride in that issue's own file, not in every
@@ -90,37 +91,40 @@ function elBody(el, pics, editable, editing) {
   var voice = voiceOf(el);
   var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
   var style = 'font-size:' + (el.size || 12) + 'px';
+  var text = shownText(el, page);
   if (voice === 'ransom') {
-    return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
+    return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(text) + '</div>';
   }
   if (voice === 'marker') {
-    return '<div class="' + cls + '" style="' + style + '">' + markerHtml(el.text) + '</div>';
+    return '<div class="' + cls + '" style="' + style + '">' + markerHtml(text) + '</div>';
   }
+  // A page number is the page's, not something to type.
+  if (isFolio(el)) editable = false;
   // Type, headline and stencil are edited where they sit. Ransom and marker
   // are per-piece markup, and typing into that fights the caret on every
   // keystroke, so they are edited in the inspector instead.
   return '<div class="' + cls + '" style="' + style + '"' +
     (editable && editing ? ' contenteditable="true"' : '') +
     (editable ? ' data-eltext="' + esc(el.id) + '"' : '') +
-    '>' + esc(el.text || '') + '</div>';
+    '>' + esc(text || '') + '</div>';
 }
 
-function elHtml(el, pics, editable, selected) {
+function elHtml(el, pics, editable, selected, page) {
   var editing = editable && el.id === pasteEditing;
   return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
     (inkOf(el) === '#ffffff' ? ' inkpaper' : '') + (selected ? ' sel' : '') + (editing ? ' editing' : '') +
     '" data-el="' + esc(el.id) + '" style="' + elStyle(el) + '">' +
-    elBody(el, pics, editable, editing) +
+    elBody(el, pics, editable, editing, page) +
     (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
                 '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
     '</div>';
 }
 
-function pasteupHtml(panel, pics, editable, ghosts) {
+function pasteupHtml(panel, pics, editable, ghosts, page) {
   var els = elsOf(panel).concat(ghosts || []).sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
   if (!els.length && !editable) return '';
   return '<div class="pasteup">' + els.map(function (e) {
-    return elHtml(e, pics || photoCache, editable && !e.ghost, editable && !e.ghost && e.id === pasteSel);
+    return elHtml(e, pics || photoCache, editable && !e.ghost, editable && !e.ghost && e.id === pasteSel, page);
   }).join('') + '</div>';
 }
 
@@ -216,8 +220,9 @@ function growTextEls(panelEl, panel) {
 // on every keystroke would drop the caret out of whatever is being typed into,
 // so a layer whose shape has not changed is left alone.
 function paintPasteup(panelEl, panel) {
-  var ghosts = spreadGhosts(pressState().panels, Number(panelEl.getAttribute('data-page')), pressAspect());
-  var want = pasteupHtml(panel, photoCache, true, ghosts);
+  var page = Number(panelEl.getAttribute('data-page'));
+  var ghosts = spreadGhosts(pressState().panels, page, pressAspect());
+  var want = pasteupHtml(panel, photoCache, true, ghosts, page);
   var layer = panelEl.querySelector('.pasteup');
   var typing = document.activeElement;
   if (layer && typing && layer.contains(typing)) {

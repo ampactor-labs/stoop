@@ -128,7 +128,8 @@ var PASTE_DEFAULTS = {
   photo: { w: 0.55, h: 0.34 },
   rule: { w: 0.66, h: 0.012 },
   box: { w: 0.45, h: 0.26 },
-  stamp: { w: 0.3, h: 0.12 }
+  stamp: { w: 0.3, h: 0.12 },
+  qr: { w: 0.32, h: 0.22 }
 };
 
 function topZ(panel) {
@@ -158,7 +159,7 @@ function addEl(page, kind, extra) {
     y: Math.min(0.9 - size.h, 0.16 + nudge),
     w: size.w,
     h: size.h,
-    rot: kind === 'rule' ? 0 : crooked(els.length * 37 + page * 13),
+    rot: kind === 'rule' || kind === 'qr' ? 0 : crooked(els.length * 37 + page * 13),
     z: topZ(panel) + 1
   };
   if (kind === 'text') {
@@ -168,6 +169,7 @@ function addEl(page, kind, extra) {
     el.ink = 'black';
   }
   if (kind === 'photo') el.photo = extra && extra.photo;
+  if (kind === 'qr') el.text = (extra && extra.text) || '';
   if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
   if (kind === 'stamp') {
     el.stamp = (extra && extra.stamp) || 'free';

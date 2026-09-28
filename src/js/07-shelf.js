@@ -34,9 +34,10 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
 // is the issue you open on a phone at the bus stop.
 function cuttingWords(p, pics) {
   return (p && Array.isArray(p.els) ? p.els : []).filter(function (e) {
-    return e && ((e.kind === 'text' && String(e.text || '').trim()) || (e.kind === 'photo' && e.alt));
+    return e && !isFolio(e) && (((e.kind === 'text' || e.kind === 'qr') && String(e.text || '').trim()) || (e.kind === 'photo' && e.alt));
   }).sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).map(function (e) {
     if (e.kind === 'text') return '<p class="reading-cut">' + esc(e.text) + '</p>';
+    if (e.kind === 'qr') return '<p class="reading-cut">A code for ' + esc(e.text) + '</p>';
     var src = pics && pics[e.photo];
     return '<figure class="reading-fig">' + (src ? '<img src="' + esc(src) + '" alt="' + esc(e.alt) + '">' : '') +
       '<figcaption>' + esc(e.alt) + '</figcaption></figure>';

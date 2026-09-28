@@ -86,7 +86,7 @@ function pdfInk(el) {
 
 function inkable(el) {
   if (el.kind === 'photo') return twoTonePhoto(photoCache[el.photo]);
-  return el.kind === 'text' || el.kind === 'box' || el.kind === 'rule' || el.kind === 'stamp';
+  return el.kind === 'text' || el.kind === 'box' || el.kind === 'rule' || el.kind === 'stamp' || el.kind === 'qr';
 }
 
 function inkSwatches(el) {
@@ -94,7 +94,7 @@ function inkSwatches(el) {
   var now = inkOf(el);
   // White is for type and rules laid over a photograph; a screen printed
   // in white would be a white rectangle.
-  var inks = el.kind === 'photo' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
+  var inks = el.kind === 'photo' || el.kind === 'qr' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
   return '<div class="swatches"><span class="sub">INK</span>' + inks.map(function (ink) {
     return '<button class="swatch' + (ink[1] === now ? ' on' : '') + '" data-elcolour="' + esc(el.id) +
       '" data-c="' + ink[1] + '" title="' + ink[0] + '" aria-label="' + ink[0] + ' ink" style="background:' +

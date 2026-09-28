@@ -77,6 +77,10 @@ function renderInspector() {
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
         '">' + esc(el.text || '') + '</textarea>'
       : '') +
+    (el.kind === 'qr'
+      ? '<input class="text-input" id="qrtext" maxlength="270" placeholder="A link, a phone number, anything to scan" value="' +
+        esc(el.text || '') + '">'
+      : '') +
     (el.kind === 'photo'
       ? '<input class="text-input" id="alttext" maxlength="200" placeholder="What is in it, for anyone who cannot see it" value="' +
         esc(el.alt || '') + '">'
@@ -92,9 +96,11 @@ function addToPasteup(kind) {
   }
   var extra = {};
   if (kind === 'text') extra.text = 'NEW CUTTING';
+  if (kind === 'qr') extra.text = defaultCodeText();
   addEl(pastePage, kind, extra);
   renderPress();
-  toast(kind === 'text' ? 'Type into it, or change its voice below' : 'Drag it where you want it');
+  toast(kind === 'text' ? 'Type into it, or change its voice below'
+    : kind === 'qr' ? 'Type what it should open below' : 'Drag it where you want it');
 }
 
 document.addEventListener('click', function (ev) {

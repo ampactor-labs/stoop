@@ -399,6 +399,7 @@ body.landing main { padding-top: 2.4rem; }
 .elrule { width: 100%; height: 100%; background: var(--ink); min-height: 2px; }
 .elphoto { width: 100%; height: 100%; object-fit: contain; display: block; }
 .elphoto.fill { object-fit: cover; }
+.elqr { width: 100%; height: 100%; display: block; color: var(--ink); }
 .elmissing { width: 100%; height: 100%; border: 1px dashed #999; color: #999; font: 9px 'Courier New', monospace; display: flex; align-items: center; justify-content: center; }
 
 .eltext { width: 100%; height: 100%; overflow: hidden; outline: none; color: var(--ink); white-space: pre-wrap; }
@@ -666,12 +667,15 @@ body.landing main { padding-top: 2.4rem; }
     <button class="btn quiet" data-addel="box">+ BOX</button>
     <button class="btn quiet" data-addel="rule">+ RULE</button>
     <button class="btn quiet" id="stampbtn">+ STAMP</button>
+    <button class="btn quiet" data-addel="qr">+ CODE</button>
+    <button class="btn quiet" id="blockbtn">+ BLOCK</button>
     <button class="btn quiet" id="undobtn">UNDO</button>
     <button class="btn quiet" id="redobtn">REDO</button>
     <span class="sub" id="addhint"></span>
     <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
   </div>
   <div id="stamps" class="stamps"></div>
+  <div id="blocks" class="stamps"></div>
   <div id="phototray" class="phototray"></div>
   <div id="inspector" class="inspector"></div>
   <div class="sheetzone" id="sheetzone"></div>
@@ -800,7 +804,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 269 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 276 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -2068,7 +2072,8 @@ var PASTE_DEFAULTS = {
   photo: { w: 0.55, h: 0.34 },
   rule: { w: 0.66, h: 0.012 },
   box: { w: 0.45, h: 0.26 },
-  stamp: { w: 0.3, h: 0.12 }
+  stamp: { w: 0.3, h: 0.12 },
+  qr: { w: 0.32, h: 0.22 }
 };
 
 function topZ(panel) {
@@ -2093,7 +2098,7 @@ function addEl(page, kind, extra) {
     y: Math.min(0.9 - size.h, 0.16 + nudge),
     w: size.w,
     h: size.h,
-    rot: kind === 'rule' ? 0 : crooked(els.length * 37 + page * 13),
+    rot: kind === 'rule' || kind === 'qr' ? 0 : crooked(els.length * 37 + page * 13),
     z: topZ(panel) + 1
   };
   if (kind === 'text') {
@@ -2103,6 +2108,7 @@ function addEl(page, kind, extra) {
     el.ink = 'black';
   }
   if (kind === 'photo') el.photo = extra && extra.photo;
+  if (kind === 'qr') el.text = (extra && extra.text) || '';
   if (kind === 'box') el.ink = (extra && extra.ink) || 'black';
   if (kind === 'stamp') {
     el.stamp = (extra && extra.stamp) || 'free';
@@ -2235,10 +2241,11 @@ function elStyle(el) {
   return elGeom(el) + (inkOf(el) ? '--ink:' + inkOf(el) + ';' : '');
 }
 
-function elBody(el, pics, editable, editing) {
+function elBody(el, pics, editable, editing, page) {
   if (el.kind === 'rule') return '<div class="elrule"></div>';
   if (el.kind === 'box') return '';
   if (el.kind === 'stamp') return stampHtml(el);
+  if (el.kind === 'qr') return qrSvg(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
     if (!src) return '<div class="elmissing">' + (editable ? 'photo' : 'photo in its own issue file') + '</div>';
@@ -2248,34 +2255,36 @@ function elBody(el, pics, editable, editing) {
   var voice = voiceOf(el);
   var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
   var style = 'font-size:' + (el.size || 12) + 'px';
+  var text = shownText(el, page);
   if (voice === 'ransom') {
-    return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(el.text) + '</div>';
+    return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(text) + '</div>';
   }
   if (voice === 'marker') {
-    return '<div class="' + cls + '" style="' + style + '">' + markerHtml(el.text) + '</div>';
+    return '<div class="' + cls + '" style="' + style + '">' + markerHtml(text) + '</div>';
   }
+  if (isFolio(el)) editable = false;
   return '<div class="' + cls + '" style="' + style + '"' +
     (editable && editing ? ' contenteditable="true"' : '') +
     (editable ? ' data-eltext="' + esc(el.id) + '"' : '') +
-    '>' + esc(el.text || '') + '</div>';
+    '>' + esc(text || '') + '</div>';
 }
 
-function elHtml(el, pics, editable, selected) {
+function elHtml(el, pics, editable, selected, page) {
   var editing = editable && el.id === pasteEditing;
   return '<div class="el el-' + el.kind + (el.ink === 'white' ? ' inkwhite' : '') + (el.ghost ? ' ghost' : '') +
     (inkOf(el) === '#ffffff' ? ' inkpaper' : '') + (selected ? ' sel' : '') + (editing ? ' editing' : '') +
     '" data-el="' + esc(el.id) + '" style="' + elStyle(el) + '">' +
-    elBody(el, pics, editable, editing) +
+    elBody(el, pics, editable, editing, page) +
     (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
                 '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
     '</div>';
 }
 
-function pasteupHtml(panel, pics, editable, ghosts) {
+function pasteupHtml(panel, pics, editable, ghosts, page) {
   var els = elsOf(panel).concat(ghosts || []).sort(function (a, b) { return (a.z || 0) - (b.z || 0); });
   if (!els.length && !editable) return '';
   return '<div class="pasteup">' + els.map(function (e) {
-    return elHtml(e, pics || photoCache, editable && !e.ghost, editable && !e.ghost && e.id === pasteSel);
+    return elHtml(e, pics || photoCache, editable && !e.ghost, editable && !e.ghost && e.id === pasteSel, page);
   }).join('') + '</div>';
 }
 
@@ -2358,8 +2367,9 @@ function growTextEls(panelEl, panel) {
 }
 
 function paintPasteup(panelEl, panel) {
-  var ghosts = spreadGhosts(pressState().panels, Number(panelEl.getAttribute('data-page')), pressAspect());
-  var want = pasteupHtml(panel, photoCache, true, ghosts);
+  var page = Number(panelEl.getAttribute('data-page'));
+  var ghosts = spreadGhosts(pressState().panels, page, pressAspect());
+  var want = pasteupHtml(panel, photoCache, true, ghosts, page);
   var layer = panelEl.querySelector('.pasteup');
   var typing = document.activeElement;
   if (layer && typing && layer.contains(typing)) {
@@ -2688,6 +2698,10 @@ function renderInspector() {
         (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
         '">' + esc(el.text || '') + '</textarea>'
       : '') +
+    (el.kind === 'qr'
+      ? '<input class="text-input" id="qrtext" maxlength="270" placeholder="A link, a phone number, anything to scan" value="' +
+        esc(el.text || '') + '">'
+      : '') +
     (el.kind === 'photo'
       ? '<input class="text-input" id="alttext" maxlength="200" placeholder="What is in it, for anyone who cannot see it" value="' +
         esc(el.alt || '') + '">'
@@ -2702,9 +2716,11 @@ function addToPasteup(kind) {
   }
   var extra = {};
   if (kind === 'text') extra.text = 'NEW CUTTING';
+  if (kind === 'qr') extra.text = defaultCodeText();
   addEl(pastePage, kind, extra);
   renderPress();
-  toast(kind === 'text' ? 'Type into it, or change its voice below' : 'Drag it where you want it');
+  toast(kind === 'text' ? 'Type into it, or change its voice below'
+    : kind === 'qr' ? 'Type what it should open below' : 'Drag it where you want it');
 }
 
 document.addEventListener('click', function (ev) {
@@ -3182,13 +3198,13 @@ function pdfInk(el) {
 
 function inkable(el) {
   if (el.kind === 'photo') return twoTonePhoto(photoCache[el.photo]);
-  return el.kind === 'text' || el.kind === 'box' || el.kind === 'rule' || el.kind === 'stamp';
+  return el.kind === 'text' || el.kind === 'box' || el.kind === 'rule' || el.kind === 'stamp' || el.kind === 'qr';
 }
 
 function inkSwatches(el) {
   if (!inkable(el)) return '';
   var now = inkOf(el);
-  var inks = el.kind === 'photo' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
+  var inks = el.kind === 'photo' || el.kind === 'qr' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
   return '<div class="swatches"><span class="sub">INK</span>' + inks.map(function (ink) {
     return '<button class="swatch' + (ink[1] === now ? ' on' : '') + '" data-elcolour="' + esc(el.id) +
       '" data-c="' + ink[1] + '" title="' + ink[0] + '" aria-label="' + ink[0] + ' ink" style="background:' +
@@ -3350,6 +3366,173 @@ function pdfPhotoFill(panel, box, images) {
   return 'q ' + iw.toFixed(2) + ' 0 0 ' + ih.toFixed(2) + ' ' + (cx - iw / 2).toFixed(2) + ' ' +
     (cy - ih / 2).toFixed(2) + ' cm ' + pdfImageOps(pic) + ' Q\n';
 }
+var qrSeen = new Map();
+
+function qrOf(text) {
+  var t = String(text || '');
+  if (!qrSeen.has(t)) {
+    if (qrSeen.size > 100) qrSeen.clear();
+    qrSeen.set(t, t ? qrMatrix(t) : null);
+  }
+  return qrSeen.get(t);
+}
+
+function qrRuns(m) {
+  var runs = [];
+  for (var y = 0; y < m.length; y++) {
+    for (var x = 0; x < m.length; x++) {
+      if (!m[y][x]) continue;
+      var s = x;
+      while (x + 1 < m.length && m[y][x + 1]) x++;
+      runs.push([s, y, x - s + 1]);
+    }
+  }
+  return runs;
+}
+
+function qrSvg(el) {
+  var m = qrOf(el.text);
+  if (!m) return '<div class="elmissing">' + (el.text ? 'too long for a code' : 'type a link below') + '</div>';
+  var n = m.length + 8;
+  return '<svg class="elqr" viewBox="0 0 ' + n + ' ' + n + '" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges"' +
+    ' role="img" aria-label="' + esc('A code for ' + el.text) + '"><rect width="' + n + '" height="' + n + '" fill="#fff"/>' +
+    '<path fill="currentColor" d="' + qrRuns(m).map(function (r) {
+      return 'M' + (r[0] + 4) + ' ' + (r[1] + 4) + 'h' + r[2] + 'v1h-' + r[2] + 'z';
+    }).join('') + '"/></svg>';
+}
+
+function defaultCodeText() {
+  var a = (state.address || '').trim();
+  return a ? (/^https?:\/\//.test(a) ? a : 'https://' + a) : '';
+}
+
+document.addEventListener('input', function (ev) {
+  if (ev.target.id !== 'qrtext' || !pasteSel) return;
+  updateEl(pasteSel, { text: ev.target.value.trim() });
+  var node = liveEl(pasteSel);
+  var panelEl = node && node.closest('.panel');
+  var panel = panelEl && panelOfPage(Number(panelEl.getAttribute('data-page')));
+  if (panel) paintPasteup(panelEl, panel);
+});
+
+function pdfElQr(el, g) {
+  var m = qrOf(el.text);
+  if (!m) return '';
+  var n = m.length + 8;
+  var size = Math.min(g.w, g.h), cell = size / n;
+  var x0 = g.cx - size / 2, top = g.cy + size / 2;
+  var ops = 'q 1 g ' + x0.toFixed(2) + ' ' + (top - size).toFixed(2) + ' ' + size.toFixed(2) + ' ' +
+    size.toFixed(2) + ' re f Q\n';
+  qrRuns(m).forEach(function (r) {
+    ops += (x0 + (r[0] + 4) * cell).toFixed(3) + ' ' + (top - (r[1] + 5) * cell).toFixed(3) + ' ' +
+      (r[2] * cell).toFixed(3) + ' ' + cell.toFixed(3) + ' re\n';
+  });
+  return ops + 'f\n';
+}
+var BLOCKS = [['folios', 'PAGE NUMBERS'], ['contents', 'CONTENTS'], ['credits', 'CREDITS'], ['quote', 'PULL QUOTE']];
+
+function isFolio(el) { return !!el && el.kind === 'text' && el.folio === true; }
+
+function shownText(el, page) { return isFolio(el) && page ? String(page) : el.text; }
+
+function renderBlockPalette(open) {
+  var box = document.getElementById('blocks');
+  if (!box) return;
+  box.classList.toggle('on', !!open);
+  box.innerHTML = open ? BLOCKS.map(function (b) {
+    return '<button class="btn quiet" data-block="' + b[0] + '">' + b[1] + '</button>';
+  }).join('') : '';
+}
+
+function toggleFolios() {
+  var ps = pressState();
+  var inner = ps.panels.slice(1, ps.panels.length - 1);
+  var numbered = function (p) { return elsOf(p).some(isFolio); };
+  pasteMark();
+  if (inner.every(numbered)) {
+    inner.forEach(function (p) { p.els = elsOf(p).filter(function (e) { return !isFolio(e); }); });
+    return 'Page numbers off';
+  }
+  inner.forEach(function (p, i) {
+    if (numbered(p)) return;
+    elsOf(p).push({ id: uid('el'), kind: 'text', voice: 'type', text: String(i + 2), folio: true, size: 9,
+      ink: 'black', align: 'center', x: 0.4, y: 0.935, w: 0.2, h: 0.04, rot: 0, z: topZ(p) + 1 });
+  });
+  return 'Every page between the covers is numbered';
+}
+
+function contentsText() {
+  var ps = pressState();
+  var pages = ps.panels.length;
+  var lines = ['CONTENTS', ''];
+  ps.panels.forEach(function (p, i) {
+    var h = String(p.h || '').trim();
+    if (i === 0 || i === pages - 1 || !h || /, CONTINUED$/.test(h) || !(String(p.body || '').trim() || p.photo)) return;
+    var title = h.length > 22 ? h.slice(0, 21) + '…' : h;
+    var no = String(i + 1);
+    lines.push(title + ' ' + new Array(Math.max(3, 27 - title.length - no.length)).join('.') + ' ' + no);
+  });
+  return lines.join('\n');
+}
+
+function creditsText() {
+  var ps = pressState();
+  var ranIds = Array.isArray(ps.ran) ? ps.ran.map(function (r) { return r.id; }) : null;
+  var pieces = livePieces().filter(function (p) { return !ranIds || ranIds.indexOf(p.id) >= 0; });
+  var words = [], photos = [];
+  var add = function (list, who) { if (who && who !== 'anon' && list.indexOf(who) < 0) list.push(who); };
+  pieces.forEach(function (p) {
+    if (String(p.body || '').trim()) add(words, p.byline);
+    if (p.photo) add(photos, p.byline);
+  });
+  var rootOf = function (id) { return (photoMeta[id] && photoMeta[id].root) || id; };
+  var shown = {};
+  ps.panels.forEach(function (p) {
+    if (p.photo) shown[rootOf(p.photo)] = 1;
+    elsOf(p).forEach(function (e) { if (e.photo) shown[rootOf(e.photo)] = 1; });
+  });
+  state.logs.forEach(function (l) { if (l.photo && shown[rootOf(l.photo)]) add(photos, l.author); });
+  var names = function (list) { return list.map(nameOf).join(', '); };
+  var out = ['EDITED BY ' + nameOf(cycleState().editor)];
+  if (words.length) out.push('WORDS ' + names(words));
+  if (photos.length) out.push('PHOTOS ' + names(photos));
+  return out.join('\n');
+}
+
+function addBlock(kind) {
+  var msg = 'Drag it where you want it';
+  if (kind === 'folios') {
+    msg = toggleFolios();
+    savePress();
+  } else {
+    var spec = {
+      contents: { voice: 'type', text: contentsText(), x: 0.1, y: 0.12, w: 0.8, h: 0.3 },
+      credits: { voice: 'sans', text: creditsText(), x: 0.1, y: 0.7, w: 0.8, h: 0.12 },
+      quote: { voice: 'serif', text: '“A line worth pulling out.”', x: 0.08, y: 0.4, w: 0.84, h: 0.14, size: 20, align: 'center' }
+    }[kind];
+    if (!spec) return;
+    var el = addEl(pastePage, 'text', { voice: spec.voice, text: spec.text });
+    if (!el) return;
+    ['x', 'y', 'w', 'h', 'size', 'align'].forEach(function (k) { if (spec[k] !== undefined) el[k] = spec[k]; });
+    el.rot = 0;
+    savePress();
+    msg = kind === 'quote' ? 'Double-click it to write the line' : 'Made from the pages as they are now';
+  }
+  renderBlockPalette(false);
+  renderPress();
+  toast(msg);
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target;
+  if (t.closest && t.closest('#blockbtn')) {
+    var box = document.getElementById('blocks');
+    renderBlockPalette(!(box && box.classList.contains('on')));
+    return;
+  }
+  var pick = t.closest && t.closest('[data-block]');
+  if (pick) addBlock(pick.getAttribute('data-block'));
+});
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -3722,9 +3905,10 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
 
 function cuttingWords(p, pics) {
   return (p && Array.isArray(p.els) ? p.els : []).filter(function (e) {
-    return e && ((e.kind === 'text' && String(e.text || '').trim()) || (e.kind === 'photo' && e.alt));
+    return e && !isFolio(e) && (((e.kind === 'text' || e.kind === 'qr') && String(e.text || '').trim()) || (e.kind === 'photo' && e.alt));
   }).sort(function (a, b) { return (a.y - b.y) || (a.x - b.x); }).map(function (e) {
     if (e.kind === 'text') return '<p class="reading-cut">' + esc(e.text) + '</p>';
+    if (e.kind === 'qr') return '<p class="reading-cut">A code for ' + esc(e.text) + '</p>';
     var src = pics && pics[e.photo];
     return '<figure class="reading-fig">' + (src ? '<img src="' + esc(src) + '" alt="' + esc(e.alt) + '">' : '') +
       '<figcaption>' + esc(e.alt) + '</figcaption></figure>';
@@ -4010,7 +4194,7 @@ function panelFaceHtml(panels, page, pics, url, issue, aspect) {
     (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt=""' +
       (imageSize(pics[p.photo]) ? ' style="aspect-ratio:' + imageSize(pics[p.photo]).w + ' / ' + imageSize(pics[p.photo]).h + '"' : '') + '>' : '') +
     '<div class="body">' + esc(p.body || '') + '</div>' +
-    pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
+    pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect), page) +
     (page === pages ? addrHtml(url) : '');
 }
 
@@ -4802,7 +4986,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
       ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
     });
   }
-  return ops + pdfPasteup(panel, box, images, ghosts);
+  return ops + pdfPasteup(panel, box, images, ghosts, page);
 }
 
 function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
@@ -5094,7 +5278,12 @@ function pdfElMarker(el, g, face, size) {
   return ops;
 }
 
-function pdfElText(el, g) {
+function pdfElText(el, g, page) {
+  if (isFolio(el) && page) {
+    var n = { text: String(page) };
+    Object.keys(el).forEach(function (k) { if (k !== 'text' && k !== 'lines') n[k] = el[k]; });
+    el = n;
+  }
   var voice = voiceOf(el);
   if (voice === 'ransom') return pdfElRansom(el, g);
   var face = faceOf(el);
@@ -5125,7 +5314,7 @@ function pdfElText(el, g) {
   return ops + draw;
 }
 
-function pdfEl(el, box, images) {
+function pdfEl(el, box, images, page) {
   var g = elBoxPdf(box, el);
   var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el) + (el.kind === 'text' ? strokeFor(el) : '');
   if (el.kind === 'rule') {
@@ -5137,16 +5326,18 @@ function pdfEl(el, box, images) {
     ops += pdfElPhoto(el, g, images);
   } else if (el.kind === 'stamp') {
     ops += pdfElStamp(el, g);
+  } else if (el.kind === 'qr') {
+    ops += pdfElQr(el, g);
   } else {
-    ops += pdfElText(el, g);
+    ops += pdfElText(el, g, page);
   }
   return ops + 'Q\n';
 }
 
-function pdfPasteup(panel, box, images, ghosts) {
+function pdfPasteup(panel, box, images, ghosts, page) {
   return elsOf(panel).concat(ghosts || [])
     .sort(function (a, b) { return (a.z || 0) - (b.z || 0); })
-    .map(function (el) { return pdfEl(el, box, images); })
+    .map(function (el) { return pdfEl(el, box, images, page); })
     .join('');
 }
 var FLYER = { w: 612, h: 792, pad: 54, strip: 96, tabs: 8 };
@@ -5344,7 +5535,7 @@ function photosForFile(issues, no) {
 }
 
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
-  'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'roster',
+  'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
 
 function pageWithSeed(seed) {

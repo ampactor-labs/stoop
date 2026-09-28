@@ -109,7 +109,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
       ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
     });
   }
-  return ops + pdfPasteup(panel, box, images, ghosts);
+  return ops + pdfPasteup(panel, box, images, ghosts, page);
 }
 
 // A flipped panel is the same drawing rotated half a turn about its own
