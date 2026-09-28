@@ -71,11 +71,11 @@ Two decisions shape the rest:
 
 | Measured | Size |
 | --- | --- |
-| The press, carried by every issue file | 261 KB |
+| The press, carried by every issue file | 283 KB |
 | One photograph (a generated 3000 by 2250 test image), kept in colour at 2400 px on its long edge | 337 KB |
-| A full 8-page issue with a photograph on every page | 2,964 KB |
+| A full 8-page issue with a photograph on every page | 2,986 KB |
 
-An issue of plain text is almost all press, and an issue full of photographs is almost all photographs. The built page is 265,727 bytes, or 93,174 bytes gzipped (`wc -c artifact/index.html` and `gzip -c artifact/index.html | wc -c`).
+An issue of plain text is almost all press, and an issue full of photographs is almost all photographs. The built page is 287,352 bytes, or 99,052 bytes gzipped (`wc -c artifact/index.html` and `gzip -c artifact/index.html | wc -c`).
 
 ### One cycle
 
@@ -174,7 +174,7 @@ node test/run.js
 - the PDF surviving a parse of its bytes and embedding the same fonts as the page;
 - a photograph reaching the PDF in colour as the same JPEG, cuttings in ink and pages printed on a colour, on screen, on paper and in the file handed on.
 
-On 28 September 2026, in a cloud container with Chromium, a full run passed all 284 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
+On 28 September 2026, in a cloud container with Chromium, a full run passed all 346 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
 
 CI runs `check.sh` and nothing else, the same check the pre-commit hook runs. [CONTRIBUTING.md](CONTRIBUTING.md) asks for the browser suites before any commit that touches `src/js/` or the press. Nothing tests printing on real paper, folding and cutting, a copy shop's output, a real phone (the suites use a phone-sized window), browsers other than Chromium, or scanning the QR code with a camera.
 
@@ -187,7 +187,7 @@ Everything lives in the browser that made it. There is no server to fall back on
 - **A local copy and the hosted page keep their work apart.** Work done in `index.html` opened from disk does not appear at https://ampactor.dev/stoop/, and the other way round. Export and merge carries it across.
 - **Back issues travel with their covers only.** A handed-on file carries each back issue's cover photograph; its other photographs show as marked places that say which issue file holds them.
 - **A photograph that arrives in a file cannot be lightened or given another look.** Its original stays on the device that took it in.
-- **A text-only issue is mostly press.** Every issue file carries the press, about 260 KB, however little the issue holds.
+- **A text-only issue is mostly press.** Every issue file carries the press, about 283 KB, however little the issue holds.
 - **Photographs make heavy files.** An issue with a colour photograph on every page is about 3 MB, which is the photographs. Screening a photo to grain or dots makes it several times lighter.
 - **Colour runs to the edge only at a print shop.** A page colour floods the whole page, and most home printers stop about a quarter inch short of the paper's edge, which is what the faint line on each page shows. **PDF FOR A PRINT SHOP** carries the bleed a shop needs to trim it clean.
 - **Printers and hands differ.** The page asks for a test sheet before a print run and offers the other fold when the page numbers come out shuffled. Nothing checks a real printer.
