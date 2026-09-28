@@ -21,6 +21,10 @@ function parse(buf) {
   out.mediaBoxes = (s.match(/\/MediaBox\[([^\]]+)\]/g) || []).map(m => m.slice(10, -1));
   out.flips = (s.match(/-1 0 0 -1 /g) || []).length;
   out.oneBitImages = (s.match(/\/BitsPerComponent 1\b/g) || []).length;
+  // The photograph's own JPEG, as it rides in the file.
+  const dct = /\/ColorSpace\/DeviceRGB\/BitsPerComponent 8\/Filter\/DCTDecode\/Length (\d+)>>\nstream\n/.exec(s);
+  out.jpegs = (s.match(/\/Filter\/DCTDecode/g) || []).length;
+  out.jpeg = dct ? buf.subarray(dct.index + dct[0].length, dct.index + dct[0].length + Number(dct[1])) : null;
 
   // Every xref offset must land exactly on its own object header. The table is
   // found by the newline in front of it, because "startxref" ends in the same
@@ -73,7 +77,7 @@ module.exports = async function pdf(browser, ok) {
   await page.click('#savenamesbtn2');
   await page.waitForTimeout(200);
 
-  // A real photograph, so the 1-bit image path is exercised rather than skipped.
+  // A real photograph, so the image path is exercised rather than skipped.
   await go('#log');
   await page.fill('#loginput', 'Workbench photo for the cover');
   await page.setInputFiles('#photofile', photoFile());
@@ -107,8 +111,24 @@ module.exports = async function pdf(browser, ok) {
   ok('the page is letter landscape in points', /^0 0 792\.00 612\.00$/.test(letter.mediaBoxes[0]),
      letter.mediaBoxes[0]);
   ok('THE TOP ROW IS ROTATED FOR THE FOLD', letter.flips === 4, 'flip transforms ' + letter.flips);
-  ok('the photograph and the code ride as 1-bit images', letter.oneBitImages === 2,
-     '1-bit images ' + letter.oneBitImages);
+  ok('the code rides as a 1-bit image', letter.oneBitImages === 1, '1-bit images ' + letter.oneBitImages);
+  const onPaper = letter.jpeg && await page.evaluate(async (b64) => {
+    const img = new Image();
+    img.src = 'data:image/jpeg;base64,' + b64;
+    await img.decode();
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let colour = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 40) colour++;
+    }
+    return { w: c.width, colour: colour / (d.length / 4) };
+  }, letter.jpeg.toString('base64'));
+  ok('THE PHOTOGRAPH GOES ON PAPER IN COLOUR, AS THE SAME JPEG IT IS ON SCREEN',
+     letter.jpegs === 1 && !!onPaper && onPaper.w === 240 && onPaper.colour > 0.5,
+     letter.jpegs + ' jpeg, ' + JSON.stringify(onPaper));
   ok('every xref offset lands on its object', letter.errors.length === 0 && letter.xrefChecked > 4,
      letter.errors[0] || ('checked ' + letter.xrefChecked));
   ok('startxref points at the table', letter.startxrefPointsAtXref);

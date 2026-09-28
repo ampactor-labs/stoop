@@ -78,7 +78,7 @@ The connections are the design. Each loop closes back on lived life; that closur
 2. **Invitation.** A scene posts a flyer; staples carry it to consenting corkboards; humans end up in a room together; the documentation comes back as pieces; the issue makes the next flyer easier to say yes to. The only thing that spreads is the thing that gathers.
 3. **Trust.** Vouched members do work; work earns the standing to vouch; names-on-vouches make trust a form of social collateral rather than a CAPTCHA. In a majority-bot internet, this loop is the moat.
 4. **Commons.** Quests teach skills; the ledger records who can now teach them; capability compounds; bigger quests become possible. Forks copy the commons, so the federation's growth mechanism is also its knowledge transfer mechanism.
-5. **Energy.** The watt budget forces the 1-bit aesthetic; the aesthetic is the identity; the identity is the politics; the politics keep costs near zero; the dues surplus flows to tools and shows; the shows feed the invitation loop. Constraint, style, money, and meaning are one circuit.
+5. **Energy.** The watt budget keeps what a scene serves small and static; small is the identity; the identity is the politics; the politics keep costs near zero; the dues surplus flows to tools and shows; the shows feed the invitation loop. Constraint, style, money, and meaning are one circuit.
 
 ## Rhythm
 
@@ -125,9 +125,9 @@ Bridges: POSSE outward to the dying networks (a room can syndicate); read-bridge
 
 ## Energy and aesthetic
 
-Budget first, look second, and they turn out to be the same thing. Pages stay under a megabyte; images ship dithered (1-bit and riso-grain, which is also the print bridge); no video; system fonts; static output. A scene's whole presence should serve from a machine drawing single-digit watts, Low-tech Magazine style, and the flagship's battery meter renders in the header as an honest instrument. In long rain the solar instance goes down, and that is a feature: a memento that the network is a physical thing on one physical planet.
+Budget first for the site, and never for the zine. The pages a scene serves stay light; no video; static output. The zine itself carries its photographs as they were taken, in colour, because a tool that decides for the people making a zine that their photographs will be black and white is not saving anyone anything; the copier's own looks, grain and halftone dots and hard contrast, are one tap away for anybody who wants them. A scene's whole presence should serve from a machine drawing single-digit watts, Low-tech Magazine style, and the flagship's battery meter renders in the header as an honest instrument. In long rain the solar instance goes down, and that is a feature: a memento that the network is a physical thing on one physical planet.
 
-Accessibility rides the same choices: 1-bit contrast is high contrast; color never carries meaning alone; meaning-bearing color pairs sit on the blue/orange axis, never red/green; captions are zine culture already.
+Accessibility rides the same choices: type sets in high contrast by default; color never carries meaning alone; meaning-bearing color pairs sit on the blue/orange axis, never red/green; captions are zine culture already.
 
 ## Economics
 

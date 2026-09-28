@@ -21,7 +21,7 @@ function inspectorButtons(el) {
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
   if (el.kind === 'photo' && photoMeta[el.photo]) {
-    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
+    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', LOOK_LABEL[photoMeta[el.photo].style]]);
   }
   var at = findEl(el.id);
   var pages = pressState().panels.length;
@@ -52,7 +52,7 @@ function renderInspector() {
     var m = photoMeta[page.photo];
     box.className = 'inspector on';
     box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
-      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', SCREEN_LABEL[m.style]]]
+      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
         .map(function (pair) {
           return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
         }).join('') + '</div>';
@@ -156,7 +156,7 @@ function moveElToPage(id, dir) {
   toast('Moved to page ' + to);
 }
 
-// Lighter, darker, or the next screen, for a photo cutting or a page's photo.
+// Lighter, darker, or the next look, for a photo cutting or a page's photo.
 function rescreenFrom(btn) {
   var a = Array.prototype.filter.call(btn.attributes, function (x) { return /^data-(elph|pgph)/.test(x.name); })[0];
   var kind = a.name.replace('data-', '');
@@ -167,8 +167,8 @@ function rescreenFrom(btn) {
   var meta = photo && photoMeta[photo];
   if (!meta) return;
   var change = /light$/.test(kind) ? { exp: 1 } : /dark$/.test(kind) ? { exp: -1 }
-    : { style: SCREENS[(SCREENS.indexOf(meta.style) + 1) % SCREENS.length] };
-  toast('Screening\u2026');
+    : { style: LOOKS[(LOOKS.indexOf(meta.style) + 1) % LOOKS.length] };
+  toast('Redoing the photo\u2026');
   rescreen(photo, change).then(function (id) {
     if (!id) return;
     pasteMark();
@@ -176,7 +176,7 @@ function rescreenFrom(btn) {
     savePress();
     renderPress();
     var m = photoMeta[id];
-    toast(SCREEN_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
+    toast(LOOK_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
   }).catch(function (e) { toast('Could not screen it again: ' + e.message); });
 }
 

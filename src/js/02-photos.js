@@ -4,12 +4,11 @@
 
 // ---------- photo store ----------
 // Photos live in IndexedDB (localStorage caps out around 5 MB); the state
-// above holds only their ids. Everything is dithered to 1-bit on intake, so
-// a full-page photo is tens of kilobytes and prints on any copier.
+// above holds only their ids.
 var PHOTO_DB = 'stoop_photos';
 var PHOTO_STORE = 'photos';
 // Beside the photographs, on this device only and never in a file: each
-// one's greyscale original, and how it was screened from it.
+// one's original, and which look of it this is.
 var META_STORE = 'meta';
 var MASTER_STORE = 'masters';
 var photoCache = {};

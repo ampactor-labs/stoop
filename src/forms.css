@@ -93,7 +93,7 @@
 .btn.wide { flex: 1; min-width: 160px; }
 .paper .sub { color: #57524a; }
 
-/* Photos: 1-bit on intake, so they need no colour management anywhere. */
+/* Photos: in colour as taken, or in the two tones of a copier, scaled smoothly either way. */
 .log-photo {
   display: block;
   width: 100%;
@@ -101,10 +101,9 @@
   margin: .5rem 0 .2rem;
   border: 2px solid var(--ink);
   background: #fff;
-  image-rendering: pixelated;
 }
 /* The photo strip above the pages: every photograph the scene has. */
 .phototray { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem 0 .4rem; align-items: flex-start; }
 .phototray:empty { display: none; }
-.tray-photo { height: 56px; border: 2px solid var(--fg); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
+.tray-photo { height: 56px; border: 2px solid var(--fg); background: #fff; cursor: pointer; flex: 0 0 auto; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
 .tray-photo:hover { outline: 2px solid var(--spot); }

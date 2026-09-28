@@ -1,23 +1,12 @@
-// What an issue file weighs, and why the number is what it is.
+// What an issue file weighs, and where the weight goes.
 //
-// Every exported issue carries the whole press inside it, so two costs ride in
-// every file anyone hands to anyone: the press, once, and each photograph. The
-// ceilings below are not derived from any law of physics — they are ratchets,
-// set above what the current build actually measures, so that a regression has
-// to be a decision instead of an accident. Their job is to keep an issue file
-// the kind of thing you send without thinking about it.
-//
-// Measured on the build this was written against:
-//
-//     press, fixed          143 KB     the same in every issue, photos or not
-//     per photograph         83 KB     1000px long edge, 1-bit, deflated
-//     text, 8 pages           7 KB
-//     full 8-page issue     818 KB     a photograph on every page
-//
-// The per-photograph number is the one with a principle under it: a dithered
-// photograph has exactly two tones, so it is stored at one bit per pixel. It
-// used to be stored as 32-bit RGBA at 486 KB, which is the same picture at
-// roughly six times the price, paid again in every file it travelled in.
+// Every exported issue carries the whole press inside it, and every
+// photograph on its pages, in colour and at print resolution. There is no
+// budget here: a file is as heavy as the zine it carries, and a zine full of
+// photographs is a heavy file, the way it is a heavy stack of paper. What
+// this suite holds a file to is carrying each thing once, carrying nothing
+// the zine does not need, and never carrying the camera's own notes. The
+// numbers are printed with each check, so anybody can see what a file costs.
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -25,22 +14,30 @@ const os = require('os');
 const APP = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const KB = 1024;
 
-// Photographs with the tonal range of photographs. Flat colour dithers to
-// almost nothing and would flatter every number here.
+// Photographs with the tonal range of photographs, bigger than print needs,
+// each carrying the kind of note a phone writes into a picture: where it was.
+const NOTE = 'GPS 51.5072N 0.1276W SECRET-LOCATION';
+function withNote(jpeg) {
+  const body = Buffer.concat([Buffer.from('Exif\0\0', 'latin1'), Buffer.from(NOTE, 'latin1')]);
+  const len = Buffer.alloc(2);
+  len.writeUInt16BE(body.length + 2);
+  return Buffer.concat([jpeg.subarray(0, 2), Buffer.from([0xff, 0xe1]), len, body, jpeg.subarray(2)]);
+}
+
 async function makeJpegs(page, count, dir) {
   const b64 = await page.evaluate((n) => {
     const made = [];
     for (let k = 0; k < n; k++) {
       const c = document.createElement('canvas');
-      c.width = 1600; c.height = 1200;
+      c.width = 3000; c.height = 2250;
       const x = c.getContext('2d');
-      const g = x.createLinearGradient(0, 0, 0, 1200);
-      g.addColorStop(0, '#e8eef5'); g.addColorStop(0.5, '#8b8f96'); g.addColorStop(1, '#1d1f24');
-      x.fillStyle = g; x.fillRect(0, 0, 1600, 1200);
+      const g = x.createLinearGradient(0, 0, 0, 2250);
+      g.addColorStop(0, '#e8c3a5'); g.addColorStop(0.5, '#5b8f76'); g.addColorStop(1, '#1d1f44');
+      x.fillStyle = g; x.fillRect(0, 0, 3000, 2250);
       for (let i = 0; i < 400; i++) {
         x.fillStyle = 'rgba(' + ((i * 37 + k * 29) % 255) + ',' + ((i * 91 + k * 7) % 255) +
           ',' + ((i * 53) % 255) + ',0.45)';
-        x.fillRect((i * 173 + k * 11) % 1600, (i * 97 + k * 5) % 1200, 50 + (i % 140), 30 + (i % 110));
+        x.fillRect((i * 173 + k * 11) % 3000, (i * 97 + k * 5) % 2250, 90 + (i % 260), 60 + (i % 200));
       }
       made.push(c.toDataURL('image/jpeg', 0.92).split(',')[1]);
     }
@@ -48,7 +45,7 @@ async function makeJpegs(page, count, dir) {
   }, count);
   return b64.map((d, i) => {
     const f = path.join(dir, 'shot-' + i + '.jpg');
-    fs.writeFileSync(f, Buffer.from(d, 'base64'));
+    fs.writeFileSync(f, withNote(Buffer.from(d, 'base64')));
     return f;
   });
 }
@@ -119,39 +116,42 @@ module.exports = async function weight(browser, ok) {
 
   ok('every page of the full issue carries a photograph', full.placed === 8, full.placed + ' placed');
 
-  // The fixed term. check.sh ratchets the built fragment at 256 KB without a
-  // browser, a number derived from the megabyte ceiling less eight
-  // photographs; this measures the same thing from the other side, the press
-  // as it actually rides in a file, which is the file less the seed.
-  // Comparing the whole bare file against the same number once put the
-  // document wrapper and the seed on the wrong side of the ledger.
+  // The press rides once, as built: the file less its seed is the page that
+  // was built, give or take the document wrapper.
   const seedOf = (html) => (html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/) || ['', ''])[1];
+  const built = fs.statSync(path.resolve(__dirname, '..', 'artifact', 'index.html')).size;
   const pressBytes = bareBytes - Buffer.byteLength(seedOf(bare.html));
-  ok('the press is a fixed cost, and it has not crept',
-     pressBytes < 256 * KB, Math.round(pressBytes / KB) + ' KB, ratchet 256 KB');
+  ok('THE PRESS RIDES IN THE FILE ONCE, AS BUILT', Math.abs(pressBytes - built) < 8 * KB,
+     Math.round(pressBytes / KB) + ' KB in the file, ' + Math.round(built / KB) + ' KB built');
 
-  // The marginal term, and the one with a principle under it.
-  const perPhoto = (fullBytes - bareBytes) / full.placed;
-  ok('A PHOTOGRAPH COSTS WHAT A 1-BIT PHOTOGRAPH COSTS',
-     perPhoto < 120 * KB, Math.round(perPhoto / KB) + ' KB each, ratchet 120 KB');
-
-  // Not a proxy for anything: the actual file, at its heaviest.
-  ok('A FULL ISSUE IS UNDER A MEGABYTE',
-     fullBytes < 1024 * KB, Math.round(fullBytes / KB) + ' KB, ceiling 1024 KB');
-
-  // The structural version of the same claim: two tones, stored in one bit.
-  // A PNG header says this outright, so the check does not depend on a size.
-  const seed = JSON.parse(seedOf(full.html));
+  const seed = JSON.parse(seedOf(full.html).replace(/<\\\//g, '</'));
   const shots = Object.keys(seed.photos || {}).map(k => seed.photos[k]);
-  const headers = shots.map((url) => {
-    const png = Buffer.from(url.split(',')[1], 'base64');
-    // IHDR data starts 8 bytes of signature + 8 of length/type in.
-    return { depth: png[24], colour: png[25] };
-  });
+  const photoBytes = shots.reduce((a, u) => a + u.length, 0);
   ok('the issue carries its photographs', shots.length === 8, shots.length + ' in the seed');
-  ok('AND STORES THEM AT ONE BIT PER PIXEL, GREYSCALE',
-     headers.length > 0 && headers.every(h => h.depth === 1 && h.colour === 0),
-     headers.map(h => h.depth + '/' + h.colour).join(' '));
+  ok('EACH PHOTOGRAPH RIDES ONCE, AND IS MOST OF WHAT A FULL ISSUE WEIGHS',
+     fullBytes - bareBytes - photoBytes < 16 * KB,
+     Math.round(photoBytes / shots.length / KB) + ' KB a photograph, ' + Math.round(fullBytes / KB) +
+       ' KB the full issue, ' + Math.round(bareBytes / KB) + ' KB with none');
+
+  // A JPEG's frame header says its size and how many colours it carries.
+  const frame = (url) => {
+    const b = Buffer.from(url.split(',')[1], 'base64');
+    for (let i = 2; i + 9 < b.length;) {
+      const m = b[i + 1];
+      if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) {
+        return { h: b.readUInt16BE(i + 5), w: b.readUInt16BE(i + 7), comps: b[i + 9], bytes: b };
+      }
+      i += 2 + b.readUInt16BE(i + 2);
+    }
+    return null;
+  };
+  const frames = shots.map(u => /^data:image\/jpeg;base64,/.test(u) ? frame(u) : null);
+  ok('A PHOTOGRAPH RIDES IN COLOUR, AS JPEG', frames.every(f => f && f.comps === 3),
+     frames.map(f => f ? f.comps : 'x').join(' '));
+  ok('AT PRINT RESOLUTION: 2400 PIXELS ON THE LONG EDGE, FROM 3000',
+     frames.every(f => f && f.w === 2400 && f.h === 1800), frames.map(f => f ? f.w + 'x' + f.h : 'x').join(' '));
+  ok('AND THE CAMERA\'S OWN NOTES, WHERE IT WAS TAKEN AMONG THEM, NEVER RIDE IN A FILE',
+     !full.html.includes(NOTE) && frames.every(f => f && !f.bytes.includes('Exif') && !f.bytes.includes('SECRET')));
 
   ok('no script errors while weighing', errs.length === 0, errs.slice(0, 3).join(' | '));
   fs.rmSync(dir, { recursive: true, force: true });

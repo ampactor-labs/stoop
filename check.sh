@@ -57,27 +57,12 @@ for hand in A B; do
   : "$lower"
 done
 
-# 6. The press's fixed cost. Every issue this app exports carries the app
-# inside it, so the app's size is paid again in every issue file anyone sends.
-#
-# The number that actually matters is the issue file, and check.sh cannot build
-# one — that needs a browser. So the real ceiling lives in test/08-weight.js,
-# which publishes an issue and weighs it: a full eight-page issue with a
-# photograph on every page stays under a megabyte. This check guards the one
-# term of that sum that is cheap to measure here, the part identical in every
-# issue whether it carries photographs or not.
-#
-# The ratchet is derived from the ceiling rather than chosen. A megabyte less
-# eight photographs at about 83 KB each leaves 360 KB for the press, rounded
-# down to 256 KB so the margin is real. Past that, the press could reach the
-# ceiling on its own, which is the point at which the file stops being a zine
-# with a press inside it. Measured today the press is about 190 KB and a full
-# issue about 850 KB.
-bytes=$(wc -c < artifact/index.html)
-if [ "$bytes" -gt 262144 ]; then
-  echo "FAIL: press is $((bytes / 1024)) KB; the ratchet is 256 KB (test/08-weight.js holds the issue-file ceiling)"
-  fail=1
-fi
+# 6. What a file weighs is not a law. There used to be a ceiling here, and
+# it was a rule this project made for itself, not one anything needed: it
+# held an issue under a megabyte and so held every photograph to black and
+# white. The press says its own size in its footer (law 4), and
+# test/08-weight.js checks that a file carries each thing once and nothing
+# it does not need, which is the part that was ever worth guarding.
 
 # 8. Portability: built output names no host, so a scene directory survives
 # being copied to another host, a thumb drive, or a tarball.

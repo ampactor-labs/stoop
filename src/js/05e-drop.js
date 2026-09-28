@@ -1,6 +1,6 @@
 // ---------- things that land on the sheet ----------
 // The sheet accepts what is dropped on it. A photograph dragged in from the
-// desktop is dithered and glued down where it fell; text dragged or pasted in
+// desktop is taken in and glued down where it fell; text dragged or pasted in
 // becomes a cutting there. No tray, no arming, no button to press first: the
 // paper is the interface, and putting a thing on paper means putting it on
 // the paper.

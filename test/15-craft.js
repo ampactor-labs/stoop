@@ -1,6 +1,6 @@
-// Making things. A dark phone photo can be lightened after the fact and
-// screened as grain, dots or hard contrast, from an original kept on this
-// device and never shipped in a file. A cutting can be duplicated and moved
+// Making things. A photo comes in colour; a dark one can be lightened after
+// the fact, turned black and white, or screened as grain, dots or hard
+// contrast, from an original kept on this device. A cutting can be duplicated and moved
 // to another page, a long piece runs on to the next page instead of being
 // cut off, and the pages show where a home printer stops reaching.
 const path = require('path');
@@ -20,7 +20,7 @@ module.exports = async function craft(browser, ok) {
   await page.goto(APP);
   await page.waitForTimeout(700);
 
-  // ---- photographs: lighter, darker, and three screens.
+  // ---- photographs: lighter, darker, black and white, and three screens.
   const p2 = page.locator('[data-page="2"]');
   await p2.scrollIntoViewIfNeeded();
   await p2.click({ position: { x: 6, y: 6 } });
@@ -34,15 +34,20 @@ module.exports = async function craft(browser, ok) {
     const g = c.getContext('2d');
     g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height).data;
-    let n = 0, mid = 0;
-    for (let i = 0; i < d.length; i += 4) { if (d[i] < 128) n++; if (d[i] > 0 && d[i] < 255) mid++; }
-    return { share: n / (d.length / 4), mid };
+    let n = 0, mid = 0, colour = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] < 128) n++;
+      if (d[i] > 0 && d[i] < 255) mid++;
+      if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 24) colour++;
+    }
+    return { share: n / (d.length / 4), mid, colour, src: img.src.slice(0, 64) };
   });
   const photoId = async () => (await store()).press.panels[1].els.find(e => e.kind === 'photo').photo;
   const first = await photoId();
   const before = await dark();
-  ok('a photograph can be lightened, darkened or re-screened',
-     /LIGHTER/.test(await page.locator('#inspector').innerText()) && /GRAIN/.test(await page.locator('#inspector').innerText()));
+  ok('a photograph can be lightened, darkened or given another look, and starts in colour',
+     /LIGHTER/.test(await page.locator('#inspector').innerText()) && /COLOUR/.test(await page.locator('#inspector').innerText()) &&
+     before.colour > 1000, 'colour pixels ' + before.colour);
   await page.click('[data-elphlight]');
   await page.waitForTimeout(1200);
   const lighter = await dark();
@@ -54,9 +59,21 @@ module.exports = async function craft(browser, ok) {
   ok('darker again gives back the photograph already made', (await photoId()) === first);
   await page.click('[data-elphscreen]');
   await page.waitForTimeout(1200);
+  const grey = await dark();
+  ok('B&W IS THE PHOTOGRAPH IN GREYS, ITS TONES KEPT',
+     /B&W/.test(await page.locator('[data-elphscreen]').innerText()) && grey.colour === 0 && grey.mid > 1000,
+     'colour ' + grey.colour + ', grey ' + grey.mid);
+  await page.click('[data-elphscreen]');
+  await page.waitForTimeout(1200);
+  ok('grain is the copier\'s dither', /GRAIN/.test(await page.locator('[data-elphscreen]').innerText()) &&
+     (await dark()).mid === 0);
+  await page.click('[data-elphscreen]');
+  await page.waitForTimeout(1200);
   const dots = await dark();
-  ok('DOTS IS A HALFTONE, AND STILL ONLY TWO TONES',
-     /DOTS/.test(await page.locator('[data-elphscreen]').innerText()) && dots.mid === 0, 'grey pixels ' + dots.mid);
+  const depth = (url) => Buffer.from(url.split(',')[1], 'base64')[24];
+  ok('DOTS IS A HALFTONE, AND STILL ONLY TWO TONES, STORED AT ONE BIT A PIXEL',
+     /DOTS/.test(await page.locator('[data-elphscreen]').innerText()) && dots.mid === 0 &&
+     /^data:image\/png/.test(dots.src) && depth(dots.src) === 1, 'grey pixels ' + dots.mid + ', ' + dots.src.slice(0, 22));
   await page.click('[data-elphscreen]');
   await page.waitForTimeout(1200);
   ok('hard is the copier with the contrast up', /HARD/.test(await page.locator('[data-elphscreen]').innerText()));
@@ -96,9 +113,15 @@ module.exports = async function craft(browser, ok) {
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
   const html = fs.readFileSync(await dl.path(), 'utf8');
   const seed = JSON.parse(/<script type="application\/json" id="stoop-seed">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g, '</'));
-  const kinds = Object.values(seed.photos).map(u => u.slice(0, 22));
-  ok('THE KEPT ORIGINALS NEVER RIDE IN A FILE', kinds.every(k => k === 'data:image/png;base64,'),
-     kinds.length + ' photos: ' + [...new Set(kinds)].join(' '));
+  const refs = new Set();
+  const iss = seed.issues[seed.issues.length - 1];
+  (iss.panels || []).forEach(p => { if (p.photo) refs.add(p.photo); (p.els || []).forEach(e => e.photo && refs.add(e.photo)); });
+  (iss.pieces || []).forEach(p => p.photo && refs.add(p.photo));
+  const carried = Object.keys(seed.photos);
+  ok('THE FILE CARRIES THE LOOKS ON ITS PAGES, NOT EVERY ONE TRIED ON THE WAY',
+     !carried.includes(second) && carried.every(id => refs.has(id)) &&
+     carried.some(id => /^data:image\/png/.test(seed.photos[id])) && carried.some(id => /^data:image\/jpeg/.test(seed.photos[id])),
+     carried.length + ' photos: ' + carried.map(id => seed.photos[id].slice(11, 15)).join(' '));
   await go('#shelf');
   await page.click('[data-readissue="01"]');
   await page.waitForTimeout(250);

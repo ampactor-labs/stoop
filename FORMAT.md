@@ -32,7 +32,7 @@ A conforming reader finds that element, parses it, and renders the issue. A conf
   "address": "example.org/stoop/nightbus",
   "issues": [ … ],
   "cycle": { "no": "04", "editor": "b", "bell": 1789000000000 },
-  "photos": { "ph_abc123": "data:image/png;base64,…" },
+  "photos": { "ph_abc123": "data:image/jpeg;base64,…" },
   "open": "#shelf",
   "read": "03"
 }
@@ -42,7 +42,7 @@ A conforming reader finds that element, parses it, and renders the issue. A conf
 - `version` is this specification's version. A reader that does not know a version SHOULD refuse rather than misread.
 - `issues` carries every issue up to and including `no`, oldest first. A reader handed issue three gets issues one and two with it, because an archive that only holds its newest entry is a stream with extra steps.
 - `cycle` describes the issue the recipient would make next. `no` is `no + 1`, zero-padded to at least two digits; `editor` follows the parity rule in §4. It is computed from the issue in the file, never inherited from the sender's own shelf.
-- `photos` maps photo ids to data URIs. Every id referenced by the issue named in `no` — its panels and its pieces — MUST appear here. Earlier issues SHOULD carry only their covers' photographs: each has its own file with the rest, and a file that carried every photograph on the shelf would grow with every issue until nobody could send it. A reader MUST show a photograph it does not have as an empty place, never fail over it. Writers SHOULD store each photograph as a 1-bit greyscale PNG — the image is dithered to two tones on intake, and encoding it at any greater depth multiplies the size of every file it travels in by about six for no visible difference. Readers MUST accept any image data URI a browser can display.
+- `photos` maps photo ids to data URIs. Every id referenced by the issue named in `no` — its panels and its pieces — MUST appear here. Earlier issues SHOULD carry only their covers' photographs: each has its own file with the rest, and a file that carried every photograph on the shelf would grow with every issue until nobody could send it. A reader MUST show a photograph it does not have as an empty place, never fail over it. Writers SHOULD store a photograph as JPEG, in colour; as PNG where it has transparency, so a cut-out stays cut out; and as a 1-bit greyscale PNG where it has been screened to two tones, since that is all it holds. Writers SHOULD NOT store more pixels than print needs (2400 on the long edge is about 280 to the inch on the tallest page this format has) and MUST NOT carry a camera's metadata, which can say where a photograph was taken; redrawing the image before storing it drops all of it. Readers MUST accept any image data URI a browser can display.
 - `open` and `read` are hints about what to show first. Readers MAY ignore both.
 
 - `people` is the scene's roster, in order. Authorship is stored as an `id`, never as a spelling, so renaming somebody does not orphan their past work. A scene is however many people it is; two is not a limit.

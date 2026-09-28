@@ -188,12 +188,11 @@
   margin: .5rem 0 .2rem;
   border: 2px solid var(--ink);
   background: #fff;
-  image-rendering: pixelated;
 }
 
 .phototray { display: flex; gap: .5rem; overflow-x: auto; padding: .2rem 0 .4rem; align-items: flex-start; }
 .phototray:empty { display: none; }
-.tray-photo { height: 56px; border: 2px solid var(--fg); background: #fff; cursor: pointer; flex: 0 0 auto; image-rendering: pixelated; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
+.tray-photo { height: 56px; border: 2px solid var(--fg); background: #fff; cursor: pointer; flex: 0 0 auto; box-shadow: 2px 2px 0 rgba(20,18,16,.35); }
 .tray-photo:hover { outline: 2px solid var(--spot); }
 
 .log-stream { display: flex; flex-direction: column; gap: .7rem; margin-top: 1rem; }
@@ -251,7 +250,7 @@
 
 
 .reading { background: var(--paper); color: var(--ink); border: 2px solid var(--ink); padding: 1.4rem 1.3rem; box-shadow: 5px 5px 0 rgba(0,0,0,.55); max-width: 38rem; margin: 0 auto; }
-.reading img { width: 100%; image-rendering: pixelated; margin: .6rem 0; }
+.reading img { width: 100%; margin: .6rem 0; }
 .reading-head { border-bottom: 3px solid var(--ink); padding-bottom: .6rem; margin-bottom: 1rem; }
 .reading-head h1 { font-size: 2.2rem; margin: 0; }
 .reading-meta { font-family: 'Courier New', monospace; font-size: .75rem; margin: .3rem 0 0; }
@@ -289,7 +288,7 @@
 .panel .body { font-family: 'Courier New', monospace; font-size: 11.5px; line-height: 1.45; color: var(--ink); outline: none; white-space: pre-wrap; flex: 1; overflow: hidden; }
 .panel .pgtag { position: absolute; bottom: 4px; right: 8px; font-size: 9px; color: #aaa; font-family: 'Courier New', monospace; }
 .panel .fitwarn:not(:empty) { position: absolute; bottom: 3px; left: 6px; font-family: 'Courier New', monospace; font-size: 9px; background: var(--red); color: #fff; padding: 1px 4px; }
-.panel-photo { display: block; width: 100%; max-height: 46%; object-fit: contain; object-position: left top; margin: 0 0 5px; image-rendering: pixelated; }
+.panel-photo { display: block; width: 100%; max-height: 46%; object-fit: contain; object-position: left top; margin: 0 0 5px; }
 .panel-unpic { position: absolute; top: 3px; right: 5px; background: #fff; border: 1px solid var(--ink); color: var(--ink); font-size: 10px; line-height: 1; padding: 2px 4px; cursor: pointer; }
 .cover h3 { font-size: 24px; }
 .cover .no { font-family: Anton, Impact, sans-serif; font-size: 68px; line-height: .9; color: var(--ink); margin: 2px 0; }
@@ -391,7 +390,7 @@ body.landing main { padding-top: 2.4rem; }
 .el-box { border: 2px solid var(--ink); }
 .el-box.inkwhite { background: var(--ink); border-color: var(--ink); }
 .elrule { width: 100%; height: 100%; background: var(--ink); min-height: 2px; }
-.elphoto { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; display: block; }
+.elphoto { width: 100%; height: 100%; object-fit: contain; display: block; }
 .elphoto.fill { object-fit: cover; }
 .elmissing { width: 100%; height: 100%; border: 1px dashed #999; color: #999; font: 9px 'Courier New', monospace; display: flex; align-items: center; justify-content: center; }
 
@@ -775,7 +774,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 251 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 255 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1131,10 +1130,14 @@ function placeFromTray(id) {
   renderPress();
   toast('Glued to page ' + pastePage + ' \u2014 drag it where it goes');
 }
-var PHOTO_MAX_EDGE = 1000;
+var PHOTO_MAX_EDGE = 2400;
+var SCREEN_MAX_EDGE = 1000;
+var PHOTO_QUALITY = 0.9;
 var PHOTO_CONTRAST = 1.15;
-var SCREENS = ['grain', 'dots', 'hard'];
-var SCREEN_LABEL = { grain: 'GRAIN', dots: 'DOTS', hard: 'HARD' };
+var LOOKS = ['colour', 'grey', 'grain', 'dots', 'hard'];
+var LOOK_LABEL = { colour: 'COLOUR', grey: 'B&W', grain: 'GRAIN', dots: 'DOTS', hard: 'HARD' };
+
+function isScreen(look) { return look === 'grain' || look === 'dots' || look === 'hard'; }
 
 function loadImage(src) {
   return new Promise(function (resolve, reject) {
@@ -1154,26 +1157,59 @@ function readImage(file) {
   });
 }
 
-function greyFrom(img) {
-  var scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(img.width, img.height));
-  var w = Math.max(1, Math.round(img.width * scale));
-  var h = Math.max(1, Math.round(img.height * scale));
+function canvasAt(img, edge, paper) {
+  var scale = Math.min(1, edge / Math.max(img.width, img.height));
   var canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
   var ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, w, h);
-  ctx.drawImage(img, 0, 0, w, h);
-  var data = ctx.getImageData(0, 0, w, h);
-  var d = data.data;
-  var g = new Float32Array(w * h);
-  for (var i = 0; i < w * h; i++) {
-    g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
-    d[i * 4] = d[i * 4 + 1] = d[i * 4 + 2] = g[i];
+  if (paper) { ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return { canvas: canvas, ctx: ctx, w: canvas.width, h: canvas.height };
+}
+
+function hasClear(c) {
+  var d = c.ctx.getImageData(0, 0, c.w, c.h).data;
+  for (var i = 3; i < d.length; i += 4) if (d[i] < 250) return true;
+  return false;
+}
+
+function encoded(c, clear) {
+  return clear ? c.canvas.toDataURL('image/png') : c.canvas.toDataURL('image/jpeg', PHOTO_QUALITY);
+}
+
+function toneCurve(exp) {
+  var gamma = Math.pow(0.78, exp);
+  var lut = new Uint8ClampedArray(256);
+  for (var i = 0; i < 256; i++) lut[i] = Math.round(255 * Math.pow(i / 255, gamma));
+  return lut;
+}
+
+function tonePhoto(img, exp, look) {
+  var c = canvasAt(img, PHOTO_MAX_EDGE, false);
+  var clear = hasClear(c);
+  if (exp || look === 'grey') {
+    var data = c.ctx.getImageData(0, 0, c.w, c.h);
+    var d = data.data;
+    var lut = toneCurve(exp);
+    for (var i = 0; i < d.length; i += 4) {
+      if (look === 'grey') {
+        d[i] = d[i + 1] = d[i + 2] = lut[Math.round(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2])];
+      } else {
+        d[i] = lut[d[i]]; d[i + 1] = lut[d[i + 1]]; d[i + 2] = lut[d[i + 2]];
+      }
+    }
+    c.ctx.putImageData(data, 0, 0);
   }
-  ctx.putImageData(data, 0, 0);
-  return { w: w, h: h, g: g, canvas: canvas };
+  return encoded(c, clear);
+}
+
+function greyFrom(img) {
+  var c = canvasAt(img, SCREEN_MAX_EDGE, true);
+  var d = c.ctx.getImageData(0, 0, c.w, c.h).data;
+  var g = new Float32Array(c.w * c.h);
+  for (var i = 0; i < c.w * c.h; i++) g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+  return { w: c.w, h: c.h, g: g };
 }
 
 function screenBits(grey, exp, style) {
@@ -1236,17 +1272,111 @@ function screenPhoto(grey, exp, style) {
   });
 }
 
-function pngSize(url) {
-  var m = /^data:image\/png;base64,([A-Za-z0-9+\/]{32})/.exec(url || '');
-  if (!m) return null;
-  var b = atob(m[1]);
-  var at = function (i) { return ((b.charCodeAt(i) << 24) | (b.charCodeAt(i + 1) << 16) | (b.charCodeAt(i + 2) << 8) | b.charCodeAt(i + 3)) >>> 0; };
-  return { w: at(16), h: at(20) };
+function lookOf(src, img, exp, look) {
+  if (isScreen(look)) return screenPhoto(greyFrom(img), exp, look);
+  if (look === 'colour' && !exp) return Promise.resolve(src);
+  return Promise.resolve(tonePhoto(img, exp, look));
 }
 
 function keepMeta(id, meta) {
   photoMeta[id] = meta;
   return photoTx('readwrite', function (s) { return s.put(meta, id); }, META_STORE).catch(function () {});
+}
+
+function intakePhotos(fileList) {
+  var files = Array.prototype.slice.call(fileList).filter(function (f) {
+    return /^image\//.test(f.type);
+  });
+  if (!files.length) return Promise.resolve([]);
+  toast(files.length > 1 ? 'Taking in ' + files.length + ' photos…' : 'Taking in the photo…');
+
+  return files.reduce(function (chain, file) {
+    return chain.then(function (ids) {
+      return readImage(file)
+        .then(function (img) {
+          var id = uid('ph');
+          var master = tonePhoto(img, 0, 'colour');
+          return photoPut(id, master)
+            .then(function () {
+              photoTx('readwrite', function (s) { return s.put(master, id); }, MASTER_STORE).catch(function () {});
+              return keepMeta(id, { root: id, exp: 0, style: 'colour' });
+            })
+            .then(function () { return ids.concat(id); });
+        })
+        .catch(function () { toast('Skipped a file that is not an image'); return ids; });
+    });
+  }, Promise.resolve([]));
+}
+
+var screening = false;
+function rescreen(oldId, change) {
+  var meta = photoMeta[oldId];
+  if (!meta || screening) return Promise.resolve(null);
+  var next = { root: meta.root, exp: Math.max(-4, Math.min(4, meta.exp + (change.exp || 0))), style: change.style || meta.style };
+  var have = Object.keys(photoMeta).filter(function (id) {
+    var m = photoMeta[id];
+    return m.root === next.root && m.exp === next.exp && m.style === next.style && photoCache[id];
+  })[0];
+  if (have) return Promise.resolve(have);
+  screening = true;
+  var src;
+  return photoTx('readonly', function (s) { return s.get(meta.root); }, MASTER_STORE).then(function (got) {
+    if (!got) throw new Error('its original is not on this device');
+    src = got;
+    return loadImage(src);
+  }).then(function (img) {
+    return lookOf(src, img, next.exp, next.style);
+  }).then(function (url) {
+    var id = uid('ph');
+    return photoPut(id, url).then(function () { return keepMeta(id, next); }).then(function () { return id; });
+  }).then(function (id) { screening = false; return id; }, function (e) { screening = false; throw e; });
+}
+var sizeSeen = new Map();
+
+function b64Bytes(url, chars) {
+  var at = url.indexOf(',') + 1;
+  var s = atob(chars ? url.slice(at, at + chars) : url.slice(at));
+  var out = new Uint8Array(s.length);
+  for (var i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+
+function jpegFrame(b) {
+  var i = 2;
+  while (i + 9 < b.length) {
+    if (b[i] !== 0xff) return null;
+    var m = b[i + 1];
+    if (m === 0xff) { i++; continue; }
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) {
+      return { w: (b[i + 7] << 8) | b[i + 8], h: (b[i + 5] << 8) | b[i + 6], comps: b[i + 9] };
+    }
+    i += 2 + ((b[i + 2] << 8) | b[i + 3]);
+  }
+  return null;
+}
+
+function imageInfo(url) {
+  if (!url || url.slice(0, 5) !== 'data:') return null;
+  if (sizeSeen.has(url)) return sizeSeen.get(url);
+  var info = null;
+  try {
+    if (/^data:image\/png;base64,/.test(url)) {
+      var p = b64Bytes(url, 44);
+      var at = function (i) { return ((p[i] << 24) | (p[i + 1] << 16) | (p[i + 2] << 8) | p[i + 3]) >>> 0; };
+      info = { type: 'png', w: at(16), h: at(20), depth: p[24], colour: p[25] };
+    } else if (/^data:image\/jpeg;base64,/.test(url)) {
+      var f = jpegFrame(b64Bytes(url, 4096)) || jpegFrame(b64Bytes(url));
+      if (f) info = { type: 'jpeg', w: f.w, h: f.h, comps: f.comps };
+    }
+  } catch (e) { info = null; }
+  if (sizeSeen.size > 400) sizeSeen.clear();
+  sizeSeen.set(url, info);
+  return info;
+}
+
+function imageSize(url) {
+  var i = imageInfo(url);
+  return i && i.w && i.h ? { w: i.w, h: i.h } : null;
 }
 
 var CRC_TABLE = (function () {
@@ -1305,55 +1435,6 @@ function png1bit(w, h, bits) {
     }
     return 'data:image/png;base64,' + btoa(s);
   }).catch(function () { return null; });
-}
-
-function intakePhotos(fileList) {
-  var files = Array.prototype.slice.call(fileList).filter(function (f) {
-    return /^image\//.test(f.type);
-  });
-  if (!files.length) return Promise.resolve([]);
-  toast(files.length > 1 ? 'Dithering ' + files.length + ' photos…' : 'Dithering photo…');
-
-  return files.reduce(function (chain, file) {
-    return chain.then(function (ids) {
-      return readImage(file)
-        .then(function (img) {
-          var id = uid('ph');
-          var grey = greyFrom(img);
-          var master = grey.canvas.toDataURL('image/jpeg', 0.85);
-          return screenPhoto(grey, 0, 'grain')
-            .then(function (url) { return photoPut(id, url); })
-            .then(function () {
-              photoTx('readwrite', function (s) { return s.put(master, id); }, MASTER_STORE).catch(function () {});
-              return keepMeta(id, { root: id, exp: 0, style: 'grain' });
-            })
-            .then(function () { return ids.concat(id); });
-        })
-        .catch(function () { toast('Skipped a file that is not an image'); return ids; });
-    });
-  }, Promise.resolve([]));
-}
-
-var screening = false;
-function rescreen(oldId, change) {
-  var meta = photoMeta[oldId];
-  if (!meta || screening) return Promise.resolve(null);
-  var next = { root: meta.root, exp: Math.max(-4, Math.min(4, meta.exp + (change.exp || 0))), style: change.style || meta.style };
-  var have = Object.keys(photoMeta).filter(function (id) {
-    var m = photoMeta[id];
-    return m.root === next.root && m.exp === next.exp && m.style === next.style && photoCache[id];
-  })[0];
-  if (have) return Promise.resolve(have);
-  screening = true;
-  return photoTx('readonly', function (s) { return s.get(meta.root); }, MASTER_STORE).then(function (src) {
-    if (!src) throw new Error('its original is not on this device');
-    return loadImage(src);
-  }).then(function (img) {
-    return screenPhoto(greyFrom(img), next.exp, next.style);
-  }).then(function (url) {
-    var id = uid('ph');
-    return photoPut(id, url).then(function () { return keepMeta(id, next); }).then(function () { return id; });
-  }).then(function (id) { screening = false; return id; }, function (e) { screening = false; throw e; });
 }
 var activeLogFilter = 'all';
 
@@ -1722,7 +1803,7 @@ function paintFace(el, panel, page, active) {
       el.insertBefore(img, body);
     }
     if (img.getAttribute('src') !== photoCache[panel.photo]) {
-      var size = pngSize(photoCache[panel.photo]);
+      var size = imageSize(photoCache[panel.photo]);
       img.style.aspectRatio = size ? size.w + ' / ' + size.h : '';
       img.src = photoCache[panel.photo];
     }
@@ -2505,7 +2586,7 @@ function inspectorButtons(el) {
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME']);
   if (el.kind === 'photo' && photoMeta[el.photo]) {
-    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', SCREEN_LABEL[photoMeta[el.photo].style]]);
+    b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER'], ['elphscreen', LOOK_LABEL[photoMeta[el.photo].style]]);
   }
   var at = findEl(el.id);
   var pages = pressState().panels.length;
@@ -2535,7 +2616,7 @@ function renderInspector() {
     var m = photoMeta[page.photo];
     box.className = 'inspector on';
     box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
-      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', SCREEN_LABEL[m.style]]]
+      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
         .map(function (pair) {
           return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
         }).join('') + '</div>';
@@ -2646,8 +2727,8 @@ function rescreenFrom(btn) {
   var meta = photo && photoMeta[photo];
   if (!meta) return;
   var change = /light$/.test(kind) ? { exp: 1 } : /dark$/.test(kind) ? { exp: -1 }
-    : { style: SCREENS[(SCREENS.indexOf(meta.style) + 1) % SCREENS.length] };
-  toast('Screening\u2026');
+    : { style: LOOKS[(LOOKS.indexOf(meta.style) + 1) % LOOKS.length] };
+  toast('Redoing the photo\u2026');
   rescreen(photo, change).then(function (id) {
     if (!id) return;
     pasteMark();
@@ -2655,7 +2736,7 @@ function rescreenFrom(btn) {
     savePress();
     renderPress();
     var m = photoMeta[id];
-    toast(SCREEN_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
+    toast(LOOK_LABEL[m.style] + (m.exp ? ' \u00b7 ' + (m.exp > 0 ? 'lighter ' : 'darker ') + Math.abs(m.exp) : ''));
   }).catch(function (e) { toast('Could not screen it again: ' + e.message); });
 }
 
@@ -3620,7 +3701,7 @@ function panelFaceHtml(panels, page, pics, url, issue, aspect) {
   return '<h3>' + esc(p.h || '') + '</h3>' +
     (page === 1 ? '<div class="no">№' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
     (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt=""' +
-      (pngSize(pics[p.photo]) ? ' style="aspect-ratio:' + pngSize(pics[p.photo]).w + ' / ' + pngSize(pics[p.photo]).h + '"' : '') + '>' : '') +
+      (imageSize(pics[p.photo]) ? ' style="aspect-ratio:' + imageSize(pics[p.photo]).w + ' / ' + imageSize(pics[p.photo]).h + '"' : '') + '>' : '') +
     '<div class="body">' + esc(p.body || '') + '</div>' +
     pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
     (page === pages ? addrHtml(url) : '');
@@ -4076,7 +4157,7 @@ function deflate(bytes) {
   } catch (e) { return Promise.resolve(null); }
 }
 
-function packBitmap(dataUrl, gen) {
+function rasterOf(dataUrl) {
   return new Promise(function (resolve) {
     var img = new Image();
     img.onload = function () {
@@ -4086,39 +4167,81 @@ function packBitmap(dataUrl, gen) {
       canvas.height = h;
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
-      var d = ctx.getImageData(0, 0, w, h).data;
-      var rowBytes = Math.ceil(w / 8);
-      var out = new Uint8Array(rowBytes * h);
-      for (var y = 0; y < h; y++) {
-        for (var x = 0; x < w; x++) {
-          if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
-        }
-      }
-      if (gen) {
-        var flips = Math.floor(w * h * gen * 0.004);
-        for (var k = 0; k < flips; k++) {
-          var r = hash32('dust' + k);
-          var px = r % w, py = (r >>> 12) % h;
-          var byteAt = py * rowBytes + (px >> 3), bit = 0x80 >> (px & 7);
-          if ((r >>> 28) & 1) out[byteAt] &= ~bit; else out[byteAt] |= bit;
-        }
-      }
-      resolve({ w: w, h: h, bits: out });
+      resolve({ w: w, h: h, d: ctx.getImageData(0, 0, w, h).data });
     };
     img.onerror = function () { resolve(null); };
     img.src = dataUrl;
   });
 }
 
+function twoTone(d) {
+  for (var i = 0; i < d.length; i += 4) {
+    var v = d[i];
+    if ((v !== 0 && v !== 255) || d[i + 1] !== v || d[i + 2] !== v || d[i + 3] !== 255) return false;
+  }
+  return true;
+}
+
+function packBitmap(r, gen) {
+  var w = r.w, h = r.h, d = r.d;
+  var rowBytes = Math.ceil(w / 8);
+  var out = new Uint8Array(rowBytes * h);
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
+    }
+  }
+  if (gen) {
+    var flips = Math.floor(w * h * gen * 0.004);
+    for (var k = 0; k < flips; k++) {
+      var hr = hash32('dust' + k);
+      var px = hr % w, py = (hr >>> 12) % h;
+      var byteAt = py * rowBytes + (px >> 3), bit = 0x80 >> (px & 7);
+      if ((hr >>> 28) & 1) out[byteAt] &= ~bit; else out[byteAt] |= bit;
+    }
+  }
+  return out;
+}
+
+function pdfImageStream(doc, head, bytes) {
+  return deflate(bytes).then(function (packed) {
+    return doc.stream(head + (packed ? '/Filter/FlateDecode' : ''), packed || bytes);
+  });
+}
+
+function pdfAddColour(doc, r) {
+  var n = r.w * r.h, d = r.d;
+  var rgb = new Uint8Array(n * 3), alpha = new Uint8Array(n), clear = false;
+  for (var i = 0; i < n; i++) {
+    rgb[i * 3] = d[i * 4]; rgb[i * 3 + 1] = d[i * 4 + 1]; rgb[i * 3 + 2] = d[i * 4 + 2];
+    alpha[i] = d[i * 4 + 3];
+    if (alpha[i] < 255) clear = true;
+  }
+  var size = '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h + '/BitsPerComponent 8';
+  var mask = clear ? pdfImageStream(doc, size + '/ColorSpace/DeviceGray', alpha) : Promise.resolve(0);
+  return mask.then(function (m) {
+    return pdfImageStream(doc, size + '/ColorSpace/DeviceRGB' + (m ? '/SMask ' + m + ' 0 R' : ''), rgb);
+  });
+}
+
+function pdfAddJpeg(doc, dataUrl) {
+  var info = imageInfo(dataUrl);
+  if (!info || !info.w) return null;
+  var space = info.comps === 1 ? '/DeviceGray' : info.comps === 4 ? '/DeviceCMYK/Decode[1 0 1 0 1 0 1 0]' : '/DeviceRGB';
+  var num = doc.stream('/Type/XObject/Subtype/Image/Width ' + info.w + '/Height ' + info.h +
+    '/ColorSpace' + space + '/BitsPerComponent 8/Filter/DCTDecode', b64Bytes(dataUrl));
+  return { num: num, w: info.w, h: info.h };
+}
+
 function pdfAddImage(doc, dataUrl, gen) {
-  return packBitmap(dataUrl, gen).then(function (bm) {
-    if (!bm) return null;
-    return deflate(bm.bits).then(function (packed) {
-      var dict = '/Type/XObject/Subtype/Image/Width ' + bm.w + '/Height ' + bm.h +
-        '/ColorSpace/DeviceGray/BitsPerComponent 1' + (packed ? '/Filter/FlateDecode' : '');
-      var num = doc.stream(dict, packed || bm.bits);
-      return { num: num, w: bm.w, h: bm.h };
-    });
+  if (/^data:image\/jpeg;/.test(dataUrl || '')) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
+  return rasterOf(dataUrl).then(function (r) {
+    if (!r) return null;
+    var made = twoTone(r.d)
+      ? pdfImageStream(doc, '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h +
+          '/ColorSpace/DeviceGray/BitsPerComponent 1', packBitmap(r, gen))
+      : pdfAddColour(doc, r);
+    return made.then(function (num) { return { num: num, w: r.w, h: r.h }; });
   });
 }
 var pressFace = null;

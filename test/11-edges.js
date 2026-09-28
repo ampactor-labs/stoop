@@ -259,24 +259,29 @@ module.exports = async function edges(browser, ok) {
   ok('nor does one in the scraps box, behind the drawer',
      (await page.locator('[data-page="5"] .el').count()) === before && (await page.inputValue('#loginput')) === 'hell');
 
-  // ---- a cut-out photograph comes in as a square, not a blob.
+  // ---- a cut-out photograph stays cut out: a square, not a blob, and not a
+  // white card either, so it can go over colour.
   await page.setInputFiles('#photofile', cutoutFile());
   await page.waitForTimeout(1800);
-  const dark = await page.evaluate(async () => {
+  const cut = await page.evaluate(async () => {
     const img = document.querySelector('#loglist .log-photo');
-    if (!img) return -1;
+    if (!img) return null;
     await img.decode();
     const c = document.createElement('canvas');
     c.width = img.naturalWidth; c.height = img.naturalHeight;
     const g = c.getContext('2d');
     g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, c.width, c.height).data;
-    let n = 0;
-    for (let i = 0; i < d.length; i += 4) if (d[i] < 128) n++;
-    return n / (d.length / 4);
+    let ink = 0, clear = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] > 200 && d[i] < 128) ink++;
+      if (d[i + 3] < 10) clear++;
+    }
+    return { ink: ink / (d.length / 4), clear: clear / (d.length / 4), type: img.src.slice(0, 15) };
   });
-  ok('A TRANSPARENT CUT-OUT COMES IN WHITE AROUND ITS INK', dark > 0.02 && dark < 0.1,
-     'dark share ' + dark.toFixed(3));
+  ok('A TRANSPARENT CUT-OUT STAYS CUT OUT, INK AND NOTHING AROUND IT',
+     !!cut && cut.ink > 0.02 && cut.ink < 0.1 && cut.clear > 0.85 && cut.type === 'data:image/png;',
+     cut ? 'ink ' + cut.ink.toFixed(3) + ', clear ' + cut.clear.toFixed(3) + ', ' + cut.type : 'no image');
 
   // ---- a file dropped off the page does not replace the press.
   const caught = await page.evaluate(() => {

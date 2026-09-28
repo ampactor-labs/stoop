@@ -52,7 +52,7 @@ module.exports = async function features(browser, ok) {
   await page.click('[data-logfilter="all"]');
   await page.waitForTimeout(150);
 
-  // Photos: real intake, dithered to two levels, small enough to keep.
+  // Photos: real intake, kept in colour as taken.
   await page.fill('#loginput', 'First test photo from the workbench');
   await page.setInputFiles('#photofile', photoFile());
   await page.waitForTimeout(1800);
@@ -66,11 +66,16 @@ module.exports = async function features(browser, ok) {
     c.getContext('2d').drawImage(img, 0, 0);
     const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
     const levels = new Set();
-    for (let i = 0; i < d.length; i += 4) levels.add(d[i]);
-    return { levels: [...levels].sort((a, b) => a - b), bytes: img.src.length };
+    let colour = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      levels.add(d[i]);
+      if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 40) colour++;
+    }
+    return { levels: levels.size, colour: colour / (d.length / 4), bytes: img.src.length, type: img.src.slice(0, 15) };
   });
-  ok('the photo is genuinely 1-bit', shot && shot.levels.length === 2 && shot.levels[0] === 0 && shot.levels[1] === 255,
-     shot ? 'levels=' + JSON.stringify(shot.levels) : 'no image');
+  ok('THE PHOTO KEEPS ITS COLOUR AND ITS TONES, WITHOUT BEING ASKED',
+     shot && shot.colour > 0.5 && shot.levels > 100 && shot.type === 'data:image/jpeg',
+     shot ? 'colour ' + shot.colour.toFixed(2) + ', levels ' + shot.levels + ', ' + shot.type : 'no image');
   ok('the photo is small enough to keep', shot && shot.bytes < 120000,
      shot ? Math.round(shot.bytes / 1024) + ' KB' : '');
 

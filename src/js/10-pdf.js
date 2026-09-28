@@ -4,9 +4,9 @@
 // three, and is also what a copy shop will accept.
 //
 // Written rather than fetched, per the zero-external-requests law. Only what
-// this press puts on paper is supported: two of the standard fourteen fonts,
-// which need no embedding, and 1-bit images, which are the only kind the
-// intake produces.
+// this press puts on paper is supported: a few of the standard fourteen
+// fonts, which need no embedding, the press's own two faces, and photographs
+// in colour or in the two tones of a photocopy.
 
 var PT_PER_PX = 0.75;     // CSS pixels at 96dpi into PDF points at 72dpi
 var PT_PER_IN = 72;
@@ -121,8 +121,12 @@ function pdfDoc() {
 }
 
 // ---------- images ----------
-// Everything this press prints is already 1-bit, so the samples pack eight to
-// a byte and the PDF carries the same black and white the photocopier will.
+// A photograph kept as JPEG goes into the PDF as the same bytes: a PDF
+// reader decodes JPEG itself, so the colour on paper is the colour on screen
+// with nothing re-encoded on the way. Anything else is drawn and read back.
+// Two tones pack eight to a byte, the same black and white the photocopier
+// will make; colour goes in as red, green and blue, with its transparency
+// beside it as a mask, so a cut-out stays cut out on paper too.
 function deflate(bytes) {
   if (typeof CompressionStream === 'undefined') return Promise.resolve(null);
   try {
@@ -131,7 +135,7 @@ function deflate(bytes) {
   } catch (e) { return Promise.resolve(null); }
 }
 
-function packBitmap(dataUrl, gen) {
+function rasterOf(dataUrl) {
   return new Promise(function (resolve) {
     var img = new Image();
     img.onload = function () {
@@ -141,42 +145,83 @@ function packBitmap(dataUrl, gen) {
       canvas.height = h;
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
-      var d = ctx.getImageData(0, 0, w, h).data;
-      var rowBytes = Math.ceil(w / 8);
-      var out = new Uint8Array(rowBytes * h);
-      for (var y = 0; y < h; y++) {
-        for (var x = 0; x < w; x++) {
-          // 1 is white in DeviceGray; the sample byte is the red channel
-          // because the intake already collapsed the image to grey.
-          if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
-        }
-      }
-      // A copy of a copy: dust lands as black, thin things drop out as white,
-      // from a fixed seed so every print of the issue wears the same marks.
-      if (gen) {
-        var flips = Math.floor(w * h * gen * 0.004);
-        for (var k = 0; k < flips; k++) {
-          var r = hash32('dust' + k);
-          var px = r % w, py = (r >>> 12) % h;
-          var byteAt = py * rowBytes + (px >> 3), bit = 0x80 >> (px & 7);
-          if ((r >>> 28) & 1) out[byteAt] &= ~bit; else out[byteAt] |= bit;
-        }
-      }
-      resolve({ w: w, h: h, bits: out });
+      resolve({ w: w, h: h, d: ctx.getImageData(0, 0, w, h).data });
     };
     img.onerror = function () { resolve(null); };
     img.src = dataUrl;
   });
 }
 
+function twoTone(d) {
+  for (var i = 0; i < d.length; i += 4) {
+    var v = d[i];
+    if ((v !== 0 && v !== 255) || d[i + 1] !== v || d[i + 2] !== v || d[i + 3] !== 255) return false;
+  }
+  return true;
+}
+
+function packBitmap(r, gen) {
+  var w = r.w, h = r.h, d = r.d;
+  var rowBytes = Math.ceil(w / 8);
+  var out = new Uint8Array(rowBytes * h);
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      // 1 is white in DeviceGray.
+      if (d[(y * w + x) * 4] >= 128) out[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
+    }
+  }
+  // A copy of a copy: dust lands as black, thin things drop out as white,
+  // from a fixed seed so every print of the issue wears the same marks.
+  if (gen) {
+    var flips = Math.floor(w * h * gen * 0.004);
+    for (var k = 0; k < flips; k++) {
+      var hr = hash32('dust' + k);
+      var px = hr % w, py = (hr >>> 12) % h;
+      var byteAt = py * rowBytes + (px >> 3), bit = 0x80 >> (px & 7);
+      if ((hr >>> 28) & 1) out[byteAt] &= ~bit; else out[byteAt] |= bit;
+    }
+  }
+  return out;
+}
+
+function pdfImageStream(doc, head, bytes) {
+  return deflate(bytes).then(function (packed) {
+    return doc.stream(head + (packed ? '/Filter/FlateDecode' : ''), packed || bytes);
+  });
+}
+
+function pdfAddColour(doc, r) {
+  var n = r.w * r.h, d = r.d;
+  var rgb = new Uint8Array(n * 3), alpha = new Uint8Array(n), clear = false;
+  for (var i = 0; i < n; i++) {
+    rgb[i * 3] = d[i * 4]; rgb[i * 3 + 1] = d[i * 4 + 1]; rgb[i * 3 + 2] = d[i * 4 + 2];
+    alpha[i] = d[i * 4 + 3];
+    if (alpha[i] < 255) clear = true;
+  }
+  var size = '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h + '/BitsPerComponent 8';
+  var mask = clear ? pdfImageStream(doc, size + '/ColorSpace/DeviceGray', alpha) : Promise.resolve(0);
+  return mask.then(function (m) {
+    return pdfImageStream(doc, size + '/ColorSpace/DeviceRGB' + (m ? '/SMask ' + m + ' 0 R' : ''), rgb);
+  });
+}
+
+function pdfAddJpeg(doc, dataUrl) {
+  var info = imageInfo(dataUrl);
+  if (!info || !info.w) return null;
+  var space = info.comps === 1 ? '/DeviceGray' : info.comps === 4 ? '/DeviceCMYK/Decode[1 0 1 0 1 0 1 0]' : '/DeviceRGB';
+  var num = doc.stream('/Type/XObject/Subtype/Image/Width ' + info.w + '/Height ' + info.h +
+    '/ColorSpace' + space + '/BitsPerComponent 8/Filter/DCTDecode', b64Bytes(dataUrl));
+  return { num: num, w: info.w, h: info.h };
+}
+
 function pdfAddImage(doc, dataUrl, gen) {
-  return packBitmap(dataUrl, gen).then(function (bm) {
-    if (!bm) return null;
-    return deflate(bm.bits).then(function (packed) {
-      var dict = '/Type/XObject/Subtype/Image/Width ' + bm.w + '/Height ' + bm.h +
-        '/ColorSpace/DeviceGray/BitsPerComponent 1' + (packed ? '/Filter/FlateDecode' : '');
-      var num = doc.stream(dict, packed || bm.bits);
-      return { num: num, w: bm.w, h: bm.h };
-    });
+  if (/^data:image\/jpeg;/.test(dataUrl || '')) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
+  return rasterOf(dataUrl).then(function (r) {
+    if (!r) return null;
+    var made = twoTone(r.d)
+      ? pdfImageStream(doc, '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h +
+          '/ColorSpace/DeviceGray/BitsPerComponent 1', packBitmap(r, gen))
+      : pdfAddColour(doc, r);
+    return made.then(function (num) { return { num: num, w: r.w, h: r.h }; });
   });
 }

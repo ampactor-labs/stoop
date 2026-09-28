@@ -59,11 +59,13 @@ module.exports = async function selfcarry(browser, ok) {
   ok('the file is named for its scene and issue', /nightbus-01\.html/.test(dl.suggestedFilename()),
      dl.suggestedFilename());
   ok('the file reaches for nothing on any network', !/(src|href)="https?:/.test(html));
-  // What this file weighs, and why, is test/08-weight.js. Here it is only
-  // held to the same ratchet: the file less the seed it carries is the press.
-  const seedLen = (html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/) || ['', ''])[1].length;
+  // What a file weighs, and where the weight goes, is test/08-weight.js.
+  // Here: the file less the seed it carries is the press as built.
+  const seedText = (html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/) || ['', ''])[1];
+  const built = fs.statSync(path.resolve(__dirname, '..', 'artifact', 'index.html')).size;
   ok('an issue of text is the press and little else',
-     html.length - seedLen < 256 * 1024, Math.round((html.length - seedLen) / 1024) + ' KB');
+     Math.abs(Buffer.byteLength(html) - Buffer.byteLength(seedText) - built) < 8 * 1024,
+     Math.round((html.length - seedText.length) / 1024) + ' KB, built ' + Math.round(built / 1024) + ' KB');
   await ctx.close();
 
   // ---- the machine that has never seen stoop

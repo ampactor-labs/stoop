@@ -56,7 +56,7 @@ function panelFaceHtml(panels, page, pics, url, issue, aspect) {
   return '<h3>' + esc(p.h || '') + '</h3>' +
     (page === 1 ? '<div class="no">№' + esc(issue || '') + '</div><div class="rule"></div>' : '') +
     (p.photo && pics[p.photo] ? '<img class="panel-photo" src="' + esc(pics[p.photo]) + '" alt=""' +
-      (pngSize(pics[p.photo]) ? ' style="aspect-ratio:' + pngSize(pics[p.photo]).w + ' / ' + pngSize(pics[p.photo]).h + '"' : '') + '>' : '') +
+      (imageSize(pics[p.photo]) ? ' style="aspect-ratio:' + imageSize(pics[p.photo]).w + ' / ' + imageSize(pics[p.photo]).h + '"' : '') + '>' : '') +
     '<div class="body">' + esc(p.body || '') + '</div>' +
     pasteupHtml(p, pics, false, spreadGhosts(panels, page, aspect)) +
     (page === pages ? addrHtml(url) : '');

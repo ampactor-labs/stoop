@@ -151,7 +151,7 @@ function paintFace(el, panel, page, active) {
       el.insertBefore(img, body);
     }
     if (img.getAttribute('src') !== photoCache[panel.photo]) {
-      var size = pngSize(photoCache[panel.photo]);
+      var size = imageSize(photoCache[panel.photo]);
       img.style.aspectRatio = size ? size.w + ' / ' + size.h : '';
       img.src = photoCache[panel.photo];
     }
