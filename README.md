@@ -124,6 +124,7 @@ The documents beside the code:
 - [CONTRIBUTING.md](CONTRIBUTING.md) explains the source layout, the workflow and why each law in `check.sh` exists.
 - [tool/SPEC.md](tool/SPEC.md) specified a scene tool before PLAN.md existed. It is superseded: its desk and shelf now exist in the app, and its federation half is struck.
 - [docs/FOLK-MEDIA.md](docs/FOLK-MEDIA.md) is the argument the project was built on.
+- [docs/MOAT.md](docs/MOAT.md) surveys the field as of September 2026 and designs the next stretch of the route: the catalogue card and the feed, riso plates, the distro, the pen, your own faces.
 
 ## Deploy
 
