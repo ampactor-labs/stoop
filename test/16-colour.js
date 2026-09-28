@@ -106,6 +106,18 @@ module.exports = async function colour(browser, ok) {
   ok('A SCREENED PHOTOGRAPH IN BLUE IS BLUE AND PAPER, NOT BLACK', seen.blue > 0.3 && seen.black < 0.01,
      'blue ' + seen.blue.toFixed(2) + ', black ' + seen.black.toFixed(3));
 
+  // ---- a page printed on a colour.
+  await p3.click({ position: { x: 6, y: 300 } });
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.waitForTimeout(150);
+  ok('A PAGE WITH NOTHING CHOSEN OFFERS ITS COLOUR', /PAGE COLOUR/.test(await page.locator('#inspector').innerText()));
+  await page.click('[data-pgfill="3"][title="YELLOW"]');
+  await page.waitForTimeout(200);
+  ok('AND IS PRINTED ON IT', (await style('#sheetzone [data-page="3"]', 'backgroundColor')) === 'rgb(251, 238, 138)',
+     await style('#sheetzone [data-page="3"]', 'backgroundColor'));
+  ok('a page colour prints in a browser too, not dropped as a background',
+     (await style('#sheetzone [data-page="3"]', 'printColorAdjust')) === 'exact');
+
   // ---- the same inks on paper.
   await go('#paper');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
@@ -116,6 +128,8 @@ module.exports = async function colour(browser, ok) {
      /\/ImageMask true\/BitsPerComponent 1/.test(pdf) &&
      /cm 1 g 0 0 1 1 re f 0\.000 0\.471 0\.749 rg 0\.000 0\.471 0\.749 RG\n\/Im\d+ Do/.test(pdf));
   ok('the stamp in purple', /0\.463 0\.357 0\.655 rg 0\.463 0\.357 0\.655 RG/.test(pdf));
+  ok('AND THE YELLOW PAGE A YELLOW GROUND, LAID FIRST INSIDE ITS EDGE',
+     /re W n\n0\.984 0\.933 0\.541 rg [\d. ]+ re f 0 g\n/.test(pdf));
 
   // ---- a colour from a file is checked before it reaches a style.
   await page.evaluate(() => {
@@ -145,6 +159,10 @@ module.exports = async function colour(browser, ok) {
   const landed = await other.evaluate(() => [...document.querySelectorAll('#landing .eltext')]
     .map(n => getComputedStyle(n).color));
   ok('A FRIEND OPENING THE FILE SEES THE PINK', landed.includes('rgb(255, 72, 176)'), landed.join(' '));
+  ok('and the yellow page', (await other.evaluate(() => {
+    const n = document.querySelector('#landing [data-readpage="3"]');
+    return n ? getComputedStyle(n).backgroundColor : '';
+  })) === 'rgb(251, 238, 138)');
   await other.context().close();
 
   ok('no script errors around colour', errs.length === 0, errs.slice(0, 3).join(' | '));

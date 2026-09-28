@@ -47,15 +47,17 @@ function renderInspector() {
 
   var el = selectedEl();
   var page = panelOfPage(pastePage);
-  if (!el && page && page.photo && photoMeta[page.photo]) {
-    // The page's own photograph, the one a piece brought or the cover's.
-    var m = photoMeta[page.photo];
+  if (!el && page) {
+    // The page itself: its colour, and its own photograph, the one a piece
+    // brought or the cover's.
+    var m = page.photo && photoMeta[page.photo];
     box.className = 'inspector on';
-    box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
-      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
+    box.innerHTML = '<div class="insp-head"><b>PAGE ' + pastePage + '</b><span class="sub">' +
+      (m ? 'and its photo' : 'click a cutting to change it') + '</span></div>' +
+      (m ? '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
         .map(function (pair) {
           return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
-        }).join('') + '</div>';
+        }).join('') + '</div>' : '') + fillSwatches(pastePage);
     return;
   }
   if (!el) {

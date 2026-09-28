@@ -46,6 +46,36 @@ function inkFilter(hex) {
   return 'filter:url(#' + id + ')';
 }
 
+// A page can be printed on a colour: a flood under everything on it, the
+// way a colour printer lays a ground. Light colours only, so the page's own
+// type stays black on it and legible.
+var FILLS = [['WHITE', ''], ['PINK', '#f9c6d3'], ['YELLOW', '#fbee8a'], ['BLUE', '#bcdcf2'],
+  ['GREEN', '#c7e8c0'], ['ORANGE', '#fbc08e'], ['LAVENDER', '#d9cdef'], ['KRAFT', '#d8b98f']];
+
+function fillOf(panel) {
+  var c = panel && panel.fill;
+  return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : '';
+}
+
+function fillAttr(panel) {
+  return fillOf(panel) ? ' style="background:' + fillOf(panel) + '"' : '';
+}
+
+function fillSwatches(page) {
+  var now = fillOf(panelOfPage(page));
+  return '<div class="swatches"><span class="sub">PAGE COLOUR</span>' + FILLS.map(function (f) {
+    return '<button class="swatch' + (f[1] === now ? ' on' : '') + '" data-pgfill="' + page + '" data-c="' + f[1] +
+      '" title="' + f[0] + '" aria-label="' + f[0] + ' page" style="background:' + (f[1] || '#fff') + '"></button>';
+  }).join('') + '</div>';
+}
+
+function pdfFill(panel, box) {
+  var hex = fillOf(panel);
+  if (!hex) return '';
+  return inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ') + ' rg ' + box.left.toFixed(2) + ' ' +
+    (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' + box.h.toFixed(2) + ' re f 0 g\n';
+}
+
 // The PDF sets the ink once for the whole cutting, fill and stroke.
 function pdfInk(el) {
   var hex = inkOf(el);
@@ -70,6 +100,17 @@ function inkSwatches(el) {
 }
 
 document.addEventListener('click', function (ev) {
+  var f = ev.target.closest && ev.target.closest('[data-pgfill]');
+  if (f) {
+    var panel = panelOfPage(Number(f.getAttribute('data-pgfill')));
+    if (!panel) return;
+    pasteMark();
+    if (f.getAttribute('data-c')) panel.fill = f.getAttribute('data-c'); else delete panel.fill;
+    savePress();
+    renderPress();
+    toast(f.getAttribute('title') + ' page');
+    return;
+  }
   var b = ev.target.closest && ev.target.closest('[data-elcolour]');
   if (!b) return;
   var c = b.getAttribute('data-c');

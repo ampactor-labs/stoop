@@ -117,22 +117,22 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
-    ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
-    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
+    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, fill: panel.fill, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
       spreadGhosts(panels, slot.page, box.h / box.w));
     // The panel clips what hangs over its edge, as it does on screen and in
     // the browser's print; without it a cutting printed onto its neighbour.
     ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
-      box.h.toFixed(2) + ' re W n\n';
+      box.h.toFixed(2) + ' re W n\n' + pdfFill(panel, box);
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
     } else {
       ops += inner;
     }
-    ops += 'Q\n';
+    // Toner lands on top of whatever the page is printed on.
+    ops += 'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
   });
   return ops;
 }

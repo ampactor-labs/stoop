@@ -72,7 +72,7 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
 
 `gen` is optional and is 0 to 3: how many times the issue has been through the copier. A reader MAY render wear for it (frayed edges, toner speckle, dust in the photographs) and MUST derive that wear from fixed seeds rather than randomness, so every print of the issue wears the same marks. Absent means 0.
 
-`panels` has exactly as many entries as the format has pages, in reading order: index 0 is page 1, the front cover; the last index is the back cover. `h` is the heading, `body` is plain text with newlines significant, `photo` is a photo id or `null`.
+`panels` has exactly as many entries as the format has pages, in reading order: index 0 is page 1, the front cover; the last index is the back cover. `h` is the heading, `body` is plain text with newlines significant, `photo` is a photo id or `null`. `fill` is optional: the colour the page is printed on, as `#rrggbb`, laid as a flood across the whole page under everything on it; absent is white. A reader MUST ignore a value that is not a `#` and six hex digits.
 
 ### The paste-up
 

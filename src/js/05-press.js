@@ -139,6 +139,7 @@ function paintPanels() {
 function paintFace(el, panel, page, active) {
   var head = el.querySelector('h3');
   var body = el.querySelector('.body');
+  el.style.backgroundColor = fillOf(panel);
   if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
   if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
 

@@ -75,7 +75,7 @@ function readPagesHtml(issue, url, nameFn) {
       var kind = i === 0 ? ' cover' : (i === all.length - 1 ? ' backcover' : '');
       return '<div class="spread' + kind + '">' + sp.map(function (pg) {
         var cls = pg === 1 ? ' cover' : (pg === pages ? ' backcover' : '');
-        return '<div class="panel' + cls + '" data-readpage="' + pg + '">' +
+        return '<div class="panel' + cls + '" data-readpage="' + pg + '"' + fillAttr(panels[pg - 1]) + '>' +
           panelFaceHtml(panels, pg, photoCache, url, issue.no, aspect) + '</div>';
       }).join('') + '</div>';
     }).join('') + '</div></div>';

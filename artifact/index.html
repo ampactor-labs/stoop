@@ -275,6 +275,8 @@
 }
 .panel { border: 1px dashed #bbb; padding: .28in .3in; overflow: hidden; position: relative; background: #fff; box-sizing: border-box; display: flex; flex-direction: column; }
 .panel.flip { transform: rotate(180deg); }
+
+.panel, .panel * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .panel.over { outline: 2px solid var(--red); outline-offset: -2px; }
 .panel h3 { font-family: Anton, Impact, sans-serif; font-size: 20px; margin: 0 0 6px; text-transform: uppercase; color: var(--ink); outline: none; }
 .panel .body { font-family: 'Courier New', monospace; font-size: 11.5px; line-height: 1.45; color: var(--ink); outline: none; white-space: pre-wrap; flex: 1; overflow: hidden; }
@@ -533,12 +535,11 @@ body.landing main { padding-top: 2.4rem; }
   <filter id="gen1" x="-2%" y="-2%" width="104%" height="104%">
     <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="n"/>
     <feDisplacementMap in="SourceGraphic" in2="n" scale="1.1" result="d"/>
-    <feComponentTransfer in="d"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
-  </filter>
+      </filter>
   <filter id="gen2" x="-2%" y="-2%" width="104%" height="104%">
     <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="5" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="d"/>
-    <feComponentTransfer in="d" result="t"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" result="t"/>
+    
     <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="1" seed="9" result="s"/>
     <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  6 0 0 0 -3.9" result="dots"/>
     <feFlood flood-color="#000" result="ink"/>
@@ -547,8 +548,8 @@ body.landing main { padding-top: 2.4rem; }
   </filter>
   <filter id="gen3" x="-3%" y="-3%" width="106%" height="106%">
     <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="11" result="n"/>
-    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.6" result="d"/>
-    <feComponentTransfer in="d" result="t"><feFuncR type="discrete" tableValues="0 1"/><feFuncG type="discrete" tableValues="0 1"/><feFuncB type="discrete" tableValues="0 1"/></feComponentTransfer>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.6" result="t"/>
+    
     <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" seed="13" result="s"/>
     <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  7 0 0 0 -4.1" result="dots"/>
     <feFlood flood-color="#000" result="ink"/>
@@ -772,7 +773,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 255 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 259 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1789,6 +1790,7 @@ function paintPanels() {
 function paintFace(el, panel, page, active) {
   var head = el.querySelector('h3');
   var body = el.querySelector('.body');
+  el.style.backgroundColor = fillOf(panel);
   if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
   if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
 
@@ -2611,14 +2613,15 @@ function renderInspector() {
 
   var el = selectedEl();
   var page = panelOfPage(pastePage);
-  if (!el && page && page.photo && photoMeta[page.photo]) {
-    var m = photoMeta[page.photo];
+  if (!el && page) {
+    var m = page.photo && photoMeta[page.photo];
     box.className = 'inspector on';
-    box.innerHTML = '<div class="insp-head"><b>PAGE PHOTO</b><span class="sub">page ' + pastePage + '</span></div>' +
-      '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
+    box.innerHTML = '<div class="insp-head"><b>PAGE ' + pastePage + '</b><span class="sub">' +
+      (m ? 'and its photo' : 'click a cutting to change it') + '</span></div>' +
+      (m ? '<div class="press-actions">' + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER'], ['pgphscreen', LOOK_LABEL[m.style]]]
         .map(function (pair) {
           return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
-        }).join('') + '</div>';
+        }).join('') + '</div>' : '') + fillSwatches(pastePage);
     return;
   }
   if (!el) {
@@ -3082,6 +3085,33 @@ function inkFilter(hex) {
   return 'filter:url(#' + id + ')';
 }
 
+var FILLS = [['WHITE', ''], ['PINK', '#f9c6d3'], ['YELLOW', '#fbee8a'], ['BLUE', '#bcdcf2'],
+  ['GREEN', '#c7e8c0'], ['ORANGE', '#fbc08e'], ['LAVENDER', '#d9cdef'], ['KRAFT', '#d8b98f']];
+
+function fillOf(panel) {
+  var c = panel && panel.fill;
+  return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : '';
+}
+
+function fillAttr(panel) {
+  return fillOf(panel) ? ' style="background:' + fillOf(panel) + '"' : '';
+}
+
+function fillSwatches(page) {
+  var now = fillOf(panelOfPage(page));
+  return '<div class="swatches"><span class="sub">PAGE COLOUR</span>' + FILLS.map(function (f) {
+    return '<button class="swatch' + (f[1] === now ? ' on' : '') + '" data-pgfill="' + page + '" data-c="' + f[1] +
+      '" title="' + f[0] + '" aria-label="' + f[0] + ' page" style="background:' + (f[1] || '#fff') + '"></button>';
+  }).join('') + '</div>';
+}
+
+function pdfFill(panel, box) {
+  var hex = fillOf(panel);
+  if (!hex) return '';
+  return inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ') + ' rg ' + box.left.toFixed(2) + ' ' +
+    (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' + box.h.toFixed(2) + ' re f 0 g\n';
+}
+
 function pdfInk(el) {
   var hex = inkOf(el);
   if (!hex) return '0 g 0 G\n';
@@ -3105,6 +3135,17 @@ function inkSwatches(el) {
 }
 
 document.addEventListener('click', function (ev) {
+  var f = ev.target.closest && ev.target.closest('[data-pgfill]');
+  if (f) {
+    var panel = panelOfPage(Number(f.getAttribute('data-pgfill')));
+    if (!panel) return;
+    pasteMark();
+    if (f.getAttribute('data-c')) panel.fill = f.getAttribute('data-c'); else delete panel.fill;
+    savePress();
+    renderPress();
+    toast(f.getAttribute('title') + ' page');
+    return;
+  }
   var b = ev.target.closest && ev.target.closest('[data-elcolour]');
   if (!b) return;
   var c = b.getAttribute('data-c');
@@ -3438,7 +3479,7 @@ function runOnAt(page, panel, text) {
   var el = zone && zone.offsetParent && zone.querySelector('[data-page="' + page + '"]');
   var body = el && el.querySelector('.body');
   if (!body) return -1;
-  paintFace(el, { h: panel.h, body: '', photo: panel.photo }, page, null);
+  paintFace(el, { h: panel.h, body: '', photo: panel.photo, fill: panel.fill }, page, null);
   var fits = function (t) {
     body.innerText = t;
     return body.scrollHeight <= body.clientHeight + 1;
@@ -3473,7 +3514,8 @@ function staticSheetHtml(panels, formatId, hand, photos, url, gen, issue) {
       ';--cols:' + sheet.cols + ';--rows:' + sheet.rows + '">' +
       sheet.slots.map(function (slot) {
         var cover = slot.page === 1 ? ' cover' : (slot.page === pages ? ' backcover' : '');
-        return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '">' +
+        return '<div class="panel' + cover + (slot.flip ? ' flip' : '') + '" data-page="' + slot.page + '"' +
+          fillAttr(panels[slot.page - 1]) + '>' +
           panelFaceHtml(panels, slot.page, pics, url, issue, size.ph / size.pw) +
           '<div class="testnum"><b>' + slot.page + '</b><small>' + esc(pageLabel(slot.page, pages)) + '</small></div>' +
           '</div>';
@@ -3788,7 +3830,7 @@ function readPagesHtml(issue, url, nameFn) {
       var kind = i === 0 ? ' cover' : (i === all.length - 1 ? ' backcover' : '');
       return '<div class="spread' + kind + '">' + sp.map(function (pg) {
         var cls = pg === 1 ? ' cover' : (pg === pages ? ' backcover' : '');
-        return '<div class="panel' + cls + '" data-readpage="' + pg + '">' +
+        return '<div class="panel' + cls + '" data-readpage="' + pg + '"' + fillAttr(panels[pg - 1]) + '>' +
           panelFaceHtml(panels, pg, photoCache, url, issue.no, aspect) + '</div>';
       }).join('') + '</div>';
     }).join('') + '</div></div>';
@@ -4565,20 +4607,19 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
-    ops += '0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
     var panel = panels[slot.page - 1] || { h: '', body: '', photo: null };
-    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, issue: issue };
+    if (slot.page === 1) panel = { h: panel.h, body: panel.body, photo: panel.photo, els: panel.els, fill: panel.fill, issue: issue };
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
       spreadGhosts(panels, slot.page, box.h / box.w));
     ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
-      box.h.toFixed(2) + ' re W n\n';
+      box.h.toFixed(2) + ' re W n\n' + pdfFill(panel, box);
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
     } else {
       ops += inner;
     }
-    ops += 'Q\n';
+    ops += 'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
   });
   return ops;
 }
