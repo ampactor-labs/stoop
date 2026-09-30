@@ -88,6 +88,8 @@ function collectPhotoRefs() {
   });
   // A back issue is the archive. Sweeping a photo out from under a published
   // issue would rewrite history, so every shelved panel pins its photo.
+  // What the distro carries is somebody else's archive, and pinned the same.
+  (state.distro || []).forEach(function (e) { (e.issue.panels || []).forEach(keep); (e.issue.pieces || []).forEach(keep); });
   state.issues.forEach(function (iss) {
     (iss.panels || []).forEach(keep);
     (iss.pieces || []).forEach(keep);

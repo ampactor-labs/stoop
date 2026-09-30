@@ -130,6 +130,7 @@ function renderShelf() {
   if (openIssueNo && !issueByNo(openIssueNo)) openIssueNo = null;
   renderBackupStatus();
   renderReader();
+  renderDistro();
 }
 
 function renderReader() {

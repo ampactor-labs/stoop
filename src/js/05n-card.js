@@ -71,11 +71,13 @@ function coverPhotoId(issue) {
 
 // Who made it, by what they did: the editor and whoever wrote are the
 // creators; whoever only photographed is a contributor.
-function cardPeople(issue) {
+function cardPeople(issue, ctx) {
   var words = [], photos = [];
+  var who = (ctx && ctx.nameFn) || nameOf;
+  var roster = (ctx && ctx.people) || people;
   var add = function (list, id) {
     if (!id || id === 'anon') return;
-    var names = id === 'both' ? people.map(function (p) { return p.name; }) : [nameOf(id)];
+    var names = id === 'both' ? roster.map(function (p) { return p.name; }) : [who(id)];
     names.forEach(function (n) { if (list.indexOf(n) < 0) list.push(n); });
   };
   (issue.pieces || []).forEach(function (p) {
@@ -89,18 +91,20 @@ function cardPeople(issue) {
     (p && p.els || []).forEach(function (e) { if (e && e.photo) shown[rootOf(e.photo)] = 1; });
   });
   state.logs.forEach(function (l) { if (l.photo && shown[rootOf(l.photo)]) add(photos, l.author); });
-  var editor = nameOf(issue.editor);
+  var editor = who(issue.editor);
   var creators = [editor].concat(words.filter(function (n) { return n !== editor; }));
   return { editor: editor, creators: creators,
     contributors: photos.filter(function (n) { return creators.indexOf(n) < 0; }) };
 }
 
-function cardOf(issue) {
-  var typed = cleanCard(issue.card || cardState());
-  var zine = state.zine || 'STOOP ZINE';
+// ctx, when given, is the scene the issue belongs to as a file's seed names
+// it (its name, address and roster); without it, this scene.
+function cardOf(issue, ctx) {
+  var typed = cleanCard(issue.card || (ctx && !ctx.own ? {} : cardState()));
+  var zine = (ctx && ctx.zine) || state.zine || 'STOOP ZINE';
   var head = String(issue.title || (issue.panels && issue.panels[0] && issue.panels[0].h) || '').trim();
-  var who = cardPeople(issue);
-  var url = issueUrl(issue.no);
+  var who = cardPeople(issue, ctx);
+  var url = ctx ? distroUrl({ address: ctx.address, issue: issue }) : issueUrl(issue.no);
   var c = {
     title: zine + ' №' + issue.no + (head && head !== zine ? ': ' + head : ''),
     no: issue.no, publisher: zine, url: url, date: isoDay(issue.ts),
@@ -148,8 +152,8 @@ function colophonText(issue) {
 
 // schema.org's PublicationIssue inside a Periodical, which is what a
 // crawler, a library's harvester or a link unfurler reads.
-function cardJsonLd(issue) {
-  var c = cardOf(issue);
+function cardJsonLd(issue, ctx) {
+  var c = cardOf(issue, ctx);
   var person = function (n) { return { '@type': 'Person', name: n }; };
   var out = {
     '@context': 'https://schema.org', '@type': 'PublicationIssue',
@@ -181,7 +185,9 @@ function stampCard(doc, seed) {
   var no = seed && (seed.read || seed.no);
   var iss = seed && seed.stoop === 'issue' && (seed.issues || []).filter(function (i) { return i && i.no === no; })[0];
   if (!iss) return;
-  var c = cardOf(iss);
+  var ctx = { zine: seed.zine, address: seed.address, people: seed.people || [], own: seedIsOurs(seed),
+    nameFn: distroNameFn({ people: seed.people || [] }) };
+  var c = cardOf(iss, ctx);
   var meta = function (key, content) {
     if (!content) return;
     var m = document.createElement('meta');
@@ -199,7 +205,7 @@ function stampCard(doc, seed) {
   var s = document.createElement('script');
   s.type = 'application/ld+json';
   s.id = 'stoop-card';
-  s.textContent = JSON.stringify(cardJsonLd(iss)).replace(/<\//g, '<\\/');
+  s.textContent = JSON.stringify(cardJsonLd(iss, ctx)).replace(/<\//g, '<\\/');
   head.appendChild(s);
 }
 

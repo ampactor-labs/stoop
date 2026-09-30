@@ -70,7 +70,9 @@ function siteReadme(latest) {
     '  01/sheet.pdf    that issue imposed for a printer, at its exact paper size\n' +
     '  01/cover.jpg    its cover photograph, where there is one, for a shared link to show\n' +
     '  feed.xml        the bell in a feed reader: one entry per issue, the PDF as its enclosure\n' +
-    '  catalog.csv     the shelf as a library catalogues it, one row per issue\n\n' +
+    '  catalog.csv     the shelf as a library catalogues it, one row per issue\n' +
+    '  distro/         the zines this scene carries, when it carries any, each at\n' +
+    '                  distro/<name>/NN/ with its PDF, as its own scene\'s file\n\n' +
     (where
       ? 'The back covers point at ' + where + '/01/ and so on, so this folder has to be\n' +
         'what ' + where + '/ serves for the codes to land.\n'
@@ -108,6 +110,18 @@ function publishSite() {
       if (jpg) files.push({ name: root + iss.no + '/cover.jpg', data: jpg });
     });
   });
+  // The distro goes out beside the issues, each carried zine as its own
+  // scene's file; the feed and the catalogue are this scene's alone.
+  state.distro.forEach(function (e) {
+    var dir = root + 'distro/' + distroSlug(e) + '/' + e.issue.no + '/';
+    files.push({ name: dir + 'index.html', data: enc.encode(pageWithSeed(distroSeed(e))) });
+    chain = chain.then(function () {
+      return buildSheetPdf(e.issue.panels, e.issue.format, e.issue.hand, distroUrl(e), e.issue.no, e.issue.gen);
+    }).then(function (blob) { return blob.arrayBuffer(); }).then(function (buf) {
+      files.push({ name: dir + 'sheet.pdf', data: new Uint8Array(buf) });
+    });
+  });
+  if (state.distro.length) files.push({ name: root + 'distro/index.html', data: enc.encode(distroPageHtml()) });
   return chain.then(function () {
     files.push({ name: root + 'feed.xml', data: enc.encode(feedXml(issues, sizes)) });
     files.push({ name: root + 'catalog.csv', data: enc.encode(catalogCsv(issues)) });

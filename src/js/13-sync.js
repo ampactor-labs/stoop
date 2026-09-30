@@ -21,6 +21,7 @@ function exportBackup() {
     address: state.address,
     zine: state.zine,
     card: state.card,
+    distro: state.distro,
     press: state.press,
     photos: photos
   };
@@ -108,6 +109,7 @@ function importBackup(raw, mode) {
     state.address = incoming.address;
     state.zine = incoming.zine;
     state.card = incoming.card;
+    state.distro = incoming.distro;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -127,6 +129,7 @@ function importBackup(raw, mode) {
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
     Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
+    state.distro = mergeList(state.distro, incoming.distro);
     mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;
@@ -181,7 +184,7 @@ function handleImportFile(file, mode) {
 function resetData() {
   if (!confirm('Reset to sample data? Everything on this device will be replaced.')) return;
   forgetUndo();
-  state = JSON.parse(JSON.stringify(defaultData));
+  state = normalize(JSON.parse(JSON.stringify(defaultData)));
   state.pieces.forEach(function (p) { p.byline = people[0].id; });
   state.cycle = { no: '01', bell: Date.now() + 6048e5, editor: people[0].id };
   saveState();

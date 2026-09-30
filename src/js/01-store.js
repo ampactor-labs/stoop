@@ -231,6 +231,7 @@ function normalize(raw) {
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
     card: cleanCard(raw && raw.card),
+    distro: records(raw && raw.distro).filter(function (e) { return e.issue && typeof e.issue === 'object' && e.issue.no; }),
     press: (raw && raw.press) || null
   };
   return migrate(out);
@@ -258,7 +259,7 @@ var state = (function () {
       cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', card: seed.card
     });
   }
-  return JSON.parse(JSON.stringify(defaultData));
+  return normalize(JSON.parse(JSON.stringify(defaultData)));
 })();
 
 ensurePeople();

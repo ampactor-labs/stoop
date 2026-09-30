@@ -772,6 +772,17 @@ body.landing main { padding-top: 2.4rem; }
     <div id="shelflist" class="shelf-list"></div>
   </div>
   <div class="paper">
+    <h2>THE DISTRO</h2>
+    <div id="distrolist" class="shelf-list"></div>
+    <div id="distroreader" class="shelfreader"></div>
+    <div class="form-row">
+      <input type="file" id="carryfile" accept="text/html,.html" hidden>
+      <button class="btn" id="carrybtn">CARRY A ZINE</button>
+    </div>
+    <p class="hint">A friend's issue file, shelved as theirs. It reads, prints in its own format, and goes out with the site under distro/. Your own issues and roster are untouched.</p>
+  </div>
+
+  <div class="paper">
     <h2>THE SITE</h2>
     <button class="btn" id="sitebtn">MAKE THE SITE</button>
     <p class="hint">A zip of every issue as the page its back cover's code points at, with a PDF of each for printers, for any host that serves plain files or a thumb drive.</p>
@@ -884,7 +895,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 315 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 325 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1083,6 +1094,7 @@ function normalize(raw) {
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
     card: cleanCard(raw && raw.card),
+    distro: records(raw && raw.distro).filter(function (e) { return e.issue && typeof e.issue === 'object' && e.issue.no; }),
     press: (raw && raw.press) || null
   };
   return migrate(out);
@@ -1106,7 +1118,7 @@ var state = (function () {
       cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', card: seed.card
     });
   }
-  return JSON.parse(JSON.stringify(defaultData));
+  return normalize(JSON.parse(JSON.stringify(defaultData)));
 })();
 
 ensurePeople();
@@ -1196,6 +1208,7 @@ function collectPhotoRefs() {
   (pasteUndo || []).concat(pasteRedo || []).forEach(function (snap) {
     String(snap).replace(/"photo":"([^"]+)"/g, function (m, id) { live[id] = 1; return m; });
   });
+  (state.distro || []).forEach(function (e) { (e.issue.panels || []).forEach(keep); (e.issue.pieces || []).forEach(keep); });
   state.issues.forEach(function (iss) {
     (iss.panels || []).forEach(keep);
     (iss.pieces || []).forEach(keep);
@@ -3727,11 +3740,13 @@ function coverPhotoId(issue) {
   return cover.photo || (el && el.photo) || null;
 }
 
-function cardPeople(issue) {
+function cardPeople(issue, ctx) {
   var words = [], photos = [];
+  var who = (ctx && ctx.nameFn) || nameOf;
+  var roster = (ctx && ctx.people) || people;
   var add = function (list, id) {
     if (!id || id === 'anon') return;
-    var names = id === 'both' ? people.map(function (p) { return p.name; }) : [nameOf(id)];
+    var names = id === 'both' ? roster.map(function (p) { return p.name; }) : [who(id)];
     names.forEach(function (n) { if (list.indexOf(n) < 0) list.push(n); });
   };
   (issue.pieces || []).forEach(function (p) {
@@ -3745,18 +3760,18 @@ function cardPeople(issue) {
     (p && p.els || []).forEach(function (e) { if (e && e.photo) shown[rootOf(e.photo)] = 1; });
   });
   state.logs.forEach(function (l) { if (l.photo && shown[rootOf(l.photo)]) add(photos, l.author); });
-  var editor = nameOf(issue.editor);
+  var editor = who(issue.editor);
   var creators = [editor].concat(words.filter(function (n) { return n !== editor; }));
   return { editor: editor, creators: creators,
     contributors: photos.filter(function (n) { return creators.indexOf(n) < 0; }) };
 }
 
-function cardOf(issue) {
-  var typed = cleanCard(issue.card || cardState());
-  var zine = state.zine || 'STOOP ZINE';
+function cardOf(issue, ctx) {
+  var typed = cleanCard(issue.card || (ctx && !ctx.own ? {} : cardState()));
+  var zine = (ctx && ctx.zine) || state.zine || 'STOOP ZINE';
   var head = String(issue.title || (issue.panels && issue.panels[0] && issue.panels[0].h) || '').trim();
-  var who = cardPeople(issue);
-  var url = issueUrl(issue.no);
+  var who = cardPeople(issue, ctx);
+  var url = ctx ? distroUrl({ address: ctx.address, issue: issue }) : issueUrl(issue.no);
   var c = {
     title: zine + ' №' + issue.no + (head && head !== zine ? ': ' + head : ''),
     no: issue.no, publisher: zine, url: url, date: isoDay(issue.ts),
@@ -3799,8 +3814,8 @@ function colophonText(issue) {
   return lines.join('\n');
 }
 
-function cardJsonLd(issue) {
-  var c = cardOf(issue);
+function cardJsonLd(issue, ctx) {
+  var c = cardOf(issue, ctx);
   var person = function (n) { return { '@type': 'Person', name: n }; };
   var out = {
     '@context': 'https://schema.org', '@type': 'PublicationIssue',
@@ -3829,7 +3844,9 @@ function stampCard(doc, seed) {
   var no = seed && (seed.read || seed.no);
   var iss = seed && seed.stoop === 'issue' && (seed.issues || []).filter(function (i) { return i && i.no === no; })[0];
   if (!iss) return;
-  var c = cardOf(iss);
+  var ctx = { zine: seed.zine, address: seed.address, people: seed.people || [], own: seedIsOurs(seed),
+    nameFn: distroNameFn({ people: seed.people || [] }) };
+  var c = cardOf(iss, ctx);
   var meta = function (key, content) {
     if (!content) return;
     var m = document.createElement('meta');
@@ -3847,7 +3864,7 @@ function stampCard(doc, seed) {
   var s = document.createElement('script');
   s.type = 'application/ld+json';
   s.id = 'stoop-card';
-  s.textContent = JSON.stringify(cardJsonLd(iss)).replace(/<\//g, '<\\/');
+  s.textContent = JSON.stringify(cardJsonLd(iss, ctx)).replace(/<\//g, '<\\/');
   head.appendChild(s);
 }
 
@@ -4479,6 +4496,7 @@ function renderShelf() {
   if (openIssueNo && !issueByNo(openIssueNo)) openIssueNo = null;
   renderBackupStatus();
   renderReader();
+  renderDistro();
 }
 
 function renderReader() {
@@ -4732,6 +4750,170 @@ document.addEventListener('click', function (ev) {
   readMode = b.getAttribute('data-readmode');
   if (document.body.classList.contains('landing')) renderLanding(); else renderReader();
 });
+
+var openCarried = null;
+
+function distroSlug(entry) {
+  var a = String(entry.address || '').replace(/\/+$/, '');
+  var last = a.split('/').filter(Boolean).pop();
+  var name = last || entry.zine || 'zine';
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'zine';
+}
+
+function distroNameFn(entry) {
+  var roster = entry.people || [];
+  return function (id) {
+    var p = roster.filter(function (x) { return x && x.id === id; })[0];
+    if (p) return String(p.name);
+    if (id === 'both') return roster.length === 2 ? 'Both' : 'Together';
+    return id === 'anon' ? 'Anonymous' : 'Someone';
+  };
+}
+
+function distroUrl(entry) {
+  var a = String(entry.address || '').replace(/\/+$/, '');
+  return a ? (/^https?:\/\//.test(a) ? a : 'https://' + a) + '/' + entry.issue.no + '/' : '';
+}
+
+function carriedById(id) {
+  return state.distro.filter(function (e) { return e.id === id; })[0] || null;
+}
+
+function distroSeed(entry) {
+  return { stoop: 'issue', version: 1, no: entry.issue.no,
+    people: entry.people || [], address: entry.address || '', zine: entry.zine || '',
+    issues: [entry.issue], cycle: entry.cycle || nextCycleAfter(entry.issue.no),
+    photos: photosFor([entry.issue]), open: '#shelf', read: entry.issue.no };
+}
+
+function carrySeed(seed) {
+  if (!seed || seed.stoop !== 'issue') { toast('That file is not a stoop issue'); return; }
+  var no = seed.read || seed.no;
+  var iss = normalize({ issues: seed.issues || [] }).issues.filter(function (i) { return i && i.no === no; })[0];
+  if (!iss) { toast('That file carries no issue to shelve'); return; }
+  if (seedIsOurs(seed)) {
+    toast('That is this scene’s own №' + no + '. It is on the shelf already; the distro is for other people’s.');
+    return;
+  }
+  var photos = seed.photos || {};
+  Object.keys(photos).forEach(function (id) { if (!photoCache[id]) photoPut(id, photos[id]); });
+  var entry = {
+    id: uid('dz'), ts: Date.now(), issue: iss,
+    zine: String(seed.zine || 'STOOP ZINE').slice(0, 40),
+    address: String(seed.address || '').slice(0, 200),
+    people: (seed.people || []).filter(function (p) { return p && p.id && p.name; })
+      .map(function (p) { return { id: String(p.id), name: String(p.name).slice(0, 24) }; }),
+    cycle: seed.cycle && typeof seed.cycle === 'object' ? seed.cycle : null
+  };
+  var key = function (e) { return distroSlug(e) + '/' + e.issue.no; };
+  var was = state.distro.filter(function (e) { return key(e) === key(entry); })[0];
+  if (was) state.distro.splice(state.distro.indexOf(was), 1, entry); else state.distro.push(entry);
+  saveState();
+  renderShelf();
+  toast((was ? 'Replaced ' : 'Carrying ') + entry.zine + ' №' + iss.no + ', edited by ' +
+    distroNameFn(entry)(iss.editor) + '. It goes out with the site.');
+}
+
+function carryFile(file) {
+  var reader = new FileReader();
+  reader.onload = function (e) { carrySeed(seedFromHtml(String(e.target.result))); };
+  reader.onerror = function () { toast('Could not read that file'); };
+  reader.readAsText(file);
+}
+
+function dropCarried(id) {
+  var at = state.distro.map(function (e) { return e.id; }).indexOf(id);
+  if (at < 0) return;
+  var gone = state.distro.splice(at, 1)[0];
+  if (openCarried === id) openCarried = null;
+  saveState();
+  renderShelf();
+  toast('Dropped ' + gone.zine + ' №' + gone.issue.no + '.', function () {
+    state.distro.splice(Math.min(at, state.distro.length), 0, gone);
+    saveState();
+    renderShelf();
+  });
+  setTimeout(sweepPhotos, 6500);
+}
+
+function renderDistro() {
+  var list = document.getElementById('distrolist');
+  if (!list) return;
+  var entries = state.distro.slice().sort(function (x, y) { return (y.ts || 0) - (x.ts || 0); });
+  list.innerHTML = entries.length ? entries.map(function (e) {
+    var who = distroNameFn(e);
+    return '<div class="shelf-row" data-carried="' + esc(e.id) + '">' +
+      '<span class="shelf-no">№' + esc(e.issue.no) + '</span>' +
+      '<span class="shelf-meta"><b>' + esc(e.zine) + '</b><small>' + esc(fmtDay(e.issue.ts)) + ' · edited by ' +
+      esc(who(e.issue.editor)) + (e.address ? ' · ' + esc(e.address) : '') + ' · ' +
+      esc(formatOf(e.issue.format).label) + '</small></span>' +
+      '<button class="btn quiet" data-readcarried="' + esc(e.id) + '">READ</button>' +
+      '<button class="btn quiet" data-pdfcarried="' + esc(e.id) + '">PDF</button>' +
+      '<button class="btn quiet" data-shopcarried="' + esc(e.id) + '">SHOP PDF</button>' +
+      '<button class="log-del" data-dropcarried="' + esc(e.id) + '" title="Drop it from the distro" aria-label="Drop this zine">✕</button>' +
+      '</div>';
+  }).join('') : '<p class="hint">Nothing carried yet. Carry a friend’s issue file and it sits here as theirs.</p>';
+  var box = document.getElementById('distroreader');
+  if (!box) return;
+  var open = openCarried && carriedById(openCarried);
+  if (!open) { box.innerHTML = ''; box.classList.remove('on'); return; }
+  box.classList.add('on');
+  box.innerHTML = '<div class="reader-bar"><span>Reading ' + esc(open.zine) + ' №' + esc(open.issue.no) + '</span>' +
+    '<button class="btn quiet" data-closecarried>CLOSE</button></div>' +
+    readHtml(open.issue, distroUrl(open), distroNameFn(open));
+  fitReads();
+}
+
+function distroPageHtml() {
+  var rows = state.distro.slice().sort(function (x, y) { return (y.ts || 0) - (x.ts || 0); }).map(function (e) {
+    var dir = distroSlug(e) + '/' + e.issue.no + '/';
+    return '<div class="row"><b>' + esc(e.zine) + ' №' + esc(e.issue.no) + '</b> — edited by ' +
+      esc(distroNameFn(e)(e.issue.editor)) + ', ' + esc(fmtDay(e.issue.ts)) +
+      (e.address ? ', lives at ' + esc(e.address) : '') + '<br><a href="' + esc(dir) + '">read it</a> · <a href="' +
+      esc(dir + 'sheet.pdf') + '">the PDF</a></div>';
+  }).join('');
+  return '<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>' + esc(state.zine || 'STOOP ZINE') + ' — the distro</title><style>body{margin:0 auto;max-width:640px;padding:2rem 1rem;' +
+    'background:#f3ead8;color:#1d1a16;font-family:\'Courier New\',monospace;line-height:1.45}h1{font-family:Impact,\'Arial Black\',sans-serif;' +
+    'font-size:2.4rem;margin:0 0 .3rem}p{margin:.4rem 0 1.4rem}.row{border-top:2px solid #1d1a16;padding:.8rem 0}a{color:#155d80;font-weight:bold}' +
+    '</style></head><body><h1>THE DISTRO</h1><p>What ' + esc(state.zine || 'STOOP ZINE') + ' carries. Each is somebody else’s zine, made on ' +
+    'their own press; the page it opens is theirs to hand on.</p>' + rows + '<p><a href="../">back to the shelf</a></p></body></html>\n';
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target;
+  var el;
+  if (t.closest && t.closest('#carrybtn')) { document.getElementById('carryfile').click(); return; }
+  if ((el = t.closest && t.closest('[data-readcarried]'))) {
+    var id = el.getAttribute('data-readcarried');
+    openCarried = openCarried === id ? null : id;
+    renderDistro();
+    var box = document.getElementById('distroreader');
+    if (box && openCarried) box.scrollIntoView({ block: 'start' });
+    return;
+  }
+  if (t.closest && t.closest('[data-closecarried]')) { openCarried = null; renderDistro(); return; }
+  if ((el = t.closest && t.closest('[data-pdfcarried]'))) {
+    var e = carriedById(el.getAttribute('data-pdfcarried'));
+    if (e) savePdf(e.issue.panels, e.issue.format, e.issue.hand, distroUrl(e), e.issue.no, distroSlug(e) + '-' + e.issue.no + '.pdf', e.issue.gen);
+    return;
+  }
+  if ((el = t.closest && t.closest('[data-shopcarried]'))) {
+    var s = carriedById(el.getAttribute('data-shopcarried'));
+    if (s) saveShopPdf(s.issue.panels, s.issue.format, distroUrl(s), s.issue.no, distroSlug(s) + '-' + s.issue.no + '-shop.pdf', s.issue.gen);
+    return;
+  }
+  if ((el = t.closest && t.closest('[data-dropcarried]'))) dropCarried(el.getAttribute('data-dropcarried'));
+  if (t.closest && t.closest('[data-readmode]') && openCarried) renderDistro();
+});
+
+var carryInput = document.getElementById('carryfile');
+if (carryInput) {
+  carryInput.addEventListener('change', function (e) {
+    if (e.target.files && e.target.files[0]) carryFile(e.target.files[0]);
+    e.target.value = '';
+  });
+}
 
 var GF_EXP = new Uint8Array(512);
 var GF_LOG = new Uint8Array(256);
@@ -6281,7 +6463,7 @@ function photosForFile(issues, no) {
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
-  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields'];
+  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
@@ -6539,7 +6721,9 @@ function siteReadme(latest) {
     '  01/sheet.pdf    that issue imposed for a printer, at its exact paper size\n' +
     '  01/cover.jpg    its cover photograph, where there is one, for a shared link to show\n' +
     '  feed.xml        the bell in a feed reader: one entry per issue, the PDF as its enclosure\n' +
-    '  catalog.csv     the shelf as a library catalogues it, one row per issue\n\n' +
+    '  catalog.csv     the shelf as a library catalogues it, one row per issue\n' +
+    '  distro/         the zines this scene carries, when it carries any, each at\n' +
+    '                  distro/<name>/NN/ with its PDF, as its own scene\'s file\n\n' +
     (where
       ? 'The back covers point at ' + where + '/01/ and so on, so this folder has to be\n' +
         'what ' + where + '/ serves for the codes to land.\n'
@@ -6577,6 +6761,16 @@ function publishSite() {
       if (jpg) files.push({ name: root + iss.no + '/cover.jpg', data: jpg });
     });
   });
+  state.distro.forEach(function (e) {
+    var dir = root + 'distro/' + distroSlug(e) + '/' + e.issue.no + '/';
+    files.push({ name: dir + 'index.html', data: enc.encode(pageWithSeed(distroSeed(e))) });
+    chain = chain.then(function () {
+      return buildSheetPdf(e.issue.panels, e.issue.format, e.issue.hand, distroUrl(e), e.issue.no, e.issue.gen);
+    }).then(function (blob) { return blob.arrayBuffer(); }).then(function (buf) {
+      files.push({ name: dir + 'sheet.pdf', data: new Uint8Array(buf) });
+    });
+  });
+  if (state.distro.length) files.push({ name: root + 'distro/index.html', data: enc.encode(distroPageHtml()) });
   return chain.then(function () {
     files.push({ name: root + 'feed.xml', data: enc.encode(feedXml(issues, sizes)) });
     files.push({ name: root + 'catalog.csv', data: enc.encode(catalogCsv(issues)) });
@@ -6671,6 +6865,7 @@ function exportBackup() {
     address: state.address,
     zine: state.zine,
     card: state.card,
+    distro: state.distro,
     press: state.press,
     photos: photos
   };
@@ -6754,6 +6949,7 @@ function importBackup(raw, mode) {
     state.address = incoming.address;
     state.zine = incoming.zine;
     state.card = incoming.card;
+    state.distro = incoming.distro;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -6770,6 +6966,7 @@ function importBackup(raw, mode) {
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
     Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
+    state.distro = mergeList(state.distro, incoming.distro);
     mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;
@@ -6823,7 +7020,7 @@ function handleImportFile(file, mode) {
 function resetData() {
   if (!confirm('Reset to sample data? Everything on this device will be replaced.')) return;
   forgetUndo();
-  state = JSON.parse(JSON.stringify(defaultData));
+  state = normalize(JSON.parse(JSON.stringify(defaultData)));
   state.pieces.forEach(function (p) { p.byline = people[0].id; });
   state.cycle = { no: '01', bell: Date.now() + 6048e5, editor: people[0].id };
   saveState();

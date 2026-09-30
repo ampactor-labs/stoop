@@ -56,6 +56,8 @@ The shelf keeps every issue as it shipped, with its own pages, format and fold, 
 
 When the scene has an address, the back cover also says where to write back: the issue's own address with `#reply` after it. Opened there, the file asks who is writing and opens the press on the piece form, so a reply from paper is a piece file, sent back the same way, with no server anywhere in the loop.
 
+**CARRY A ZINE** under **THE DISTRO** on the shelf takes a friend's issue file and shelves it as theirs, with the roster, name and address it came with and apart from the scene's own issues: it reads, prints in its own format, and goes out with the site under `distro/`, each carried issue as that scene's own file with a PDF beside it and a plain page listing what is carried. A hosted stoop site is also a distro table, stocked by hand. The feed and the catalogue leave the distro out, and nothing anywhere lists scenes.
+
 **BACKUP** under **scene** saves everything, photographs included, as one JSON file. **MERGE ONE IN** merges another device's backup by id and keeps the newer copy of anything both hold, and a merge never overwrites a published issue. The shelf says when this browser was last backed up, because until then the browser holds the only copy.
 
 ## How it works
@@ -113,7 +115,7 @@ index.html         the app, built from src/ (the page GitHub Pages serves)
 press/index.html   the hand print kit, built from src/press.html
 artifact/          both pages as fragments for the claude.ai artifact publisher
 src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
-test/              twenty-five browser suites and their runner, run.js
+test/              twenty-six browser suites and their runner, run.js
 build.sh           assembles src/ into the four built files
 check.sh           the repository's laws, run by CI and the pre-commit hook
 docs/              longer write-ups linked from this README
@@ -169,7 +171,7 @@ npx playwright install chromium
 node test/run.js
 ```
 
-`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-five suites cover the parts that would be easy to fake, among them:
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-six suites cover the parts that would be easy to fake, among them:
 
 - two issues on the shelf, each keeping its own words;
 - the same pieces re-flowing into another format with nothing retyped;
@@ -179,7 +181,8 @@ node test/run.js
 - the PDF surviving a parse of its bytes and embedding the same fonts as the page;
 - a photograph reaching the PDF in colour as the same JPEG, cuttings in ink and pages printed on a colour, on screen, on paper and in the file handed on;
 - the card's JSON-LD parsing out of the file and naming the issue, the site's feed carrying an entry per issue, and a file opened at `#reply` ending at SEND;
-- a blue headline, a black body and a pink page separating into exactly two riso plates, the blue one holding the headline and nothing else.
+- a blue headline, a black body and a pink page separating into exactly two riso plates, the blue one holding the headline and nothing else;
+- a friend's issue going on the shelf as theirs, printing in its own format and going out with the site under `distro/`, without touching the scene's own issues or roster.
 
 On 28 September 2026, in a cloud container with Chromium, a full run passed all 346 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
 
