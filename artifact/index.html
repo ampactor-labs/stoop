@@ -111,12 +111,22 @@
   color: var(--fg);
   letter-spacing: .08em;
 }
+
 .view-sub {
-  font-family: 'Courier New', monospace;
-  font-size: .82rem;
+  font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: .9rem;
   color: var(--grey);
   margin: .3rem 0 0;
 }
+.hint, .paper .hint {
+  font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: .88rem;
+  line-height: 1.45;
+  color: #57524a;
+  margin: .6rem 0 0;
+}
+.paper h2 { font-size: 1.15rem; margin: 0 0 .6rem; }
+.paper .form-row + .form-row { margin-top: .6rem; }
 .sub {
   font-family: 'Courier New', monospace;
   font-size: .78rem;
@@ -340,8 +350,9 @@
 .testnum small { font-family: 'Courier New', monospace; font-size: 12px; color: #666; }
 .reprintzone.testing .testnum { display: flex; }
 
-.fold-guide { margin-top: 1.4rem; }
-.fold-steps { font-family: 'Courier New', monospace; font-size: .85rem; line-height: 1.5; padding-left: 1.2rem; }
+.foldguide { margin-top: .8rem; }
+.foldguide summary { font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif; font-size: .88rem; color: var(--ink); cursor: pointer; padding: .3rem 0; }
+.fold-steps { font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif; font-size: .88rem; line-height: 1.5; padding-left: 1.2rem; }
 .fold-steps li { margin-bottom: .5rem; }
 
 
@@ -636,9 +647,10 @@ body.landing main { padding-top: 2.4rem; }
     <div class="form-row">
       <button class="btn" id="logaddbtn">KEEP IT</button>
       <input type="file" id="photofile" accept="image/*" multiple hidden>
-      <button class="btn quiet" id="photobtn">+ PHOTOS</button>
+      <button class="btn quiet" id="photobtn">PHOTOS</button>
       <span class="sub" id="logfilters"></span>
     </div>
+    <p class="hint">A line, a page or a photograph. A scrap with a title, or a long one, becomes a piece of its own at the desk; short ones run together as one column.</p>
   </div>
 
   <div id="loglist" class="log-stream"></div>
@@ -650,6 +662,7 @@ body.landing main { padding-top: 2.4rem; }
   </div>
 
   <div class="paper">
+    <h2>A PIECE</h2>
     <div class="form-row">
       <input type="text" id="piecetitle" class="text-input" maxlength="60" placeholder="Title">
       <select id="piecekind" class="text-input">
@@ -663,28 +676,32 @@ body.landing main { padding-top: 2.4rem; }
       <button class="btn" id="piecesubmitbtn">SUBMIT</button>
     </div>
     <textarea id="piecebody" class="text-input" rows="4" placeholder="The piece."></textarea>
-    <button class="btn quiet" id="drawsourcesbtn">PULL IN THE NEW SCRAPS</button>
+    <div class="press-actions">
+      <button class="btn quiet" id="drawsourcesbtn">PULL IN THE NEW SCRAPS</button>
+    </div>
+    <p class="hint">Type a piece here, or pull in whatever went into scraps since the last issue.</p>
   </div>
 
   <div class="paper">
     <h2>THE TRAY</h2>
     <div id="desktray"></div>
-    <p class="sub">A cut is not a delete. It keeps, and it can run next time.</p>
+    <p class="hint">A cut is not a delete. It keeps, and it can run next time.</p>
   </div>
 
   <div class="paper">
+    <h2>THE BELL</h2>
     <textarea id="editornote" class="text-input" rows="2" placeholder="Editor's note, if you want one."></textarea>
     <div class="form-row">
       <label class="sub" for="bellinput">BELL</label>
       <input type="date" id="bellinput" class="text-input">
       <button class="btn quiet" id="savebellbtn">SET</button>
-      <button class="btn quiet" id="icsbtn">ADD TO A CALENDAR</button>
+      <button class="btn quiet" id="icsbtn">CALENDAR</button>
     </div>
     <div class="press-actions">
       <button class="btn" id="compileissuebtn">FLOW ONTO THE PAGES</button>
       <button class="btn done" id="buildissuebtn">RING THE BELL</button>
     </div>
-    <p class="sub">The bell puts this issue on the shelf as it stands and hands the desk on.</p>
+    <p class="hint">Flowing lays the tray out on the pages; you can flow again after changes. The bell puts the issue on the shelf as it stands and hands the desk on.</p>
   </div>
 </section>
 <section data-view="press" class="table">
@@ -731,8 +748,8 @@ body.landing main { padding-top: 2.4rem; }
   </div>
   <div class="paper">
     <h2>THE SITE</h2>
-    <button class="btn" id="sitebtn">MAKE THE SITE (.ZIP)</button>
-    <p class="sub">Every issue as the page its back cover's code points at, with a PDF of each for printers, in one folder for any host or a thumb drive.</p>
+    <button class="btn" id="sitebtn">MAKE THE SITE</button>
+    <p class="hint">A zip of every issue as the page its back cover's code points at, with a PDF of each for printers, for any host that serves plain files or a thumb drive.</p>
   </div>
   <div id="shelfreader" class="shelfreader"></div>
 </section>
@@ -750,43 +767,39 @@ body.landing main { padding-top: 2.4rem; }
       <button class="btn quiet" id="addpersonbtn">ADD</button>
       <button class="btn" id="savenamesbtn">SAVE</button>
     </div>
-    <p class="sub">Anyone with work on the shelf stays on the roster.</p>
+    <p class="hint">Anyone with work on the shelf stays on the roster.</p>
   </div>
 
   <div class="paper">
-    <h2>NAME</h2>
+    <h2>NAME AND ADDRESS</h2>
     <div class="form-row">
       <input type="text" id="zinename" class="text-input" maxlength="40" placeholder="SPLIT LIP">
       <button class="btn" id="savezinebtn">SAVE</button>
     </div>
-    <p class="sub">Or click it in the bar.</p>
-  </div>
-
-  <div class="paper">
-    <h2>ADDRESS</h2>
+    <p class="hint">The name goes on the cover. You can also click it in the bar.</p>
     <div class="form-row">
       <input type="text" id="addressinput" class="text-input" placeholder="somewhere.org/splitlip (or nothing)">
       <button class="btn" id="savenamesbtn2">SAVE</button>
     </div>
-    <p class="sub">Goes on the back cover as text and a code. Leave it blank and the paper just carries no address.</p>
+    <p class="hint">The address goes on the back cover as text and as a code. Leave it blank and the paper carries no address.</p>
   </div>
 
   <div class="paper">
     <h2>TAKE IN</h2>
     <input type="file" id="bundlefile" accept="text/html,.html" hidden>
-    <button class="btn" id="bundlebtn">A PIECE OR ISSUE SOMEBODY SENT</button>
-    <p class="sub">Their file lands in your tray or on your shelf. Twice does nothing.</p>
+    <button class="btn" id="bundlebtn">TAKE IN A FILE</button>
+    <p class="hint">A piece or an issue somebody sent lands in your tray or on your shelf. Taking the same file in twice does nothing.</p>
   </div>
 
   <div class="paper">
-    <h2>OTHER DEVICES</h2>
+    <h2>BACKUPS</h2>
     <div class="press-actions">
-      <button class="btn" id="exportbtn">BACKUP</button>
+      <button class="btn" id="exportbtn">BACK IT UP</button>
       <input type="file" id="importfile" accept="application/json,.json" hidden>
-      <button class="btn quiet" id="mergebtn">MERGE ONE IN</button>
-      <button class="btn quiet" id="replacebtn">REPLACE FROM ONE</button>
+      <button class="btn quiet" id="mergebtn">MERGE A BACKUP</button>
+      <button class="btn quiet" id="replacebtn">REPLACE FROM A BACKUP</button>
     </div>
-    <p class="sub">Everything lives in this browser and nowhere else. A backup is the only copy that outlives it. Merge keeps both sides.</p>
+    <p class="hint">Everything lives in this browser and nowhere else. A backup is the only copy that outlives it. Merging keeps both sides.</p>
     <p class="sub" id="backupstatus"></p>
     <p class="sub" id="importstatus"></p>
   </div>
@@ -796,6 +809,7 @@ body.landing main { padding-top: 2.4rem; }
       <button class="btn danger" id="emptybtn">START EMPTY</button>
       <button class="btn quiet" id="resetbtn">RESET</button>
     </div>
+    <p class="hint">Start empty drops the sample pieces. Reset puts them back.</p>
   </div>
 </section>
 <section data-view="paper">
@@ -805,47 +819,46 @@ body.landing main { padding-top: 2.4rem; }
   </div>
 
   <div class="paper">
-    <div class="form-row">
-      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
-    </div>
-    <p class="sub">Print a test sheet first. Numbers come out shuffled? Swap the fold, test again.</p>
+    <h2>PRINT IT</h2>
     <div class="press-actions">
-      <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
+      <button class="btn done" id="pdfzinebtn">SAVE PDF</button>
+      <button class="btn quiet" id="pdfshopbtn">SHOP PDF</button>
+      <button class="btn quiet" id="printzinebtn">BROWSER PRINT</button>
+      <button class="btn quiet" id="flyerbtn">FLYER</button>
     </div>
+    <p class="hint">The PDF is the sheet at its exact size: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the shop PDF, every page on its own with bleed and crop marks. Browser print needs 100% and no margins. The flyer has tear-off tabs.</p>
   </div>
 
   <div class="paper">
+    <h2>TEST THE FOLD</h2>
     <div class="press-actions">
-      <button class="btn done" id="pdfzinebtn">SAVE PDF</button>
-      <button class="btn" id="pdfshopbtn">PDF FOR A PRINT SHOP</button>
-      <button class="btn" id="printzinebtn">PRINT FROM THE BROWSER</button>
-      <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
+      <button class="btn" id="testsheetbtn">PRINT TEST SHEET</button>
+      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
     </div>
-    <p class="sub">The PDF is the sheet, exact: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the other one: every page on its own, with bleed and crop marks. Browser print: 100%, no margins. The flyer has tear-off tabs.</p>
-  </div>
-
-  <div class="paper fold-guide">
-    <h2>HOW TO FOLD (one sheet, one cut)</h2>
-    <ol class="fold-steps">
-      <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
-      <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
-      <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
-      <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
-      <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
-    </ol>
-    <p class="sub">Saddle-stitch formats print several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
+    <p class="hint">Print a numbered test sheet first and fold it. If the numbers come out shuffled, swap the fold and test again.</p>
+    <details class="foldguide">
+      <summary>How to fold one sheet into eight pages</summary>
+      <ol class="fold-steps">
+        <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
+        <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
+        <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
+        <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
+        <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
+      </ol>
+      <p class="hint">A stapled booklet prints several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
+    </details>
   </div>
 
   <div class="paper">
     <div class="press-actions">
       <button class="btn danger" id="clearzinebtn">CLEAR THE PAGES</button>
-      <span class="sub">Undo brings it back.</span>
+      <span class="hint">Undo brings it back.</span>
     </div>
   </div>
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 288 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 292 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -3950,7 +3963,7 @@ function renderDesk() {
   if (!tray) return;
   var all = state.pieces.slice().sort(function (x, y) { return x.ts - y.ts; });
   if (!all.length) {
-    tray.innerHTML = '<p class="sub">Empty. Submit a piece, or pull in the new scraps.</p>';
+    tray.innerHTML = '<p class="hint">Empty. Submit a piece, or pull in the new scraps.</p>';
     return;
   }
   var n = 0;
@@ -4165,7 +4178,7 @@ function renderShelf() {
   });
 
   if (!issues.length) {
-    list.innerHTML = '<p class="sub">Nothing published yet. Assemble an issue at the desk and ring the bell; ' +
+    list.innerHTML = '<p class="hint">Nothing published yet. Assemble an issue at the desk and ring the bell; ' +
       'it lands here and stays exactly as it shipped.</p>';
   } else {
     list.innerHTML = issues.map(function (iss) {

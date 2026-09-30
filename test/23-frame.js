@@ -77,6 +77,27 @@ module.exports = async function frame(browser, ok) {
   await page.click('[data-zoom="fit"]');
   ok('FIT, PAGE AND 100% ARE THREE SIZES', Math.abs(full - 1) < 0.01 && big > fit && fit !== full,
      'fit ' + fit.toFixed(2) + ', page ' + big.toFixed(2) + ', full ' + full);
+  // ---- the words. One primary button a section, help in a face made for
+  // reading, in sentence case; the fold guide folded until it is wanted.
+  await go('#paper');
+  const primaries = await page.locator('section[data-view="paper"] .paper').evaluateAll(cards =>
+    cards.map(c => c.querySelectorAll('.btn.done').length));
+  ok('THE PAPER DRAWER HAS ONE PRIMARY BUTTON, AND ONLY WHERE IT PRINTS', primaries.filter(n => n === 1).length === 1 &&
+     primaries.every(n => n <= 1), primaries.join(','));
+  const hint = await page.locator('section[data-view="paper"] .hint').first().evaluate(el => ({
+    face: getComputedStyle(el).fontFamily, caps: el.innerText === el.innerText.toUpperCase(), size: parseFloat(getComputedStyle(el).fontSize) }));
+  ok('HELP IS SET IN A READING FACE, IN SENTENCE CASE, AT A SIZE THAT READS',
+     !/Courier/i.test(hint.face) && !hint.caps && hint.size >= 13.5, hint.face.slice(0, 30) + ' ' + hint.size + 'px');
+  ok('and the buttons stay short', (await page.locator('section[data-view="paper"] .btn').allInnerTexts())
+     .every(t => t.trim().split(/\s+/).length <= 3));
+  ok('the fold guide is there when wanted, folded until then',
+     (await page.locator('section[data-view="paper"] details.foldguide').count()) === 1 &&
+     !(await page.locator('section[data-view="paper"] details.foldguide').evaluate(d => d.open)) &&
+     /Hot dog fold/.test(await page.locator('section[data-view="paper"] details.foldguide').innerHTML()));
+  await go('#backup');
+  const sceneLabels = await page.locator('section[data-view="backup"] .btn').allInnerTexts();
+  ok('the scene drawer says what a button does in three words or fewer', sceneLabels.every(t => t.trim().split(/\s+/).length <= 4), sceneLabels.join(' | '));
+  await go('#press');
   ok('no script errors on the laptop', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();
 

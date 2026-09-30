@@ -5,41 +5,40 @@
   </div>
 
   <div class="paper">
-    <div class="form-row">
-      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
-    </div>
-    <p class="sub">Print a test sheet first. Numbers come out shuffled? Swap the fold, test again.</p>
+    <h2>PRINT IT</h2>
     <div class="press-actions">
-      <button class="btn quiet" id="testsheetbtn">PRINT TEST SHEET</button>
+      <button class="btn done" id="pdfzinebtn">SAVE PDF</button>
+      <button class="btn quiet" id="pdfshopbtn">SHOP PDF</button>
+      <button class="btn quiet" id="printzinebtn">BROWSER PRINT</button>
+      <button class="btn quiet" id="flyerbtn">FLYER</button>
     </div>
+    <p class="hint">The PDF is the sheet at its exact size: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the shop PDF, every page on its own with bleed and crop marks. Browser print needs 100% and no margins. The flyer has tear-off tabs.</p>
   </div>
 
   <div class="paper">
+    <h2>TEST THE FOLD</h2>
     <div class="press-actions">
-      <button class="btn done" id="pdfzinebtn">SAVE PDF</button>
-      <button class="btn" id="pdfshopbtn">PDF FOR A PRINT SHOP</button>
-      <button class="btn" id="printzinebtn">PRINT FROM THE BROWSER</button>
-      <button class="btn quiet" id="flyerbtn">FLYER + TEAR TABS</button>
+      <button class="btn" id="testsheetbtn">PRINT TEST SHEET</button>
+      <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
     </div>
-    <p class="sub">The PDF is the sheet, exact: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the other one: every page on its own, with bleed and crop marks. Browser print: 100%, no margins. The flyer has tear-off tabs.</p>
-  </div>
-
-  <div class="paper fold-guide">
-    <h2>HOW TO FOLD (one sheet, one cut)</h2>
-    <ol class="fold-steps">
-      <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
-      <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
-      <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
-      <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
-      <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
-    </ol>
-    <p class="sub">Saddle-stitch formats print several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
+    <p class="hint">Print a numbered test sheet first and fold it. If the numbers come out shuffled, swap the fold and test again.</p>
+    <details class="foldguide">
+      <summary>How to fold one sheet into eight pages</summary>
+      <ol class="fold-steps">
+        <li><strong>Hot dog fold.</strong> Fold in half the long way, crease hard, unfold.</li>
+        <li><strong>Eight panels.</strong> Fold in half the short way, then fold each outer edge back to the middle crease. Unfold everything.</li>
+        <li><strong>The cut.</strong> Fold in half the short way again and cut along the centre crease from the folded edge, across the middle two panels only. Stop at the quarter creases.</li>
+        <li><strong>The plus sign.</strong> Unfold, fold the long way with the slit along the top, then push both ends toward each other. The slit opens into a diamond, then a four-winged plus.</li>
+        <li><strong>Collapse.</strong> Wrap the wings around the front cover and crease. Eight pages, no staples. Read it once, then leave it somewhere.</li>
+      </ol>
+      <p class="hint">A stapled booklet prints several sheets instead: print both sides, nest them in order, and staple twice through the spine.</p>
+    </details>
   </div>
 
   <div class="paper">
     <div class="press-actions">
       <button class="btn danger" id="clearzinebtn">CLEAR THE PAGES</button>
-      <span class="sub">Undo brings it back.</span>
+      <span class="hint">Undo brings it back.</span>
     </div>
   </div>
 </section>

@@ -27,12 +27,24 @@
   color: var(--fg);
   letter-spacing: .08em;
 }
+/* Two kinds of small type. A label (.sub) is typed, in caps, and short; a
+   hint is a sentence somebody reads once, so it is set in the system face,
+   in sentence case, at a size that reads. */
 .view-sub {
-  font-family: 'Courier New', monospace;
-  font-size: .82rem;
+  font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: .9rem;
   color: var(--grey);
   margin: .3rem 0 0;
 }
+.hint, .paper .hint {
+  font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif;
+  font-size: .88rem;
+  line-height: 1.45;
+  color: #57524a;
+  margin: .6rem 0 0;
+}
+.paper h2 { font-size: 1.15rem; margin: 0 0 .6rem; }
+.paper .form-row + .form-row { margin-top: .6rem; }
 .sub {
   font-family: 'Courier New', monospace;
   font-size: .78rem;

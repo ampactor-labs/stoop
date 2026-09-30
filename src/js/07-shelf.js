@@ -103,7 +103,7 @@ function renderShelf() {
   });
 
   if (!issues.length) {
-    list.innerHTML = '<p class="sub">Nothing published yet. Assemble an issue at the desk and ring the bell; ' +
+    list.innerHTML = '<p class="hint">Nothing published yet. Assemble an issue at the desk and ring the bell; ' +
       'it lands here and stays exactly as it shipped.</p>';
   } else {
     list.innerHTML = issues.map(function (iss) {

@@ -12,43 +12,39 @@
       <button class="btn quiet" id="addpersonbtn">ADD</button>
       <button class="btn" id="savenamesbtn">SAVE</button>
     </div>
-    <p class="sub">Anyone with work on the shelf stays on the roster.</p>
+    <p class="hint">Anyone with work on the shelf stays on the roster.</p>
   </div>
 
   <div class="paper">
-    <h2>NAME</h2>
+    <h2>NAME AND ADDRESS</h2>
     <div class="form-row">
       <input type="text" id="zinename" class="text-input" maxlength="40" placeholder="SPLIT LIP">
       <button class="btn" id="savezinebtn">SAVE</button>
     </div>
-    <p class="sub">Or click it in the bar.</p>
-  </div>
-
-  <div class="paper">
-    <h2>ADDRESS</h2>
+    <p class="hint">The name goes on the cover. You can also click it in the bar.</p>
     <div class="form-row">
       <input type="text" id="addressinput" class="text-input" placeholder="somewhere.org/splitlip (or nothing)">
       <button class="btn" id="savenamesbtn2">SAVE</button>
     </div>
-    <p class="sub">Goes on the back cover as text and a code. Leave it blank and the paper just carries no address.</p>
+    <p class="hint">The address goes on the back cover as text and as a code. Leave it blank and the paper carries no address.</p>
   </div>
 
   <div class="paper">
     <h2>TAKE IN</h2>
     <input type="file" id="bundlefile" accept="text/html,.html" hidden>
-    <button class="btn" id="bundlebtn">A PIECE OR ISSUE SOMEBODY SENT</button>
-    <p class="sub">Their file lands in your tray or on your shelf. Twice does nothing.</p>
+    <button class="btn" id="bundlebtn">TAKE IN A FILE</button>
+    <p class="hint">A piece or an issue somebody sent lands in your tray or on your shelf. Taking the same file in twice does nothing.</p>
   </div>
 
   <div class="paper">
-    <h2>OTHER DEVICES</h2>
+    <h2>BACKUPS</h2>
     <div class="press-actions">
-      <button class="btn" id="exportbtn">BACKUP</button>
+      <button class="btn" id="exportbtn">BACK IT UP</button>
       <input type="file" id="importfile" accept="application/json,.json" hidden>
-      <button class="btn quiet" id="mergebtn">MERGE ONE IN</button>
-      <button class="btn quiet" id="replacebtn">REPLACE FROM ONE</button>
+      <button class="btn quiet" id="mergebtn">MERGE A BACKUP</button>
+      <button class="btn quiet" id="replacebtn">REPLACE FROM A BACKUP</button>
     </div>
-    <p class="sub">Everything lives in this browser and nowhere else. A backup is the only copy that outlives it. Merge keeps both sides.</p>
+    <p class="hint">Everything lives in this browser and nowhere else. A backup is the only copy that outlives it. Merging keeps both sides.</p>
     <p class="sub" id="backupstatus"></p>
     <p class="sub" id="importstatus"></p>
   </div>
@@ -58,5 +54,6 @@
       <button class="btn danger" id="emptybtn">START EMPTY</button>
       <button class="btn quiet" id="resetbtn">RESET</button>
     </div>
+    <p class="hint">Start empty drops the sample pieces. Reset puts them back.</p>
   </div>
 </section>

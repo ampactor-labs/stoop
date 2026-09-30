@@ -5,6 +5,7 @@
   </div>
 
   <div class="paper">
+    <h2>A PIECE</h2>
     <div class="form-row">
       <input type="text" id="piecetitle" class="text-input" maxlength="60" placeholder="Title">
       <select id="piecekind" class="text-input">
@@ -18,27 +19,31 @@
       <button class="btn" id="piecesubmitbtn">SUBMIT</button>
     </div>
     <textarea id="piecebody" class="text-input" rows="4" placeholder="The piece."></textarea>
-    <button class="btn quiet" id="drawsourcesbtn">PULL IN THE NEW SCRAPS</button>
+    <div class="press-actions">
+      <button class="btn quiet" id="drawsourcesbtn">PULL IN THE NEW SCRAPS</button>
+    </div>
+    <p class="hint">Type a piece here, or pull in whatever went into scraps since the last issue.</p>
   </div>
 
   <div class="paper">
     <h2>THE TRAY</h2>
     <div id="desktray"></div>
-    <p class="sub">A cut is not a delete. It keeps, and it can run next time.</p>
+    <p class="hint">A cut is not a delete. It keeps, and it can run next time.</p>
   </div>
 
   <div class="paper">
+    <h2>THE BELL</h2>
     <textarea id="editornote" class="text-input" rows="2" placeholder="Editor's note, if you want one."></textarea>
     <div class="form-row">
       <label class="sub" for="bellinput">BELL</label>
       <input type="date" id="bellinput" class="text-input">
       <button class="btn quiet" id="savebellbtn">SET</button>
-      <button class="btn quiet" id="icsbtn">ADD TO A CALENDAR</button>
+      <button class="btn quiet" id="icsbtn">CALENDAR</button>
     </div>
     <div class="press-actions">
       <button class="btn" id="compileissuebtn">FLOW ONTO THE PAGES</button>
       <button class="btn done" id="buildissuebtn">RING THE BELL</button>
     </div>
-    <p class="sub">The bell puts this issue on the shelf as it stands and hands the desk on.</p>
+    <p class="hint">Flowing lays the tray out on the pages; you can flow again after changes. The bell puts the issue on the shelf as it stands and hands the desk on.</p>
   </div>
 </section>

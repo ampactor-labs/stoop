@@ -152,8 +152,9 @@
 .testnum small { font-family: 'Courier New', monospace; font-size: 12px; color: #666; }
 .reprintzone.testing .testnum { display: flex; }
 
-.fold-guide { margin-top: 1.4rem; }
-.fold-steps { font-family: 'Courier New', monospace; font-size: .85rem; line-height: 1.5; padding-left: 1.2rem; }
+.foldguide { margin-top: .8rem; }
+.foldguide summary { font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif; font-size: .88rem; color: var(--ink); cursor: pointer; padding: .3rem 0; }
+.fold-steps { font-family: ui-sans-serif, system-ui, 'Helvetica Neue', Arial, sans-serif; font-size: .88rem; line-height: 1.5; padding-left: 1.2rem; }
 .fold-steps li { margin-bottom: .5rem; }
 
 /* Reprinting a back issue renders into its own zone, so opening history never

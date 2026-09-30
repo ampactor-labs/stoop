@@ -246,7 +246,7 @@ function renderDesk() {
   if (!tray) return;
   var all = state.pieces.slice().sort(function (x, y) { return x.ts - y.ts; });
   if (!all.length) {
-    tray.innerHTML = '<p class="sub">Empty. Submit a piece, or pull in the new scraps.</p>';
+    tray.innerHTML = '<p class="hint">Empty. Submit a piece, or pull in the new scraps.</p>';
     return;
   }
   var n = 0;
