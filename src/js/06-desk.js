@@ -235,6 +235,8 @@ function renderDesk() {
   if (head) {
     head.textContent = 'issue №' + c.no + ' · ' + nameOf(c.editor) + "'s turn · " + fmtBell(c.bell);
   }
+  var line = document.getElementById('cycleline');
+  if (line) line.textContent = '\u2116' + c.no + ' \u00b7 ' + nameOf(c.editor) + '\u2019s turn \u00b7 ' + fmtBell(c.bell);
   var bell = document.getElementById('bellinput');
   if (bell && document.activeElement !== bell) {
     bell.value = new Date(c.bell - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);

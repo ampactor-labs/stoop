@@ -1,26 +1,33 @@
-<section data-view="press">
-  <div class="press-top">
-    <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
-    <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
-    <p class="fitmeter" id="fitmeter"></p>
-    <p class="fitmeter" id="pressstatus"></p>
-  </div>
-  <div class="pasteup-strip">
-    <button class="btn" data-addel="text">+ TEXT</button>
-    <button class="btn" data-addel="photo">+ PHOTO</button>
-    <button class="btn quiet" data-addel="box">+ BOX</button>
-    <button class="btn quiet" data-addel="rule">+ RULE</button>
-    <button class="btn quiet" id="stampbtn">+ STAMP</button>
-    <button class="btn quiet" data-addel="qr">+ CODE</button>
-    <button class="btn quiet" id="blockbtn">+ BLOCK</button>
-    <button class="btn quiet" id="undobtn">UNDO</button>
-    <button class="btn quiet" id="redobtn">REDO</button>
-    <span class="sub" id="addhint"></span>
+<section data-view="press" class="table">
+  <aside class="rail" aria-label="Add to the page">
+    <button class="btn" data-addel="text" title="A text cutting">TEXT</button>
+    <button class="btn" data-addel="photo" title="A photograph from this device">PHOTO</button>
+    <button class="btn quiet" data-addel="box" title="A box, outlined or solid">BOX</button>
+    <button class="btn quiet" data-addel="rule" title="A rule">RULE</button>
+    <button class="btn quiet" id="stampbtn" title="A stamp">STAMP</button>
+    <button class="btn quiet" data-addel="qr" title="A code for a link">CODE</button>
+    <button class="btn quiet" id="blockbtn" title="Page numbers, contents, credits, a pull quote">BLOCK</button>
+    <span class="railgap"></span>
+    <button class="btn quiet" id="undobtn" title="Undo (Ctrl-Z)">UNDO</button>
+    <button class="btn quiet" id="redobtn" title="Redo (Ctrl-Shift-Z)">REDO</button>
     <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
+  </aside>
+  <div class="tablebed">
+    <div class="tablehead">
+      <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
+      <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
+      <p class="fitmeter" id="fitmeter"></p>
+      <p class="fitmeter" id="pressstatus"></p>
+      <span class="zoom" id="zoom"></span>
+    </div>
+    <div class="pagestrip" id="pagestrip" aria-label="The pages"></div>
+    <div class="palettes">
+      <div id="stamps" class="stamps"></div>
+      <div id="blocks" class="stamps"></div>
+      <div id="phototray" class="phototray"></div>
+    </div>
+    <div class="sheetzone" id="sheetzone"></div>
+    <p class="sub addhint" id="addhint"></p>
   </div>
-  <div id="stamps" class="stamps"></div>
-  <div id="blocks" class="stamps"></div>
-  <div id="phototray" class="phototray"></div>
-  <div id="inspector" class="inspector"></div>
-  <div class="sheetzone" id="sheetzone"></div>
+  <aside id="inspector" class="inspector" aria-label="The selected cutting"></aside>
 </section>

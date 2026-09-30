@@ -1,25 +1,36 @@
 /* Loaded last, so these win over the desktop rules in every other file. */
   /* ---------- a phone ---------- */
-  /* The page comes first. The tools sit on a bar along the bottom where a
-     thumb is, and the nav is one scrolling row instead of three wrapped ones. */
+  /* The page comes first. The cycle is a tab bar where a thumb is, the tools
+     a row above it, and the sheet a bottom sheet that never takes more than
+     half the screen. A drawer opens above all of it, so the bell is always
+     reachable. */
   @media (max-width: 640px){
-    header.chrome{gap:.3rem .6rem;padding:.4rem .6rem}
-    .wordmark{font-size:1.25rem}
-    nav.chrome-nav{flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow-x:auto;margin-left:.2rem;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-    nav.chrome-nav::-webkit-scrollbar{display:none}
-    nav.chrome-nav a,nav.chrome-nav button{white-space:nowrap;padding:.3rem .55rem}
-    main{padding:.6rem .5rem 5.5rem}
-    .press-top{gap:.35rem}
-    .press-top .select-input{width:100%;font-size:.8rem;padding:.35rem .5rem}
-    .fitmeter{font-size:.72rem;padding:.25rem .5rem}
-    .pasteup-strip{position:fixed;left:0;right:0;bottom:0;z-index:25;margin:0;padding:.45rem .5rem;gap:.35rem;flex-wrap:nowrap;overflow-x:auto;
-      background:var(--bg);border-top:3px solid var(--fg);scrollbar-width:none}
-    .pasteup-strip::-webkit-scrollbar{display:none}
-    .pasteup-strip .btn{white-space:nowrap;padding:.4rem .6rem;font-size:.8rem;flex:none}
-    .pasteup-strip .sub{display:none}
-    .inspector.on{position:fixed;left:0;right:0;bottom:3.2rem;z-index:24;margin:0;border-radius:0;border-width:1px 0 0}
-    section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none}
+    header.chrome{gap:.3rem .5rem;padding:.4rem .6rem;flex-wrap:nowrap}
+    .wordmark,nav.chrome-nav,.cycleline{display:none}
+    .toast{bottom:7.4rem}
+    .barzine{font-size:1.1rem;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chrome .verb{margin-left:auto;padding:.35rem .6rem;font-size:.75rem;white-space:nowrap}
+    .phonetabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:45;background:var(--bg);border-top:3px solid var(--fg);height:3.4rem}
+    .phonetabs a{flex:1;text-align:center;font-family:'Courier New',monospace;font-size:.68rem;letter-spacing:.05em;color:var(--fg);text-decoration:none;padding:.65rem 0;border-right:1px solid var(--bg2)}
+    .phonetabs a.here{background:var(--fg);color:var(--bg)}
+    body.landing .phonetabs{display:none}
+    section[data-view="press"]{display:block}
+    .rail{position:fixed;left:0;right:0;bottom:3.4rem;top:auto;z-index:25;height:3.2rem;flex-direction:row;overflow-x:auto;padding:.35rem .5rem;gap:.35rem;border:0;border-top:2px solid var(--fg);scrollbar-width:none}
+    .rail::-webkit-scrollbar{display:none}
+    .rail .btn{width:auto;white-space:nowrap;padding:.5rem .7rem;font-size:.75rem;flex:none}
+    .railgap{display:none}
+    .tablebed{padding:.4rem .5rem 7.5rem}
+    .tablehead{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:.3rem}
+    .tablehead::-webkit-scrollbar{display:none}
+    .tablehead .select-input{flex:none;max-width:52vw;font-size:.75rem;padding:.3rem .4rem}
+    .tablehead .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
+    .fitmeter{white-space:nowrap;font-size:.72rem;padding:.25rem .5rem}
+    .zoom,.addhint{display:none}
+    .inspector.on{position:fixed;left:0;right:0;bottom:6.6rem;top:auto;z-index:24;width:auto;max-height:45vh;overflow-y:auto;border:0;border-top:2px solid var(--fg);padding:.5rem .7rem .7rem}
+    section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none;bottom:3.4rem;z-index:35}
+    .scrim{z-index:33}
     .pages{gap:.7rem}
+    main{scroll-padding-bottom:7.5rem}
   }
 
   /* A spread is two pages wide; a phone is one page wide. Stacking them lets
@@ -28,25 +39,6 @@
     .spread{flex-direction:column;width:var(--pw)}
     .spread.cover,.spread.backcover{justify-content:flex-start}
     .spread .panel + .panel{border-left:none;border-top:1px dashed #bbb}
-  }
-
-  /* Everything above the page, in one short scrolling row, so the page is
-     the first thing on the screen rather than the fourth. */
-  @media (max-width: 640px){
-    .press-top{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:.3rem}
-    .press-top::-webkit-scrollbar{display:none}
-    .press-top .select-input{width:auto;flex:none;max-width:52vw;font-size:.75rem;padding:.3rem .4rem}
-    .press-top .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
-    .fitmeter{white-space:nowrap}
-    /* The bottom bar floats over the page; leave room to scroll clear of it. */
-    main{scroll-padding-bottom:6rem}
-  }
-
-  /* A phone knows which app it is in; the zine's own name is the identity
-     that matters. Dropping the wordmark keeps the bar to one row. */
-  @media (max-width: 640px){
-    .wordmark{display:none}
-    .barzine{font-size:1.15rem}
   }
 
 /* Handles a fingertip can hit. */

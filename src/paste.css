@@ -74,9 +74,9 @@
 .h-rot::after { content: ''; position: absolute; left: 50%; top: 9px; width: 1px; height: 10px; background: var(--red); }
 
 /* The paste-up strip under the toolbar */
-.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: .3rem 0 .8rem; }
+.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: 0; }
 .inspector:empty { display: none; }
-.inspector.on { color: var(--fg); border: 1px dashed var(--fg); background: var(--paper); padding: .5rem .7rem; }
+.inspector.on { color: var(--fg); background: var(--paper); border-left: 2px solid var(--fg); padding: .7rem .8rem 1rem; width: 300px; box-sizing: border-box; position: sticky; top: var(--barh, 0); align-self: start; max-height: calc(100vh - var(--barh, 0px)); overflow-y: auto; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Anton, Impact, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
@@ -89,7 +89,7 @@
 
 /* Nothing that only exists to be grabbed may reach the paper. */
 @media print {
-  .h, .pasteup-strip, .inspector, .phototray { display: none !important; }
+  .h, .rail, .inspector, .phototray, .pagestrip, .phonetabs, .tablehead { display: none !important; }
   .el.sel { outline: none !important; }
 }
 

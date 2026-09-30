@@ -22,7 +22,7 @@ Open `index.html` in a browser; there is nothing to install or build. It opens o
 
 ## Usage
 
-The press is the one surface, and it shows the issue as pages. Everything else opens as a drawer over it: **desk**, **shelf**, **scraps**, **scene** and **paper**. The last button, **hand it on**, saves the latest issue as a file.
+The press is the one surface. The pages sit in the middle at the largest size the screen allows; a rail of tools stands beside them; a strip above them has a chip for every page, to jump to or to drag into another place; and a sheet of controls for whatever is selected opens beside the pages on a laptop and from the bottom on a phone. Everything else opens as a drawer over it, in the order the cycle runs: **scraps**, **desk**, **paper**, **shelf** and **scene**, a tab bar on a phone. **hand it on** saves the latest issue as a file. [docs/TABLE.md](docs/TABLE.md) says why it is laid out this way.
 
 ### Writing and the desk
 
@@ -109,7 +109,7 @@ index.html         the app, built from src/ (the page GitHub Pages serves)
 press/index.html   the hand print kit, built from src/press.html
 artifact/          both pages as fragments for the claude.ai artifact publisher
 src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
-test/              twenty-two browser suites and their runner, run.js
+test/              twenty-three browser suites and their runner, run.js
 build.sh           assembles src/ into the four built files
 check.sh           the repository's laws, run by CI and the pre-commit hook
 docs/              longer write-ups linked from this README
@@ -165,7 +165,7 @@ npx playwright install chromium
 node test/run.js
 ```
 
-`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-two suites cover the parts that would be easy to fake, among them:
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-three suites cover the parts that would be easy to fake, among them:
 
 - two issues on the shelf, each keeping its own words;
 - the same pieces re-flowing into another format with nothing retyped;

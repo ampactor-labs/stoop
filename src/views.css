@@ -67,14 +67,32 @@
 
 /* The press */
 .press-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-.press-top { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+/* The table: the rail beside the pages, the head above them, the strip of
+   chips, and the sheet in its own column (paste.css). */
+.rail { position: sticky; top: var(--barh, 0); align-self: start; display: flex; flex-direction: column; gap: .3rem; padding: .6rem .35rem; height: calc(100vh - var(--barh, 0px)); box-sizing: border-box; border-right: 2px solid var(--fg); background: var(--bg); }
+.rail .btn { width: 100%; padding: .5rem .1rem; font-size: .66rem; letter-spacing: .04em; }
+.railgap { flex: 1; }
+.tablebed { min-width: 0; padding: .6rem 1rem 3rem; }
+.tablehead { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.tablehead .select-input { font-size: .8rem; padding: .35rem .5rem; min-width: 0; max-width: 22rem; }
+.zoom { margin-left: auto; display: flex; gap: .2rem; }
+.btn.tiny { font-size: .65rem; padding: .25rem .45rem; }
+.pagestrip { display: flex; gap: .3rem; overflow-x: auto; padding: .45rem 0 .35rem; scrollbar-width: thin; position: sticky; top: var(--barh, 0); z-index: 5; background: var(--bg); }
+.pchip { font-family: 'Courier New', monospace; font-size: .68rem; color: var(--fg); background: var(--paper); border: 1px solid var(--fg); padding: .25rem .45rem .3rem; min-width: 2.6rem; max-width: 7.5rem; flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: .05rem; cursor: pointer; position: relative; text-align: left; touch-action: none; user-select: none; }
+.pchip b { font-family: Anton, Impact, sans-serif; font-size: 1rem; letter-spacing: .04em; line-height: 1; }
+.pchip small { max-width: 6.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--grey); font-size: .62rem; }
+.pchip small:empty::before { content: '\00a0'; }
+.pchip.here { background: var(--fg); color: var(--bg); }
+.pchip.here small { color: var(--bg2); }
+.pchip .dot { position: absolute; right: 3px; top: 3px; width: 9px; height: 9px; border: 1px solid var(--fg); }
+.pchip.dragging { opacity: .45; }
+.pchip.drop { outline: 3px solid var(--spot); outline-offset: -1px; }
+.palettes:empty { display: none; }
+.addhint { margin: .3rem 0 0; }
 .fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--fg); color: var(--fg); background: var(--paper); padding: .35rem .6rem; margin: 0; }
 .fitmeter:empty { display: none; }
 .fitmeter.bad { background: var(--red); color: #fff; border-color: var(--red); }
-.pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
-.pasteup-strip .sub { margin-left: .3rem; }
-
-.sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
+.sheetzone { margin-top: .4rem; overflow-x: auto; padding-bottom: 1rem; }
 .sheetwrap { margin-bottom: 1.2rem; width: max-content; }
 .sheetlabel { font-family: 'Courier New', monospace; font-size: .7rem; color: var(--grey); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }
 .sheet {

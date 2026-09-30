@@ -92,6 +92,18 @@ function layoutPages() {
 // Measuring at scale one shrinks the page for a moment, and the browser
 // pulls the scroll back to fit the shorter page; without putting it back,
 // every repaint threw somebody working on page six up to page three.
+// What a phone's fixed tools and tabs take off the bottom of the window.
+function bottomReserve() {
+  var sum = 0;
+  [document.getElementById('phonetabs'), document.querySelector('section[data-view="press"] .rail')].forEach(function (el) {
+    if (el && getComputedStyle(el).position === 'fixed') sum += el.offsetHeight;
+  });
+  return sum;
+}
+
+// The room for a page is what is left under everything above the pages and
+// above everything fixed below them, measured from the document rather than
+// the window so scrolling does not change the answer.
 function fitPages(zone) {
   var sx = window.scrollX, sy = window.scrollY;
   zone.style.setProperty('--fit', 1);
@@ -99,9 +111,12 @@ function fitPages(zone) {
   var box = run && run.getBoundingClientRect();
   var panel = run && run.querySelector('.panel');
   if (box && box.width && panel) {
+    var pw = panel.getBoundingClientRect().width;
     var byWidth = (zone.clientWidth - 2) / box.width;
-    var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
-    zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
+    var room = window.innerHeight - (zone.getBoundingClientRect().top + window.scrollY) - bottomReserve() - 16;
+    var byHeight = Math.max(200, room) / panel.getBoundingClientRect().height;
+    var fit = pressZoom === 'full' ? 1 : pressZoom === 'page' ? (zone.clientWidth - 2) / pw : Math.min(byWidth, byHeight);
+    zone.style.setProperty('--fit', Math.max(0.2, fit));
   }
   if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
 }
@@ -198,6 +213,7 @@ function renderPress() {
   pressStatus();
   renderTray();
   renderInspector();
+  renderStrip();
   renderGen();
 }
 

@@ -37,7 +37,8 @@ const suites = [
   ['codes', require('./19-code.js')],
   ['magazine', require('./20-magazine.js')],
   ['booklets', require('./21-booklet.js')],
-  ['print shop', require('./22-shop.js')]
+  ['print shop', require('./22-shop.js')],
+  ['the table', require('./23-frame.js')]
 ];
 
 (async () => {

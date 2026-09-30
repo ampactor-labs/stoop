@@ -2,15 +2,25 @@
   <a class="wordmark" href="#press">STOO<b>P</b></a>
   <span class="barzine" id="barzine" contenteditable="true" spellcheck="false" title="Click to name it">STOOP ZINE</span>
   <button class="author-toggle" id="authortoggle" title="Switch who is writing"><span id="authorname">Me</span></button>
-  <nav class="chrome-nav">
-    <a href="#desk" data-nav="desk">desk</a>
-    <a href="#shelf" data-nav="shelf">shelf</a>
+  <a class="cycleline" id="cycleline" href="#desk" title="The desk"></a>
+  <nav class="chrome-nav" aria-label="The cycle">
     <a href="#scraps" data-nav="scraps">scraps</a>
-    <a href="#backup" data-nav="backup">scene</a>
-    <a href="#paper" data-nav="paper" class="verb">paper</a>
-    <button class="verb" id="handonbtn" title="Export the latest issue as a file that is also a press">hand it on</button>
+    <a href="#desk" data-nav="desk">desk</a>
+    <a href="#press" data-nav="press">press</a>
+    <a href="#paper" data-nav="paper">paper</a>
+    <a href="#shelf" data-nav="shelf">shelf</a>
+    <a href="#backup" data-nav="backup" class="gear">scene</a>
   </nav>
+  <button class="verb" id="handonbtn" title="Export the latest issue as a file that is also a press">hand it on</button>
 </header>
+<nav class="phonetabs" id="phonetabs" aria-label="The cycle">
+  <a href="#scraps" data-nav="scraps">scraps</a>
+  <a href="#desk" data-nav="desk">desk</a>
+  <a href="#press" data-nav="press">press</a>
+  <a href="#paper" data-nav="paper">paper</a>
+  <a href="#shelf" data-nav="shelf">shelf</a>
+  <a href="#backup" data-nav="backup">scene</a>
+</nav>
 <style id="pagerule">@page { size: letter landscape; margin: 0; }</style>
 <div id="reprintzone" class="reprintzone"></div>
 <div class="scrim" id="scrim"></div>

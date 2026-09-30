@@ -21,27 +21,32 @@
   .wordmark{font-family: Anton, Impact, sans-serif;font-size:1.5rem;letter-spacing:.12em;color:var(--fg);text-decoration:none}
   .wordmark b{color:var(--spot)}
   .barzine{font-family: Anton, Impact, sans-serif;font-size:1rem;letter-spacing:.08em;color:var(--fg);text-decoration:none;border-bottom:2px solid var(--spot);padding-bottom:1px}
+  .cycleline{font-family:'Courier New',monospace;font-size:.74rem;color:var(--grey);text-decoration:none;margin-left:.3rem;white-space:nowrap}
+  .cycleline:hover{color:var(--fg)}
+  .cycleline:empty{display:none}
   nav.chrome-nav{display:flex;flex-wrap:wrap;gap:.15rem;margin-left:auto;align-items:center}
+  nav.chrome-nav .gear{margin-left:.5rem;color:var(--grey)}
+  .phonetabs{display:none}
   nav.chrome-nav a,nav.chrome-nav button{font-family:'Courier New',monospace;font-size:.8rem;color:var(--link);background:none;text-decoration:none;padding:.25rem .5rem;border:1px solid transparent;cursor:pointer}
   nav.chrome-nav a:hover,nav.chrome-nav button:hover{border-color:var(--link)}
   nav.chrome-nav a.here{color:var(--bg);background:var(--fg);border-color:var(--fg)}
-  nav.chrome-nav .verb{color:var(--fg);border-color:var(--spot);background:var(--spot);margin-left:.2rem;font-weight:bold}
-  nav.chrome-nav .verb:hover{background:var(--fg);color:#fff;border-color:var(--fg)}
-  nav.chrome-nav a.verb.here{background:var(--fg);color:#fff;border-color:var(--fg)}
+  .chrome .verb{font-family:'Courier New',monospace;font-size:.8rem;color:var(--fg);border:1px solid var(--spot);background:var(--spot);margin-left:.4rem;padding:.25rem .55rem;font-weight:bold;cursor:pointer}
+  .chrome .verb:hover{background:var(--fg);color:#fff;border-color:var(--fg)}
 
-  main{max-width:960px;margin:0 auto;padding:1rem .9rem 4rem}
+  main{margin:0;padding:0}
 
   
   section[data-view]{display:none}
-  section[data-view="press"]{display:block}
+  
+  section[data-view="press"]{display:grid;grid-template-columns:4.2rem minmax(0,1fr) 300px;align-items:start}
   body.landing section[data-view="press"]{display:none}
-  section[data-view="issue"].on{display:block;animation:flick .12s steps(2) 1}
+  section[data-view="issue"].on{display:block;max-width:960px;margin:0 auto;padding:1rem .9rem 4rem;animation:flick .12s steps(2) 1}
   section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{display:block;position:fixed;top:var(--barh,0);right:0;bottom:0;
-    width:min(540px,100vw);z-index:20;overflow-y:auto;background:var(--bg);border-left:3px solid var(--fg);box-shadow:-6px 0 0 rgba(20,18,16,.12);
+    width:min(540px,100vw);z-index:35;overflow-y:auto;background:var(--bg);border-left:3px solid var(--fg);box-shadow:-6px 0 0 rgba(20,18,16,.12);
     padding:1rem .9rem 3rem;animation:slide .14s ease-out}
   @keyframes slide{from{transform:translateX(24px);opacity:.6}to{transform:none;opacity:1}}
   @keyframes flick{0%{opacity:.4}100%{opacity:1}}
-  .scrim{display:none;position:fixed;left:0;right:0;bottom:0;top:var(--barh,0);z-index:15;background:rgba(20,18,16,.28)}
+  .scrim{display:none;position:fixed;left:0;right:0;bottom:0;top:var(--barh,0);z-index:33;background:rgba(20,18,16,.28)}
   body[data-drawer] .scrim{display:block}
   section[data-view] .view-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1rem}
   section[data-view] .view-head h1{margin:0}
@@ -255,14 +260,31 @@
 
 
 .press-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-.press-top { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+.rail { position: sticky; top: var(--barh, 0); align-self: start; display: flex; flex-direction: column; gap: .3rem; padding: .6rem .35rem; height: calc(100vh - var(--barh, 0px)); box-sizing: border-box; border-right: 2px solid var(--fg); background: var(--bg); }
+.rail .btn { width: 100%; padding: .5rem .1rem; font-size: .66rem; letter-spacing: .04em; }
+.railgap { flex: 1; }
+.tablebed { min-width: 0; padding: .6rem 1rem 3rem; }
+.tablehead { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.tablehead .select-input { font-size: .8rem; padding: .35rem .5rem; min-width: 0; max-width: 22rem; }
+.zoom { margin-left: auto; display: flex; gap: .2rem; }
+.btn.tiny { font-size: .65rem; padding: .25rem .45rem; }
+.pagestrip { display: flex; gap: .3rem; overflow-x: auto; padding: .45rem 0 .35rem; scrollbar-width: thin; position: sticky; top: var(--barh, 0); z-index: 5; background: var(--bg); }
+.pchip { font-family: 'Courier New', monospace; font-size: .68rem; color: var(--fg); background: var(--paper); border: 1px solid var(--fg); padding: .25rem .45rem .3rem; min-width: 2.6rem; max-width: 7.5rem; flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: .05rem; cursor: pointer; position: relative; text-align: left; touch-action: none; user-select: none; }
+.pchip b { font-family: Anton, Impact, sans-serif; font-size: 1rem; letter-spacing: .04em; line-height: 1; }
+.pchip small { max-width: 6.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--grey); font-size: .62rem; }
+.pchip small:empty::before { content: '\00a0'; }
+.pchip.here { background: var(--fg); color: var(--bg); }
+.pchip.here small { color: var(--bg2); }
+.pchip .dot { position: absolute; right: 3px; top: 3px; width: 9px; height: 9px; border: 1px solid var(--fg); }
+.pchip.dragging { opacity: .45; }
+.pchip.drop { outline: 3px solid var(--spot); outline-offset: -1px; }
+.palettes:empty { display: none; }
+.addhint { margin: .3rem 0 0; }
 .fitmeter { font-family: 'Courier New', monospace; font-size: .8rem; border: 1px solid var(--fg); color: var(--fg); background: var(--paper); padding: .35rem .6rem; margin: 0; }
 .fitmeter:empty { display: none; }
 .fitmeter.bad { background: var(--red); color: #fff; border-color: var(--red); }
-.pasteup-strip { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; margin: .6rem 0 .3rem; }
-.pasteup-strip .sub { margin-left: .3rem; }
-
-.sheetzone { margin-top: 1rem; overflow-x: auto; padding-bottom: 1rem; }
+.sheetzone { margin-top: .4rem; overflow-x: auto; padding-bottom: 1rem; }
 .sheetwrap { margin-bottom: 1.2rem; width: max-content; }
 .sheetlabel { font-family: 'Courier New', monospace; font-size: .7rem; color: var(--grey); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .25rem; }
 .sheet {
@@ -448,9 +470,9 @@ body.landing main { padding-top: 2.4rem; }
 .h-rot::after { content: ''; position: absolute; left: 50%; top: 9px; width: 1px; height: 10px; background: var(--red); }
 
 
-.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: .3rem 0 .8rem; }
+.inspector { font-family: 'Courier New', monospace; font-size: .8rem; color: var(--grey); margin: 0; }
 .inspector:empty { display: none; }
-.inspector.on { color: var(--fg); border: 1px dashed var(--fg); background: var(--paper); padding: .5rem .7rem; }
+.inspector.on { color: var(--fg); background: var(--paper); border-left: 2px solid var(--fg); padding: .7rem .8rem 1rem; width: 300px; box-sizing: border-box; position: sticky; top: var(--barh, 0); align-self: start; max-height: calc(100vh - var(--barh, 0px)); overflow-y: auto; }
 .insp-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .5rem; }
 .insp-head b { font-family: Anton, Impact, sans-serif; letter-spacing: .06em; font-size: 1rem; }
 #ransomtext { margin-top: .5rem; width: 100%; }
@@ -463,7 +485,7 @@ body.landing main { padding-top: 2.4rem; }
 
 
 @media print {
-  .h, .pasteup-strip, .inspector, .phototray { display: none !important; }
+  .h, .rail, .inspector, .phototray, .pagestrip, .phonetabs, .tablehead { display: none !important; }
   .el.sel { outline: none !important; }
 }
 
@@ -482,23 +504,32 @@ body.landing main { padding-top: 2.4rem; }
   
   
   @media (max-width: 640px){
-    header.chrome{gap:.3rem .6rem;padding:.4rem .6rem}
-    .wordmark{font-size:1.25rem}
-    nav.chrome-nav{flex:1 1 0;min-width:0;flex-wrap:nowrap;overflow-x:auto;margin-left:.2rem;gap:.2rem;scrollbar-width:none;-webkit-overflow-scrolling:touch}
-    nav.chrome-nav::-webkit-scrollbar{display:none}
-    nav.chrome-nav a,nav.chrome-nav button{white-space:nowrap;padding:.3rem .55rem}
-    main{padding:.6rem .5rem 5.5rem}
-    .press-top{gap:.35rem}
-    .press-top .select-input{width:100%;font-size:.8rem;padding:.35rem .5rem}
-    .fitmeter{font-size:.72rem;padding:.25rem .5rem}
-    .pasteup-strip{position:fixed;left:0;right:0;bottom:0;z-index:25;margin:0;padding:.45rem .5rem;gap:.35rem;flex-wrap:nowrap;overflow-x:auto;
-      background:var(--bg);border-top:3px solid var(--fg);scrollbar-width:none}
-    .pasteup-strip::-webkit-scrollbar{display:none}
-    .pasteup-strip .btn{white-space:nowrap;padding:.4rem .6rem;font-size:.8rem;flex:none}
-    .pasteup-strip .sub{display:none}
-    .inspector.on{position:fixed;left:0;right:0;bottom:3.2rem;z-index:24;margin:0;border-radius:0;border-width:1px 0 0}
-    section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none}
+    header.chrome{gap:.3rem .5rem;padding:.4rem .6rem;flex-wrap:nowrap}
+    .wordmark,nav.chrome-nav,.cycleline{display:none}
+    .toast{bottom:7.4rem}
+    .barzine{font-size:1.1rem;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .chrome .verb{margin-left:auto;padding:.35rem .6rem;font-size:.75rem;white-space:nowrap}
+    .phonetabs{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:45;background:var(--bg);border-top:3px solid var(--fg);height:3.4rem}
+    .phonetabs a{flex:1;text-align:center;font-family:'Courier New',monospace;font-size:.68rem;letter-spacing:.05em;color:var(--fg);text-decoration:none;padding:.65rem 0;border-right:1px solid var(--bg2)}
+    .phonetabs a.here{background:var(--fg);color:var(--bg)}
+    body.landing .phonetabs{display:none}
+    section[data-view="press"]{display:block}
+    .rail{position:fixed;left:0;right:0;bottom:3.4rem;top:auto;z-index:25;height:3.2rem;flex-direction:row;overflow-x:auto;padding:.35rem .5rem;gap:.35rem;border:0;border-top:2px solid var(--fg);scrollbar-width:none}
+    .rail::-webkit-scrollbar{display:none}
+    .rail .btn{width:auto;white-space:nowrap;padding:.5rem .7rem;font-size:.75rem;flex:none}
+    .railgap{display:none}
+    .tablebed{padding:.4rem .5rem 7.5rem}
+    .tablehead{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:.3rem}
+    .tablehead::-webkit-scrollbar{display:none}
+    .tablehead .select-input{flex:none;max-width:52vw;font-size:.75rem;padding:.3rem .4rem}
+    .tablehead .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
+    .fitmeter{white-space:nowrap;font-size:.72rem;padding:.25rem .5rem}
+    .zoom,.addhint{display:none}
+    .inspector.on{position:fixed;left:0;right:0;bottom:6.6rem;top:auto;z-index:24;width:auto;max-height:45vh;overflow-y:auto;border:0;border-top:2px solid var(--fg);padding:.5rem .7rem .7rem}
+    section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none;bottom:3.4rem;z-index:35}
+    .scrim{z-index:33}
     .pages{gap:.7rem}
+    main{scroll-padding-bottom:7.5rem}
   }
 
   
@@ -506,23 +537,6 @@ body.landing main { padding-top: 2.4rem; }
     .spread{flex-direction:column;width:var(--pw)}
     .spread.cover,.spread.backcover{justify-content:flex-start}
     .spread .panel + .panel{border-left:none;border-top:1px dashed #bbb}
-  }
-
-  
-  @media (max-width: 640px){
-    .press-top{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:.3rem}
-    .press-top::-webkit-scrollbar{display:none}
-    .press-top .select-input{width:auto;flex:none;max-width:52vw;font-size:.75rem;padding:.3rem .4rem}
-    .press-top .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
-    .fitmeter{white-space:nowrap}
-    
-    main{scroll-padding-bottom:6rem}
-  }
-
-  
-  @media (max-width: 640px){
-    .wordmark{display:none}
-    .barzine{font-size:1.15rem}
   }
 
 
@@ -538,15 +552,25 @@ body.landing main { padding-top: 2.4rem; }
   <a class="wordmark" href="#press">STOO<b>P</b></a>
   <span class="barzine" id="barzine" contenteditable="true" spellcheck="false" title="Click to name it">STOOP ZINE</span>
   <button class="author-toggle" id="authortoggle" title="Switch who is writing"><span id="authorname">Me</span></button>
-  <nav class="chrome-nav">
-    <a href="#desk" data-nav="desk">desk</a>
-    <a href="#shelf" data-nav="shelf">shelf</a>
+  <a class="cycleline" id="cycleline" href="#desk" title="The desk"></a>
+  <nav class="chrome-nav" aria-label="The cycle">
     <a href="#scraps" data-nav="scraps">scraps</a>
-    <a href="#backup" data-nav="backup">scene</a>
-    <a href="#paper" data-nav="paper" class="verb">paper</a>
-    <button class="verb" id="handonbtn" title="Export the latest issue as a file that is also a press">hand it on</button>
+    <a href="#desk" data-nav="desk">desk</a>
+    <a href="#press" data-nav="press">press</a>
+    <a href="#paper" data-nav="paper">paper</a>
+    <a href="#shelf" data-nav="shelf">shelf</a>
+    <a href="#backup" data-nav="backup" class="gear">scene</a>
   </nav>
+  <button class="verb" id="handonbtn" title="Export the latest issue as a file that is also a press">hand it on</button>
 </header>
+<nav class="phonetabs" id="phonetabs" aria-label="The cycle">
+  <a href="#scraps" data-nav="scraps">scraps</a>
+  <a href="#desk" data-nav="desk">desk</a>
+  <a href="#press" data-nav="press">press</a>
+  <a href="#paper" data-nav="paper">paper</a>
+  <a href="#shelf" data-nav="shelf">shelf</a>
+  <a href="#backup" data-nav="backup">scene</a>
+</nav>
 <style id="pagerule">@page { size: letter landscape; margin: 0; }</style>
 <div id="reprintzone" class="reprintzone"></div>
 <div class="scrim" id="scrim"></div>
@@ -646,31 +670,38 @@ body.landing main { padding-top: 2.4rem; }
     <p class="sub">The bell puts this issue on the shelf as it stands and hands the desk on.</p>
   </div>
 </section>
-<section data-view="press">
-  <div class="press-top">
-    <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
-    <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
-    <p class="fitmeter" id="fitmeter"></p>
-    <p class="fitmeter" id="pressstatus"></p>
-  </div>
-  <div class="pasteup-strip">
-    <button class="btn" data-addel="text">+ TEXT</button>
-    <button class="btn" data-addel="photo">+ PHOTO</button>
-    <button class="btn quiet" data-addel="box">+ BOX</button>
-    <button class="btn quiet" data-addel="rule">+ RULE</button>
-    <button class="btn quiet" id="stampbtn">+ STAMP</button>
-    <button class="btn quiet" data-addel="qr">+ CODE</button>
-    <button class="btn quiet" id="blockbtn">+ BLOCK</button>
-    <button class="btn quiet" id="undobtn">UNDO</button>
-    <button class="btn quiet" id="redobtn">REDO</button>
-    <span class="sub" id="addhint"></span>
+<section data-view="press" class="table">
+  <aside class="rail" aria-label="Add to the page">
+    <button class="btn" data-addel="text" title="A text cutting">TEXT</button>
+    <button class="btn" data-addel="photo" title="A photograph from this device">PHOTO</button>
+    <button class="btn quiet" data-addel="box" title="A box, outlined or solid">BOX</button>
+    <button class="btn quiet" data-addel="rule" title="A rule">RULE</button>
+    <button class="btn quiet" id="stampbtn" title="A stamp">STAMP</button>
+    <button class="btn quiet" data-addel="qr" title="A code for a link">CODE</button>
+    <button class="btn quiet" id="blockbtn" title="Page numbers, contents, credits, a pull quote">BLOCK</button>
+    <span class="railgap"></span>
+    <button class="btn quiet" id="undobtn" title="Undo (Ctrl-Z)">UNDO</button>
+    <button class="btn quiet" id="redobtn" title="Redo (Ctrl-Shift-Z)">REDO</button>
     <input type="file" id="pastephotofile" accept="image/*" multiple hidden>
+  </aside>
+  <div class="tablebed">
+    <div class="tablehead">
+      <select id="formatsel" class="select-input" title="Format: how many pages, on what paper"></select>
+      <button class="btn quiet" id="genbtn" title="How many times this has been through the copier">GEN 0</button>
+      <p class="fitmeter" id="fitmeter"></p>
+      <p class="fitmeter" id="pressstatus"></p>
+      <span class="zoom" id="zoom"></span>
+    </div>
+    <div class="pagestrip" id="pagestrip" aria-label="The pages"></div>
+    <div class="palettes">
+      <div id="stamps" class="stamps"></div>
+      <div id="blocks" class="stamps"></div>
+      <div id="phototray" class="phototray"></div>
+    </div>
+    <div class="sheetzone" id="sheetzone"></div>
+    <p class="sub addhint" id="addhint"></p>
   </div>
-  <div id="stamps" class="stamps"></div>
-  <div id="blocks" class="stamps"></div>
-  <div id="phototray" class="phototray"></div>
-  <div id="inspector" class="inspector"></div>
-  <div class="sheetzone" id="sheetzone"></div>
+  <aside id="inspector" class="inspector" aria-label="The selected cutting"></aside>
 </section>
 <section data-view="shelf">
   <div class="view-head">
@@ -797,7 +828,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 280 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 288 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1786,6 +1817,14 @@ function layoutPages() {
   return plan;
 }
 
+function bottomReserve() {
+  var sum = 0;
+  [document.getElementById('phonetabs'), document.querySelector('section[data-view="press"] .rail')].forEach(function (el) {
+    if (el && getComputedStyle(el).position === 'fixed') sum += el.offsetHeight;
+  });
+  return sum;
+}
+
 function fitPages(zone) {
   var sx = window.scrollX, sy = window.scrollY;
   zone.style.setProperty('--fit', 1);
@@ -1793,9 +1832,12 @@ function fitPages(zone) {
   var box = run && run.getBoundingClientRect();
   var panel = run && run.querySelector('.panel');
   if (box && box.width && panel) {
+    var pw = panel.getBoundingClientRect().width;
     var byWidth = (zone.clientWidth - 2) / box.width;
-    var byHeight = (window.innerHeight * 0.82) / panel.getBoundingClientRect().height;
-    zone.style.setProperty('--fit', Math.max(0.2, Math.min(byWidth, byHeight)));
+    var room = window.innerHeight - (zone.getBoundingClientRect().top + window.scrollY) - bottomReserve() - 16;
+    var byHeight = Math.max(200, room) / panel.getBoundingClientRect().height;
+    var fit = pressZoom === 'full' ? 1 : pressZoom === 'page' ? (zone.clientWidth - 2) / pw : Math.min(byWidth, byHeight);
+    zone.style.setProperty('--fit', Math.max(0.2, fit));
   }
   if (window.scrollY !== sy || window.scrollX !== sx) window.scrollTo(sx, sy);
 }
@@ -1886,6 +1928,7 @@ function renderPress() {
   pressStatus();
   renderTray();
   renderInspector();
+  renderStrip();
   renderGen();
 }
 
@@ -3522,6 +3565,107 @@ document.addEventListener('click', function (ev) {
   var pick = t.closest && t.closest('[data-block]');
   if (pick) addBlock(pick.getAttribute('data-block'));
 });
+var pressZoom = 'fit';
+var ZOOMS = [['fit', 'FIT'], ['page', 'PAGE'], ['full', '100%']];
+
+function chipLabel(p, page, pages) {
+  if (page === 1) return 'cover';
+  if (page === pages) return 'back';
+  var h = String(p.h || '').trim();
+  return h.length > 14 ? h.slice(0, 13) + '…' : h;
+}
+
+function renderStrip() {
+  var strip = document.getElementById('pagestrip');
+  if (!strip) return;
+  var ps = pressState();
+  var n = ps.panels.length;
+  strip.innerHTML = ps.panels.map(function (p, i) {
+    var page = i + 1;
+    return '<button class="pchip' + (page === pastePage ? ' here' : '') + '" data-gopage="' + page +
+      '" title="Page ' + page + (page > 1 && page < n ? ' · drag to move it' : '') + '">' +
+      '<b>' + page + '</b><small>' + esc(chipLabel(p, page, n)) + '</small>' +
+      (fillOf(p) ? '<i class="dot" style="background:' + fillOf(p) + '"></i>' : '') + '</button>';
+  }).join('');
+  var z = document.getElementById('zoom');
+  if (z) {
+    z.innerHTML = ZOOMS.map(function (o) {
+      return '<button class="btn quiet tiny' + (pressZoom === o[0] ? ' on' : '') + '" data-zoom="' + o[0] +
+        '" title="Zoom">' + o[1] + '</button>';
+    }).join('');
+  }
+}
+
+function goPage(page) {
+  var el = document.querySelector('#sheetzone [data-page="' + page + '"]');
+  if (!el) return;
+  pastePage = page;
+  pasteSel = null;
+  renderPress();
+  el.scrollIntoView({ block: 'center' });
+}
+
+function movePage(from, to) {
+  var ps = pressState();
+  var n = ps.panels.length;
+  if (from === to || from <= 1 || from >= n || to <= 1 || to >= n) return;
+  pasteMark();
+  var order = [];
+  for (var i = 1; i <= n; i++) order.push(i);
+  order.splice(from - 1, 1);
+  order.splice(to - 1, 0, from);
+  var map = {};
+  order.forEach(function (old, at) { map[old] = at + 1; });
+  ps.panels = order.map(function (old) { return ps.panels[old - 1]; });
+  (ps.ran || []).forEach(function (r) { r.page = map[r.page] || r.page; });
+  pastePage = to;
+  pasteSel = null;
+  savePress();
+  renderPress();
+  toast('Page ' + from + ' is now page ' + to);
+}
+
+var stripDrag = null;
+document.addEventListener('pointerdown', function (ev) {
+  var chip = ev.target.closest && ev.target.closest('#pagestrip .pchip');
+  if (!chip || ev.button) return;
+  stripDrag = { from: Number(chip.getAttribute('data-gopage')), x: ev.clientX, y: ev.clientY, moved: false, chip: chip };
+  chip.setPointerCapture && chip.setPointerCapture(ev.pointerId);
+});
+
+document.addEventListener('pointermove', function (ev) {
+  if (!stripDrag) return;
+  if (!stripDrag.moved && Math.hypot(ev.clientX - stripDrag.x, ev.clientY - stripDrag.y) < 6) return;
+  stripDrag.moved = true;
+  stripDrag.chip.classList.add('dragging');
+  var over = document.elementFromPoint(ev.clientX, ev.clientY);
+  var target = over && over.closest && over.closest('#pagestrip .pchip');
+  document.querySelectorAll('#pagestrip .pchip.drop').forEach(function (c) { c.classList.remove('drop'); });
+  if (target && target !== stripDrag.chip) target.classList.add('drop');
+  stripDrag.to = target ? Number(target.getAttribute('data-gopage')) : null;
+});
+
+document.addEventListener('pointerup', function (ev) {
+  if (!stripDrag) return;
+  var d = stripDrag;
+  stripDrag = null;
+  d.chip.classList.remove('dragging');
+  document.querySelectorAll('#pagestrip .pchip.drop').forEach(function (c) { c.classList.remove('drop'); });
+  if (d.moved) {
+    if (d.to) movePage(d.from, d.to);
+  } else {
+    goPage(d.from);
+  }
+});
+
+document.addEventListener('click', function (ev) {
+  var z = ev.target.closest && ev.target.closest('[data-zoom]');
+  if (!z) return;
+  pressZoom = z.getAttribute('data-zoom');
+  var zone = document.getElementById('sheetzone');
+  if (zone) { fitPages(zone); checkFit(); }
+  renderStrip();
+});
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -3735,6 +3879,8 @@ function renderDesk() {
   if (head) {
     head.textContent = 'issue №' + c.no + ' · ' + nameOf(c.editor) + "'s turn · " + fmtBell(c.bell);
   }
+  var line = document.getElementById('cycleline');
+  if (line) line.textContent = '\u2116' + c.no + ' \u00b7 ' + nameOf(c.editor) + '\u2019s turn \u00b7 ' + fmtBell(c.bell);
   var bell = document.getElementById('bellinput');
   if (bell && document.activeElement !== bell) {
     bell.value = new Date(c.bell - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
@@ -5613,7 +5759,8 @@ function photosForFile(issues, no) {
 
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
-  'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
+  'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
+  'pagestrip', 'cycleline', 'zoom'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);

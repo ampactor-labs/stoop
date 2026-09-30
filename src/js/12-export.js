@@ -57,7 +57,8 @@ function photosForFile(issues, no) {
 // them would only add weight and staleness.
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
-  'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge'];
+  'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
+  'pagestrip', 'cycleline', 'zoom'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
