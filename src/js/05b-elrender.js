@@ -115,8 +115,8 @@ function elHtml(el, pics, editable, selected, page) {
     (inkOf(el) === '#ffffff' ? ' inkpaper' : '') + (selected ? ' sel' : '') + (editing ? ' editing' : '') +
     '" data-el="' + esc(el.id) + '" style="' + elStyle(el) + '">' +
     elBody(el, pics, editable, editing, page) +
-    (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
-                '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
+    (selected ? '<span class="h h-rot" data-grab="rot" role="button" aria-label="Turn" title="Drag to turn, double-click to straighten"></span>' +
+                '<span class="h h-size" data-grab="size" role="button" aria-label="Resize" title="Drag to resize"></span>' : '') +
     '</div>';
 }
 

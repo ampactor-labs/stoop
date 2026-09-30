@@ -43,10 +43,25 @@
     .spread .panel + .panel{border-left:none;border-top:1px dashed #bbb}
   }
 
-/* Handles a fingertip can hit. */
+/* Handles a fingertip can hit, and targets 44 pixels tall, which is what a
+   thumb needs (WCAG asks 24; Apple and Google say 44 and 48, and people with
+   motor impairments are served far better at 44). The nudge on the cover
+   speaks of tapping, since there is nothing to click with. */
 @media (pointer: coarse) {
   .h { width: 22px; height: 22px; }
   .h-size { right: -12px; bottom: -12px; }
   .h-rot { top: -30px; margin-left: -11px; }
   .h-rot::after { top: 20px; }
+  .btn, .subbtn, .voicesel, .pchip, .phonetabs a, .log-del, .panel-unpic, .toast-undo, .chip, .stampbtn, .tray-photo { min-height: 44px; }
+  .btn, .subbtn { padding-top: .6rem; padding-bottom: .6rem; }
+  .swatch { width: 44px; height: 44px; }
+  .rail .btn { min-width: 60px; }
+  .phonetabs a { padding-top: .8rem; }
+  .log-del, .panel-unpic { min-width: 44px; }
+  #sheetzone .cover .body:empty::before { content: 'tap anything \00b7 type \00b7 add a photo'; }
+}
+
+/* Motion is a choice the person makes in their settings, not here. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

@@ -573,6 +573,18 @@ body.landing main { padding-top: 2.4rem; }
   .h-size { right: -12px; bottom: -12px; }
   .h-rot { top: -30px; margin-left: -11px; }
   .h-rot::after { top: 20px; }
+  .btn, .subbtn, .voicesel, .pchip, .phonetabs a, .log-del, .panel-unpic, .toast-undo, .chip, .stampbtn, .tray-photo { min-height: 44px; }
+  .btn, .subbtn { padding-top: .6rem; padding-bottom: .6rem; }
+  .swatch { width: 44px; height: 44px; }
+  .rail .btn { min-width: 60px; }
+  .phonetabs a { padding-top: .8rem; }
+  .log-del, .panel-unpic { min-width: 44px; }
+  #sheetzone .cover .body:empty::before { content: 'tap anything \00b7 type \00b7 add a photo'; }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 </style>
 
@@ -858,7 +870,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 292 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 293 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1617,7 +1629,7 @@ function renderLogs() {
     return '<div class="log-card author-' + esc(l.author) + '">' +
       '<div class="log-meta"><span><span class="log-author">' + esc(nameOf(l.author)) +
       '</span> \u00b7 ' + esc(fmtStamp(l.ts)) + '</span>' +
-      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete">\u2715</button></div>' +
+      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete" aria-label="Delete this scrap">\u2715</button></div>' +
       (l.title ? '<h3 class="log-title">' + esc(l.title) + '</h3>' : '') +
       (l.photo ? photoTag(l.photo, 'log-photo') : '') +
       (l.text ? '<div class="log-body">' + esc(l.text) + '</div>' : '') +
@@ -1926,6 +1938,7 @@ function paintFace(el, panel, page, active) {
       drop.className = 'panel-unpic';
       drop.textContent = '✕';
       drop.title = 'Remove this photo';
+      drop.setAttribute('aria-label', 'Remove this photo');
       drop.setAttribute('data-delpanelpic', String(page));
       el.appendChild(drop);
     }
@@ -2335,8 +2348,8 @@ function elHtml(el, pics, editable, selected, page) {
     (inkOf(el) === '#ffffff' ? ' inkpaper' : '') + (selected ? ' sel' : '') + (editing ? ' editing' : '') +
     '" data-el="' + esc(el.id) + '" style="' + elStyle(el) + '">' +
     elBody(el, pics, editable, editing, page) +
-    (selected ? '<span class="h h-rot" data-grab="rot" title="Drag to turn, double-click to straighten"></span>' +
-                '<span class="h h-size" data-grab="size" title="Drag to resize"></span>' : '') +
+    (selected ? '<span class="h h-rot" data-grab="rot" role="button" aria-label="Turn" title="Drag to turn, double-click to straighten"></span>' +
+                '<span class="h h-size" data-grab="size" role="button" aria-label="Resize" title="Drag to resize"></span>' : '') +
     '</div>';
 }
 
@@ -2771,7 +2784,9 @@ function renderInspector() {
   if (!box) return;
   var hint = document.getElementById('addhint');
   if (hint) {
-    hint.textContent = pasteTargetLabel() + ' \u00b7 drag \u00b7 double-click to type \u00b7 drop anything';
+    var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    hint.textContent = pasteTargetLabel() + (touch ? ' \u00b7 tap a page \u00b7 double-tap to type \u00b7 drag to move'
+      : ' \u00b7 drag \u00b7 double-click to type \u00b7 drop anything');
   }
 
   var el = selectedEl();
@@ -3976,7 +3991,7 @@ function renderDesk() {
       '<button class="subbtn" data-' + (p.cut ? 'restore' : 'cut') + 'piece="' + esc(p.id) + '">' +
       (p.cut ? 'RESTORE' : 'CUT') + '</button>' +
       '<button class="subbtn" data-piecebundle="' + esc(p.id) + '" title="Save it as a file to send to whoever holds the desk">SEND</button>' +
-      '<button class="log-del" data-droppiece="' + esc(p.id) + '" title="Remove entirely">✕</button>' +
+      '<button class="log-del" data-droppiece="' + esc(p.id) + '" title="Remove entirely" aria-label="Remove this piece">✕</button>' +
       '</div>';
   }).join('');
 }

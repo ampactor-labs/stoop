@@ -259,7 +259,7 @@ function renderDesk() {
       '<button class="subbtn" data-' + (p.cut ? 'restore' : 'cut') + 'piece="' + esc(p.id) + '">' +
       (p.cut ? 'RESTORE' : 'CUT') + '</button>' +
       '<button class="subbtn" data-piecebundle="' + esc(p.id) + '" title="Save it as a file to send to whoever holds the desk">SEND</button>' +
-      '<button class="log-del" data-droppiece="' + esc(p.id) + '" title="Remove entirely">✕</button>' +
+      '<button class="log-del" data-droppiece="' + esc(p.id) + '" title="Remove entirely" aria-label="Remove this piece">✕</button>' +
       '</div>';
   }).join('');
 }

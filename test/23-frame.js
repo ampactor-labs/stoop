@@ -133,6 +133,27 @@ module.exports = async function frame(browser, ok) {
   try { await phone.click('#buildissuebtn', { trial: true, timeout: 3000 }); } catch (e) { reachable = false; }
   ok('THE BELL IS REACHABLE ON A PHONE WHILE A CUTTING IS SELECTED', reachable);
   await pgo('#press');
+
+  // ---- a thumb can hit everything, and a screen reader can name it.
+  await phone.click('[data-addel="text"]');
+  await phone.waitForTimeout(300);
+  const small = await phone.evaluate(() => {
+    const sel = '.rail .btn, #phonetabs a, #inspector .btn, #inspector .swatch, #inspector select, #pagestrip .pchip';
+    return [...document.querySelectorAll(sel)].filter(el => el.getBoundingClientRect().height < 44 || el.getBoundingClientRect().width < 24)
+      .map(el => (el.id || el.className) + ' ' + Math.round(el.getBoundingClientRect().height));
+  });
+  ok('ON A PHONE EVERY TOOL, TAB, CONTROL AND SWATCH IS AT LEAST 44 PIXELS TALL', small.length === 0, small.slice(0, 5).join(' | '));
+  const nameless = await phone.evaluate(() => [...document.querySelectorAll('button, [role="button"]')]
+    .filter(el => !(el.textContent.trim() || el.getAttribute('aria-label') || el.getAttribute('title')))
+    .map(el => el.outerHTML.slice(0, 60)));
+  ok('AND EVERY BUTTON HAS A NAME', nameless.length === 0, nameless.slice(0, 3).join(' | '));
+  const reduced = await pctx.newPage();
+  await reduced.emulateMedia({ reducedMotion: 'reduce' });
+  await reduced.goto(APP);
+  await reduced.waitForTimeout(600);
+  ok('and motion follows the person\'s own setting', (await reduced.evaluate(() =>
+    getComputedStyle(document.querySelector('section[data-view="press"]')).animationName)) === 'none');
+  await reduced.close();
   ok('no script errors on the phone', perrs.length === 0, perrs.slice(0, 3).join(' | '));
   await pctx.close();
 };

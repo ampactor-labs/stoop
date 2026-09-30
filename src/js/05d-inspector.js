@@ -92,7 +92,9 @@ function renderInspector() {
   if (!box) return;
   var hint = document.getElementById('addhint');
   if (hint) {
-    hint.textContent = pasteTargetLabel() + ' \u00b7 drag \u00b7 double-click to type \u00b7 drop anything';
+    var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    hint.textContent = pasteTargetLabel() + (touch ? ' \u00b7 tap a page \u00b7 double-tap to type \u00b7 drag to move'
+      : ' \u00b7 drag \u00b7 double-click to type \u00b7 drop anything');
   }
 
   var el = selectedEl();

@@ -178,6 +178,7 @@ function paintFace(el, panel, page, active) {
       drop.className = 'panel-unpic';
       drop.textContent = '✕';
       drop.title = 'Remove this photo';
+      drop.setAttribute('aria-label', 'Remove this photo');
       drop.setAttribute('data-delpanelpic', String(page));
       el.appendChild(drop);
     }

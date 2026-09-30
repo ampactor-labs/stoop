@@ -84,7 +84,7 @@ function renderLogs() {
     return '<div class="log-card author-' + esc(l.author) + '">' +
       '<div class="log-meta"><span><span class="log-author">' + esc(nameOf(l.author)) +
       '</span> \u00b7 ' + esc(fmtStamp(l.ts)) + '</span>' +
-      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete">\u2715</button></div>' +
+      '<button class="log-del" data-dellog="' + esc(l.id) + '" title="Delete" aria-label="Delete this scrap">\u2715</button></div>' +
       (l.title ? '<h3 class="log-title">' + esc(l.title) + '</h3>' : '') +
       (l.photo ? photoTag(l.photo, 'log-photo') : '') +
       (l.text ? '<div class="log-body">' + esc(l.text) + '</div>' : '') +
