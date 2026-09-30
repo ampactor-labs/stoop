@@ -263,6 +263,7 @@ function pdfElText(el, g, page) {
 }
 
 function pdfEl(el, box, images, page) {
+  if (plateInk !== null && !onPlate(el)) return '';
   var g = elBoxPdf(box, el);
   // The cutting's ink, fill and stroke, for everything it draws; a
   // knocked-out line sets its own white and the Q below undoes it.

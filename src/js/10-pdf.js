@@ -211,6 +211,21 @@ function pdfAddColour(doc, r) {
   });
 }
 
+// For a riso's black drum a colour photograph goes as one grey channel,
+// the luminance a drum would print, with its transparency beside it.
+function pdfAddGrey(doc, r) {
+  var n = r.w * r.h, d = r.d;
+  var grey = new Uint8Array(n), alpha = new Uint8Array(n), clear = false;
+  for (var i = 0; i < n; i++) {
+    grey[i] = Math.round(0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]);
+    alpha[i] = d[i * 4 + 3];
+    if (alpha[i] < 255) clear = true;
+  }
+  var size = '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h + '/BitsPerComponent 8/ColorSpace/DeviceGray';
+  var mask = clear ? pdfImageStream(doc, size, alpha) : Promise.resolve(0);
+  return mask.then(function (m) { return pdfImageStream(doc, size + (m ? '/SMask ' + m + ' 0 R' : ''), grey); });
+}
+
 function pdfAddJpeg(doc, dataUrl) {
   var info = imageInfo(dataUrl);
   if (!info || !info.w) return null;
@@ -226,8 +241,9 @@ function pdfImageOps(pic, ink) {
   return (pic.mask ? '1 g 0 0 1 1 re f ' + (ink || '0 g ') : '') + '/Im' + pic.num + ' Do';
 }
 
-function pdfAddImage(doc, dataUrl, gen) {
-  if (/^data:image\/jpeg;/.test(dataUrl || '')) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
+function pdfAddImage(doc, dataUrl, gen, grey) {
+  var jpeg = /^data:image\/jpeg;/.test(dataUrl || '');
+  if (jpeg && (!grey || (imageInfo(dataUrl) || {}).comps === 1)) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
   return rasterOf(dataUrl).then(function (r) {
     if (!r) return null;
     // Two tones ride as a stencil: black is where the ink goes, in whatever
@@ -236,7 +252,7 @@ function pdfAddImage(doc, dataUrl, gen) {
     var made = mask
       ? pdfImageStream(doc, '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h +
           '/ImageMask true/BitsPerComponent 1', packBitmap(r, gen))
-      : pdfAddColour(doc, r);
+      : (grey ? pdfAddGrey(doc, r) : pdfAddColour(doc, r));
     return made.then(function (num) { return { num: num, w: r.w, h: r.h, mask: mask }; });
   });
 }

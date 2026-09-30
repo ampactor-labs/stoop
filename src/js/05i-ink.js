@@ -78,9 +78,14 @@ function pdfFill(panel, box) {
     (box.top - box.h - b).toFixed(2) + ' ' + (box.w + 2 * b).toFixed(2) + ' ' + (box.h + 2 * b).toFixed(2) + ' re f 0 g\n';
 }
 
-// The PDF sets the ink once for the whole cutting, fill and stroke.
+// The PDF sets the ink once for the whole cutting, fill and stroke. While a
+// riso plate is being drawn (11e-pdf-riso.js) every ink on the plate is
+// black, or its own colour in the preview; white stays white, being paper.
+var plateInk = null;
+var plateTint = false;
 function pdfInk(el) {
   var hex = inkOf(el);
+  if (plateInk !== null && hex !== '#ffffff') hex = plateTint ? plateInk : '';
   if (!hex) return '0 g 0 G\n';
   var c = inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ');
   return c + ' rg ' + c + ' RG\n';

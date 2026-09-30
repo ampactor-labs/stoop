@@ -87,4 +87,4 @@ function strokeFor(el) { return outlined(el) ? (ptSize(el) * 0.045).toFixed(2) +
 
 // The letters in a knocked-out block are paper, which is white unless the ink
 // itself is white, when they are black.
-function knockLetters(el) { return inkOf(el) === '#ffffff' ? '0 g 0 G\n' : '1 g 1 G\n'; }
+function knockLetters(el) { return inkOf(el) === '#ffffff' && !plateInk ? '0 g 0 G\n' : '1 g 1 G\n'; }

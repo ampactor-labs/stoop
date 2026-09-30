@@ -60,7 +60,7 @@ document.addEventListener('click', function (ev) {
 // object-fit: cover crops it, under the heading and the words.
 function pdfPhotoFill(panel, box, images) {
   var pic = photoFills(panel) && images[panel.photo];
-  if (!pic) return '';
+  if (!pic || plateInk) return '';
   var ar = pic.w / pic.h;
   var b = box.bleed || 0;
   var iw = box.w + 2 * b, ih = iw / ar;

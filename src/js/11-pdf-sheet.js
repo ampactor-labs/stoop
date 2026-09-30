@@ -52,6 +52,9 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
 }
 
 function pdfPanel(panel, page, pages, box, images, url, ghosts) {
+  // A coloured riso drum carries none of the page's own black type; only
+  // letters set in white, which knock out of every drum, still draw.
+  if (plateInk && !whiteLetters(panel)) return pdfPasteup(panel, box, images, ghosts, page);
   var ops = pdfPhotoFill(panel, box, images);
   var letters = whiteLetters(panel) ? '1' : '0';
   ops += letters + ' g ' + letters + ' G\n';
@@ -152,7 +155,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
 // Every photograph the pages need, the address's code, the two faces and the
 // standard fonts, gathered once into a document; the imposed sheet and the
 // shop's single pages are two ways of laying the same pages onto it.
-function pdfPrepare(doc, panels, url, gen) {
+function pdfPrepare(doc, panels, url, gen, grey) {
   var wanted = [];
   var want = function (id) {
     if (id && photoCache[id] && wanted.indexOf(id) < 0) wanted.push(id);
@@ -167,7 +170,7 @@ function pdfPrepare(doc, panels, url, gen) {
   var chain = Promise.resolve();
   wanted.forEach(function (id) {
     chain = chain.then(function () {
-      return pdfAddImage(doc, photoCache[id], gen).then(function (ref) { if (ref) images[id] = ref; });
+      return pdfAddImage(doc, photoCache[id], gen, grey).then(function (ref) { if (ref) images[id] = ref; });
     });
   });
   if (url) {

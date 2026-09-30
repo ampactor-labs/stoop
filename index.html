@@ -858,8 +858,9 @@ body.landing main { padding-top: 2.4rem; }
       <button class="btn quiet" id="pdfshopbtn">SHOP PDF</button>
       <button class="btn quiet" id="printzinebtn">BROWSER PRINT</button>
       <button class="btn quiet" id="flyerbtn">FLYER</button>
+      <button class="btn quiet" id="risobtn">RISO PLATES</button>
     </div>
-    <p class="hint">The PDF is the sheet at its exact size: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the shop PDF, every page on its own with bleed and crop marks. Browser print needs 100% and no margins. The flyer has tear-off tabs.</p>
+    <p class="hint">The PDF is the sheet at its exact size: print it, fold it, or hand it to a copy shop. A print shop that folds and trims its own wants the shop PDF, every page on its own with bleed and crop marks. Browser print needs 100% and no margins. The flyer has tear-off tabs. Riso plates are one greyscale PDF per ink, with a preview and a note on the stock, for a riso studio.</p>
   </div>
 
   <div class="paper">
@@ -891,7 +892,7 @@ body.landing main { padding-top: 2.4rem; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 308 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 315 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -3329,8 +3330,11 @@ function pdfFill(panel, box) {
     (box.top - box.h - b).toFixed(2) + ' ' + (box.w + 2 * b).toFixed(2) + ' ' + (box.h + 2 * b).toFixed(2) + ' re f 0 g\n';
 }
 
+var plateInk = null;
+var plateTint = false;
 function pdfInk(el) {
   var hex = inkOf(el);
+  if (plateInk !== null && hex !== '#ffffff') hex = plateTint ? plateInk : '';
   if (!hex) return '0 g 0 G\n';
   var c = inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ');
   return c + ' rg ' + c + ' RG\n';
@@ -3444,7 +3448,7 @@ function alignX(el, g, lw) {
 function textMode(el) { return outlined(el) ? '1 Tr ' : ''; }
 function strokeFor(el) { return outlined(el) ? (ptSize(el) * 0.045).toFixed(2) + ' w\n' : ''; }
 
-function knockLetters(el) { return inkOf(el) === '#ffffff' ? '0 g 0 G\n' : '1 g 1 G\n'; }
+function knockLetters(el) { return inkOf(el) === '#ffffff' && !plateInk ? '0 g 0 G\n' : '1 g 1 G\n'; }
 function photoFills(panel) { return !!panel && panel.photoFill === true && !!panel.photo; }
 function whiteLetters(panel) { return !!panel && panel.letters === 'white'; }
 
@@ -3498,7 +3502,7 @@ document.addEventListener('click', function (ev) {
 
 function pdfPhotoFill(panel, box, images) {
   var pic = photoFills(panel) && images[panel.photo];
-  if (!pic) return '';
+  if (!pic || plateInk) return '';
   var ar = pic.w / pic.h;
   var b = box.bleed || 0;
   var iw = box.w + 2 * b, ih = iw / ar;
@@ -4469,6 +4473,7 @@ function renderShelf() {
         '<button class="btn quiet" data-reprintissue="' + esc(iss.no) + '">REPRINT</button>' +
         '<button class="btn quiet" data-pdfissue="' + esc(iss.no) + '">PDF</button>' +
         '<button class="btn quiet" data-shopissue="' + esc(iss.no) + '">SHOP PDF</button>' +
+        '<button class="btn quiet" data-risoissue="' + esc(iss.no) + '">RISO</button>' +
         '<button class="btn quiet" data-exportissue="' + esc(iss.no) + '">EXPORT</button>' +
         '</div>';
     }).join('');
@@ -5209,6 +5214,19 @@ function pdfAddColour(doc, r) {
   });
 }
 
+function pdfAddGrey(doc, r) {
+  var n = r.w * r.h, d = r.d;
+  var grey = new Uint8Array(n), alpha = new Uint8Array(n), clear = false;
+  for (var i = 0; i < n; i++) {
+    grey[i] = Math.round(0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]);
+    alpha[i] = d[i * 4 + 3];
+    if (alpha[i] < 255) clear = true;
+  }
+  var size = '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h + '/BitsPerComponent 8/ColorSpace/DeviceGray';
+  var mask = clear ? pdfImageStream(doc, size, alpha) : Promise.resolve(0);
+  return mask.then(function (m) { return pdfImageStream(doc, size + (m ? '/SMask ' + m + ' 0 R' : ''), grey); });
+}
+
 function pdfAddJpeg(doc, dataUrl) {
   var info = imageInfo(dataUrl);
   if (!info || !info.w) return null;
@@ -5222,15 +5240,16 @@ function pdfImageOps(pic, ink) {
   return (pic.mask ? '1 g 0 0 1 1 re f ' + (ink || '0 g ') : '') + '/Im' + pic.num + ' Do';
 }
 
-function pdfAddImage(doc, dataUrl, gen) {
-  if (/^data:image\/jpeg;/.test(dataUrl || '')) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
+function pdfAddImage(doc, dataUrl, gen, grey) {
+  var jpeg = /^data:image\/jpeg;/.test(dataUrl || '');
+  if (jpeg && (!grey || (imageInfo(dataUrl) || {}).comps === 1)) return Promise.resolve(pdfAddJpeg(doc, dataUrl));
   return rasterOf(dataUrl).then(function (r) {
     if (!r) return null;
     var mask = twoTone(r.d);
     var made = mask
       ? pdfImageStream(doc, '/Type/XObject/Subtype/Image/Width ' + r.w + '/Height ' + r.h +
           '/ImageMask true/BitsPerComponent 1', packBitmap(r, gen))
-      : pdfAddColour(doc, r);
+      : (grey ? pdfAddGrey(doc, r) : pdfAddColour(doc, r));
     return made.then(function (num) { return { num: num, w: r.w, h: r.h, mask: mask }; });
   });
 }
@@ -5424,6 +5443,7 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
 }
 
 function pdfPanel(panel, page, pages, box, images, url, ghosts) {
+  if (plateInk && !whiteLetters(panel)) return pdfPasteup(panel, box, images, ghosts, page);
   var ops = pdfPhotoFill(panel, box, images);
   var letters = whiteLetters(panel) ? '1' : '0';
   ops += letters + ' g ' + letters + ' G\n';
@@ -5509,7 +5529,7 @@ function buildSheetPdf(panels, formatId, hand, url, issue, gen) {
   return loadFaces().then(function () { return writeSheetPdf(panels, formatId, hand, url, issue, gen); });
 }
 
-function pdfPrepare(doc, panels, url, gen) {
+function pdfPrepare(doc, panels, url, gen, grey) {
   var wanted = [];
   var want = function (id) {
     if (id && photoCache[id] && wanted.indexOf(id) < 0) wanted.push(id);
@@ -5524,7 +5544,7 @@ function pdfPrepare(doc, panels, url, gen) {
   var chain = Promise.resolve();
   wanted.forEach(function (id) {
     chain = chain.then(function () {
-      return pdfAddImage(doc, photoCache[id], gen).then(function (ref) { if (ref) images[id] = ref; });
+      return pdfAddImage(doc, photoCache[id], gen, grey).then(function (ref) { if (ref) images[id] = ref; });
     });
   });
   if (url) {
@@ -5816,6 +5836,7 @@ function pdfElText(el, g, page) {
 }
 
 function pdfEl(el, box, images, page) {
+  if (plateInk !== null && !onPlate(el)) return '';
   var g = elBoxPdf(box, el);
   var ops = 'q\n' + spin(el.rot || 0, g.cx, g.cy) + pdfInk(el) + (el.kind === 'text' ? strokeFor(el) : '');
   if (el.kind === 'rule') {
@@ -6066,6 +6087,159 @@ document.addEventListener('click', function (ev) {
   }
   var iss = issueByNo(t.getAttribute('data-shopissue'));
   if (iss) saveShopPdf(iss.panels || [], iss.format, issueUrl(iss.no), iss.no, sceneSlug() + '-' + iss.no + '-shop.pdf', iss.gen);
+});
+
+function inkName(hex) {
+  var known = INKS.filter(function (i) { return i[1] === hex; })[0];
+  return known ? known[0].toLowerCase() : 'ink-' + hex.slice(1);
+}
+
+function stockName(hex) {
+  var known = FILLS.filter(function (f) { return f[1] === hex; })[0];
+  return known ? known[0].toLowerCase() : hex;
+}
+
+function plateOfEl(el) {
+  var hex = inkOf(el);
+  if (el.kind === 'photo' && !twoTonePhoto(photoCache[el.photo])) return '';
+  return hex === '#ffffff' ? null : hex;
+}
+
+function onPlate(el) {
+  var p = plateOfEl(el);
+  return p === null || p === plateInk;
+}
+
+function platesOf(panels) {
+  var inks = [''];
+  panels.forEach(function (p) {
+    elsOf(p).forEach(function (e) {
+      var hex = plateOfEl(e);
+      if (hex && inks.indexOf(hex) < 0) inks.push(hex);
+    });
+  });
+  return inks;
+}
+
+function platePages(panels, hex) {
+  var out = [];
+  panels.forEach(function (p, i) {
+    if (elsOf(p).some(function (e) { return plateOfEl(e) === hex; })) out.push(i + 1);
+  });
+  return out;
+}
+
+function plateBox(pw, ph) {
+  var top = BLEED + ph;
+  return {
+    left: BLEED, top: top, w: pw, h: ph, bleed: BLEED,
+    cx: BLEED + pw / 2, cy: top - ph / 2,
+    x: BLEED + PAD_X, y: top - PAD_Y, cw: pw - PAD_X * 2, ch: ph - PAD_Y * 2
+  };
+}
+
+function plateOps(panels, i, box, images, url, issue, gen, hex, tint) {
+  plateInk = hex;
+  plateTint = !!tint;
+  var page = i + 1;
+  var panel = panels[i] || { h: '', body: '', photo: null };
+  if (page === 1) {
+    var cover = { issue: issue };
+    Object.keys(panel).forEach(function (k) { if (k !== 'issue') cover[k] = panel[k]; });
+    panel = cover;
+  }
+  var ops = 'q 0 0 ' + (box.w + 2 * BLEED).toFixed(2) + ' ' + (box.h + 2 * BLEED).toFixed(2) + ' re W n\n' +
+    pdfPanel(panel, page, panels.length, box, images, url, spreadGhosts(panels, page, box.h / box.w)) + 'Q\n';
+  if (hex === '') ops += '0 g ' + pdfSpeckle(gen, box, 'p' + page);
+  plateInk = null;
+  plateTint = false;
+  return ops;
+}
+
+function platesNote(panels, inks, issue) {
+  var lines = [(state.zine || 'STOOP ZINE') + ' №' + issue + ' — riso plates', '',
+    'One greyscale PDF per drum, a page per zine page in reading order, at the trimmed size',
+    'with an eighth of an inch of bleed and no crop marks. Black is where the ink goes.', ''];
+  inks.forEach(function (hex) {
+    var name = inkName(hex) + '.pdf';
+    lines.push('  ' + name + new Array(Math.max(2, 16 - name.length)).join(' ') + (hex
+      ? 'the ' + inkName(hex) + ' drum: pages ' + platePages(panels, hex).join(', ')
+      : 'the black drum: the pages\' own type and address, every cutting in black,\n' +
+        '                and colour photographs as greyscale'));
+  });
+  lines.push('  preview.pdf    every plate overprinted in its ink, on the stock', '');
+  var stock = [];
+  panels.forEach(function (p, i) { if (fillOf(p)) stock.push('  page ' + (i + 1) + ': print on ' + stockName(fillOf(p)) + ' stock'); });
+  lines.push(stock.length ? 'Stock:' : 'Stock: white throughout.');
+  return lines.concat(stock).join('\n') + '\n';
+}
+
+function writePlates(panels, formatId, url, issue, gen) {
+  var size = pageSize(formatId);
+  var pw = Number(size.pw), ph = Number(size.ph);
+  var mw = pw + 2 * BLEED, mh = ph + 2 * BLEED;
+  var box = plateBox(pw, ph);
+  var r = function (x0, y0, x1, y1) { return '[' + [x0, y0, x1, y1].map(function (v) { return v.toFixed(2); }).join(' ') + ']'; };
+  var boxes = '/MediaBox' + r(0, 0, mw, mh) + '/BleedBox' + r(0, 0, mw, mh) + '/TrimBox' + r(BLEED, BLEED, mw - BLEED, mh - BLEED);
+  var inks = platesOf(panels);
+  var files = [{ name: 'plates.txt', data: new TextEncoder().encode(platesNote(panels, inks, issue)) }];
+  var chain = Promise.resolve();
+  inks.forEach(function (hex) {
+    chain = chain.then(function () {
+      var doc = pdfDoc();
+      return pdfPrepare(doc, panels, url, gen, true).then(function (got) {
+        return pdfFinish(doc, panels.map(function (p, i) {
+          return { ops: plateOps(panels, i, box, got.images, url, issue, gen, hex, false), boxes: boxes };
+        }), got.resources).arrayBuffer();
+      }).then(function (buf) { files.push({ name: inkName(hex) + '.pdf', data: new Uint8Array(buf) }); });
+    });
+  });
+  chain = chain.then(function () {
+    var doc = pdfDoc();
+    return pdfPrepare(doc, panels, url, gen, true).then(function (got) {
+      var forms = [];
+      var pages = panels.map(function (p, i) {
+        var ops = pdfFill(p, box);
+        inks.forEach(function (hex) {
+          var num = doc.stream('/Type/XObject/Subtype/Form/BBox' + r(0, 0, mw, mh) +
+            '/Group<</S/Transparency/CS/DeviceRGB/I true>>/Resources<<' + got.resources + '>>',
+            pdfBytes(plateOps(panels, i, box, got.images, url, issue, gen, hex, true)));
+          forms.push('/P' + num + ' ' + num + ' 0 R');
+          ops += 'q /GS1 gs /P' + num + ' Do Q\n';
+        });
+        return { ops: ops, boxes: boxes };
+      });
+      var res = got.resources.indexOf('/XObject<<') >= 0
+        ? got.resources.replace('/XObject<<', '/XObject<<' + forms.join(''))
+        : got.resources + '/XObject<<' + forms.join('') + '>>';
+      return pdfFinish(doc, pages, res + '/ExtGState<</GS1<</BM/Multiply>>>>').arrayBuffer();
+    }).then(function (buf) { files.push({ name: 'preview.pdf', data: new Uint8Array(buf) }); });
+  });
+  return chain.then(function () { return zipFiles(files); });
+}
+
+function saveRisoPlates(panels, formatId, url, issue, gen) {
+  toast('Separating the plates…');
+  copierFlash();
+  return loadFaces().then(function () { return writePlates(panels, formatId, url, issue, gen); }).then(function (blob) {
+    downloadBlob(sceneSlug() + '-' + issue + '-riso.zip', blob);
+    var n = platesOf(panels).length;
+    toast(n + ' plate' + (n === 1 ? '' : 's') + ', a preview and a note on the stock. Hand the zip to the studio.');
+  }).catch(function (e) { toast('Could not write the plates: ' + e.message); });
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target.closest && ev.target.closest('#risobtn,[data-risoissue]');
+  if (!t) return;
+  if (t.id === 'risobtn') {
+    capturePanels();
+    if (!confirmSheet('Write riso plates')) return;
+    var ps = pressState();
+    saveRisoPlates(ps.panels, ps.format, issueUrl(ps.issue), ps.issue, genOf(ps));
+    return;
+  }
+  var iss = issueByNo(t.getAttribute('data-risoissue'));
+  if (iss) saveRisoPlates(iss.panels || [], iss.format, issueUrl(iss.no), iss.no, iss.gen);
 });
 
 function sceneSlug() {

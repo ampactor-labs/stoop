@@ -116,6 +116,7 @@ function renderShelf() {
         '<button class="btn quiet" data-reprintissue="' + esc(iss.no) + '">REPRINT</button>' +
         '<button class="btn quiet" data-pdfissue="' + esc(iss.no) + '">PDF</button>' +
         '<button class="btn quiet" data-shopissue="' + esc(iss.no) + '">SHOP PDF</button>' +
+        '<button class="btn quiet" data-risoissue="' + esc(iss.no) + '">RISO</button>' +
         '<button class="btn quiet" data-exportissue="' + esc(iss.no) + '">EXPORT</button>' +
         '</div>';
     }).join('');
