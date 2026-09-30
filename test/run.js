@@ -42,7 +42,8 @@ const suites = [
   ['the card', require('./24-card.js')],
   ['riso plates', require('./25-riso.js')],
   ['the distro', require('./26-distro.js')],
-  ['the pen', require('./27-pen.js')]
+  ['the pen', require('./27-pen.js')],
+  ['your own faces', require('./28-faces.js')]
 ];
 
 (async () => {

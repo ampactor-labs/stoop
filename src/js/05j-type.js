@@ -35,17 +35,18 @@ function typeButtons(el) {
 // Seven voices are too many to cycle through with one button, so they are a
 // list, each named for what it looks like.
 function voiceSelect(el) {
-  return '<select class="voicesel" data-elvoicesel="' + esc(el.id) + '" aria-label="Voice">' + VOICES.map(function (v) {
-    return '<option value="' + v + '"' + (voiceOf(el) === v ? ' selected' : '') + '>' + VOICE_LABEL[v] + '</option>';
+  return '<select class="voicesel" data-elvoicesel="' + esc(el.id) + '" aria-label="Voice">' + VOICES.concat(ownVoiceIds()).map(function (v) {
+    return '<option value="' + esc(v) + '"' + (voiceOf(el) === v ? ' selected' : '') + '>' + esc(VOICE_LABEL[v] || ownFaceLabel(v)) + '</option>';
   }).join('') + '</select>';
 }
 
 function setVoice(id, next) {
   var hit = findEl(id);
-  if (!hit || hit.el.kind !== 'text' || VOICES.indexOf(next) < 0) return;
-  updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
+  if (!hit || hit.el.kind !== 'text' || (VOICES.indexOf(next) < 0 && !ownFace(next))) return;
+  var own = ownFace(next);
+  updateEl(id, { voice: next, size: VOICE_SIZE[next] || 14, family: own ? own.name : undefined }, true);
   renderPress();
-  toast(VOICE_LABEL[next]);
+  toast(VOICE_LABEL[next] || ownFaceLabel(next));
 }
 
 document.addEventListener('change', function (ev) {

@@ -90,8 +90,8 @@ function elBody(el, pics, editable, editing, page) {
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '"' + tint + '>';
   }
   var voice = voiceOf(el);
-  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
-  var style = 'font-size:' + (el.size || 12) + 'px';
+  var cls = 'eltext v-' + (ownFace(voice) ? 'own' : voice) + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
+  var style = 'font-size:' + (el.size || 12) + 'px' + ownFaceStyle(voice);
   var text = shownText(el, page);
   if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(text) + '</div>';

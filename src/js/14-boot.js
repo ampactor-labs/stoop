@@ -241,7 +241,7 @@ function fillSettings() {
 
 // Photos load before the first paint so renders stay synchronous; the app is
 // usable either way, so a failed store degrades to text rather than a blank page.
-photoLoadAll().then(function () {
+Promise.all([photoLoadAll(), faceLoadAll()]).then(function () {
   hydrateFromSeed(readSeed());
   fillFormats();
   fillSettings();

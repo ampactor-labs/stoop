@@ -45,6 +45,8 @@ function isDisplayVoice(voice) {
 // The marker has a face of its own; the other display voices share Anton.
 function faceOf(el) {
   var voice = voiceOf(el);
+  var own = ownFace(voice);
+  if (own && own.parsed) return { f: own.fkey || 'F9', w: own.parsed.widths, face: own.parsed };
   var m = markerFaceLoaded();
   if (voice === 'marker' && m) return { f: 'F8', w: m.widths, face: m };
   if (isDisplayVoice(voice)) return displayFace();
@@ -54,6 +56,7 @@ function faceOf(el) {
 // Where the first baseline sits below the top of the box: for the page's own
 // face, exactly where the browser puts it; for a standard face, an em down.
 function firstBaseline(voice, size, lead) {
+  if (ownFace(voice)) return faceBaseline(ownFace(voice).parsed, size, lead);
   var f = voice === 'marker' && markerFaceLoaded() ? markerFaceLoaded() : pressFaceLoaded();
   return f && isDisplayVoice(voice) ? faceBaseline(f, size, lead) : size;
 }
@@ -234,7 +237,7 @@ function pdfElText(el, g, page) {
   var ops = '';
   if (el.ink === 'white') ops += rect(g) + ' f\n' + knockLetters(el);
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size);
-  var lead = size * (VOICE_LEAD[voice] || 1.45);
+  var lead = size * (ownFace(voice) ? 1.3 : (VOICE_LEAD[voice] || 1.45));
   var y = g.top - firstBaseline(voice, size, lead);
   var draw = '';
   // A cutting hangs over its box rather than losing a line, up to a little

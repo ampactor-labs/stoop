@@ -183,9 +183,10 @@ function pdfPrepare(doc, panels, url, gen, grey) {
   // is the headline on screen, glyph for glyph.
   var face = pressFaceLoaded();
   var marker = markerFaceLoaded();
-  var faceNum = 0, markerNum = 0;
+  var faceNum = 0, markerNum = 0, ownRes = '';
   if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
   if (marker) chain = chain.then(function () { return pdfEmbedFace(doc, marker).then(function (n) { markerNum = n; }); });
+  chain = chain.then(function () { return pdfOwnFaces(doc, panels).then(function (r) { ownRes = r; }); });
 
   return chain.then(function () {
     var xobjects = Object.keys(images).map(function (k) {
@@ -198,7 +199,7 @@ function pdfPrepare(doc, panels, url, gen, grey) {
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
       '/F9 ' + std('Helvetica') + ' 0 R/F10 ' + std('Times-Roman') + ' 0 R' +
-      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
+      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + ownRes + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
     return { images: images, resources: resources };
   });

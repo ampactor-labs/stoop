@@ -32,6 +32,7 @@
 /* A magazine's two faces, the ones every machine already has. */
 .v-sans { font-family: Arial, Helvetica, 'Liberation Sans', sans-serif; line-height: 1.3; }
 .v-serif { font-family: 'Times New Roman', Times, 'Liberation Serif', serif; line-height: 1.35; }
+.v-own { font-family: Arial, Helvetica, sans-serif; line-height: 1.3; }
 .eltext.caps { text-transform: uppercase; }
 .eltext.nocaps { text-transform: none; }
 .eltext.al-center { text-align: center; }

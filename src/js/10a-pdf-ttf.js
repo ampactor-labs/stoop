@@ -149,7 +149,7 @@ function pdfEmbedFace(doc, f) {
   var k = 1000 / f.upm;
   return deflate(f.bytes).then(function (packed) {
     var file = doc.stream('/Length1 ' + f.bytes.length + (packed ? '/Filter/FlateDecode' : ''), packed || f.bytes);
-    var base = (f.name === 'Knewave' ? 'STOOPM+' : 'STOOPP+') + (f.name || 'Anton');
+    var base = (f.own ? 'STOOPF+' : f.name === 'Knewave' ? 'STOOPM+' : 'STOOPP+') + String(f.name || 'Anton').replace(/[^A-Za-z0-9-]/g, '');
     var desc = doc.obj(['<</Type/FontDescriptor/FontName/' + base + '/Flags 32/FontBBox[' +
       f.bbox.map(function (v) { return Math.round(v * k); }).join(' ') + ']/ItalicAngle 0/Ascent ' +
       Math.round(f.ascent * k) + '/Descent ' + Math.round(f.descent * k) + '/CapHeight ' +

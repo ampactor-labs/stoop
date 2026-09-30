@@ -453,6 +453,7 @@ body.landing main { padding-top: 2.4rem; }
 
 .v-sans { font-family: Arial, Helvetica, 'Liberation Sans', sans-serif; line-height: 1.3; }
 .v-serif { font-family: 'Times New Roman', Times, 'Liberation Serif', serif; line-height: 1.35; }
+.v-own { font-family: Arial, Helvetica, sans-serif; line-height: 1.3; }
 .eltext.caps { text-transform: uppercase; }
 .eltext.nocaps { text-transform: none; }
 .eltext.al-center { text-align: center; }
@@ -838,6 +839,16 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
   </div>
 
   <div class="paper">
+    <h2>FACES</h2>
+    <div id="facelist"></div>
+    <div class="form-row">
+      <input type="file" id="fontfile" accept=".ttf,.otf,.woff,font/ttf,font/otf,font/woff" multiple hidden>
+      <button class="btn" id="fontbtn">ADD A FACE</button>
+    </div>
+    <p class="hint">A TrueType face of your own becomes a voice. It rides in every issue file and every PDF the way Anton and Knewave do, and the footer says what it weighs. A face with PostScript outlines, which most .otf files are, cannot go into a PDF here and is refused.</p>
+  </div>
+
+  <div class="paper">
     <h2>TAKE IN</h2>
     <input type="file" id="bundlefile" accept="text/html,.html" hidden>
     <button class="btn" id="bundlebtn">TAKE IN A FILE</button>
@@ -912,7 +923,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 333 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 343 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1158,9 +1169,9 @@ var photoMeta = {};
 function openPhotoDb() {
   return new Promise(function (resolve, reject) {
     if (!window.indexedDB) { reject(new Error('no indexeddb')); return; }
-    var req = indexedDB.open(PHOTO_DB, 2);
+    var req = indexedDB.open(PHOTO_DB, 3);
     req.onupgradeneeded = function () {
-      [PHOTO_STORE, META_STORE, MASTER_STORE].forEach(function (name) {
+      [PHOTO_STORE, META_STORE, MASTER_STORE, 'fonts'].forEach(function (name) {
         if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
       });
     };
@@ -2371,8 +2382,8 @@ function elBody(el, pics, editable, editing, page) {
     return '<img class="elphoto' + (el.crop ? ' fill' : '') + '" src="' + esc(src) + '" alt="' + esc(el.alt || '') + '"' + tint + '>';
   }
   var voice = voiceOf(el);
-  var cls = 'eltext v-' + voice + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
-  var style = 'font-size:' + (el.size || 12) + 'px';
+  var cls = 'eltext v-' + (ownFace(voice) ? 'own' : voice) + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
+  var style = 'font-size:' + (el.size || 12) + 'px' + ownFaceStyle(voice);
   var text = shownText(el, page);
   if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(text) + '</div>';
@@ -3427,17 +3438,18 @@ function typeButtons(el) {
 }
 
 function voiceSelect(el) {
-  return '<select class="voicesel" data-elvoicesel="' + esc(el.id) + '" aria-label="Voice">' + VOICES.map(function (v) {
-    return '<option value="' + v + '"' + (voiceOf(el) === v ? ' selected' : '') + '>' + VOICE_LABEL[v] + '</option>';
+  return '<select class="voicesel" data-elvoicesel="' + esc(el.id) + '" aria-label="Voice">' + VOICES.concat(ownVoiceIds()).map(function (v) {
+    return '<option value="' + esc(v) + '"' + (voiceOf(el) === v ? ' selected' : '') + '>' + esc(VOICE_LABEL[v] || ownFaceLabel(v)) + '</option>';
   }).join('') + '</select>';
 }
 
 function setVoice(id, next) {
   var hit = findEl(id);
-  if (!hit || hit.el.kind !== 'text' || VOICES.indexOf(next) < 0) return;
-  updateEl(id, { voice: next, size: VOICE_SIZE[next] }, true);
+  if (!hit || hit.el.kind !== 'text' || (VOICES.indexOf(next) < 0 && !ownFace(next))) return;
+  var own = ownFace(next);
+  updateEl(id, { voice: next, size: VOICE_SIZE[next] || 14, family: own ? own.name : undefined }, true);
   renderPress();
-  toast(VOICE_LABEL[next]);
+  toast(VOICE_LABEL[next] || ownFaceLabel(next));
 }
 
 document.addEventListener('change', function (ev) {
@@ -5751,7 +5763,7 @@ function pdfEmbedFace(doc, f) {
   var k = 1000 / f.upm;
   return deflate(f.bytes).then(function (packed) {
     var file = doc.stream('/Length1 ' + f.bytes.length + (packed ? '/Filter/FlateDecode' : ''), packed || f.bytes);
-    var base = (f.name === 'Knewave' ? 'STOOPM+' : 'STOOPP+') + (f.name || 'Anton');
+    var base = (f.own ? 'STOOPF+' : f.name === 'Knewave' ? 'STOOPM+' : 'STOOPP+') + String(f.name || 'Anton').replace(/[^A-Za-z0-9-]/g, '');
     var desc = doc.obj(['<</Type/FontDescriptor/FontName/' + base + '/Flags 32/FontBBox[' +
       f.bbox.map(function (v) { return Math.round(v * k); }).join(' ') + ']/ItalicAngle 0/Ascent ' +
       Math.round(f.ascent * k) + '/Descent ' + Math.round(f.descent * k) + '/CapHeight ' +
@@ -5924,9 +5936,10 @@ function pdfPrepare(doc, panels, url, gen, grey) {
 
   var face = pressFaceLoaded();
   var marker = markerFaceLoaded();
-  var faceNum = 0, markerNum = 0;
+  var faceNum = 0, markerNum = 0, ownRes = '';
   if (face) chain = chain.then(function () { return pdfEmbedFace(doc, face).then(function (n) { faceNum = n; }); });
   if (marker) chain = chain.then(function () { return pdfEmbedFace(doc, marker).then(function (n) { markerNum = n; }); });
+  chain = chain.then(function () { return pdfOwnFaces(doc, panels).then(function (r) { ownRes = r; }); });
 
   return chain.then(function () {
     var xobjects = Object.keys(images).map(function (k) {
@@ -5939,7 +5952,7 @@ function pdfPrepare(doc, panels, url, gen, grey) {
       '/F3 ' + std('Times-Bold') + ' 0 R/F4 ' + std('Courier-Bold') + ' 0 R' +
       '/F5 ' + std('Helvetica-BoldOblique') + ' 0 R/F6 ' + std('Times-Italic') + ' 0 R' +
       '/F9 ' + std('Helvetica') + ' 0 R/F10 ' + std('Times-Roman') + ' 0 R' +
-      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + '>>' +
+      (faceNum ? '/F7 ' + faceNum + ' 0 R' : '') + (markerNum ? '/F8 ' + markerNum + ' 0 R' : '') + ownRes + '>>' +
       (xobjects ? '/XObject<<' + xobjects + '>>' : '');
     return { images: images, resources: resources };
   });
@@ -6020,6 +6033,8 @@ function isDisplayVoice(voice) {
 
 function faceOf(el) {
   var voice = voiceOf(el);
+  var own = ownFace(voice);
+  if (own && own.parsed) return { f: own.fkey || 'F9', w: own.parsed.widths, face: own.parsed };
   var m = markerFaceLoaded();
   if (voice === 'marker' && m) return { f: 'F8', w: m.widths, face: m };
   if (isDisplayVoice(voice)) return displayFace();
@@ -6027,6 +6042,7 @@ function faceOf(el) {
 }
 
 function firstBaseline(voice, size, lead) {
+  if (ownFace(voice)) return faceBaseline(ownFace(voice).parsed, size, lead);
   var f = voice === 'marker' && markerFaceLoaded() ? markerFaceLoaded() : pressFaceLoaded();
   return f && isDisplayVoice(voice) ? faceBaseline(f, size, lead) : size;
 }
@@ -6181,7 +6197,7 @@ function pdfElText(el, g, page) {
   var ops = '';
   if (el.ink === 'white') ops += rect(g) + ' f\n' + knockLetters(el);
   if (voice === 'marker') return ops + pdfElMarker(el, g, face, size);
-  var lead = size * (VOICE_LEAD[voice] || 1.45);
+  var lead = size * (ownFace(voice) ? 1.3 : (VOICE_LEAD[voice] || 1.45));
   var y = g.top - firstBaseline(voice, size, lead);
   var draw = '';
   linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
@@ -6660,7 +6676,7 @@ function photosForFile(issues, no) {
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
-  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine'];
+  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine', 'facelist'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
@@ -7064,7 +7080,8 @@ function exportBackup() {
     card: state.card,
     distro: state.distro,
     press: state.press,
-    photos: photos
+    photos: photos,
+    faces: facesForBackup()
   };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   var url = URL.createObjectURL(blob);
@@ -7136,6 +7153,7 @@ function importBackup(raw, mode) {
   Object.keys(photos).forEach(function (id) {
     if (!photoCache[id]) { photoPut(id, photos[id]); added++; }
   });
+  takeFacesFromBackup(raw && raw.faces);
 
   if (mode === 'replace') {
     forgetUndo();
@@ -7482,7 +7500,7 @@ function fillSettings() {
   if (zn && document.activeElement !== zn) zn.value = state.zine || '';
 }
 
-photoLoadAll().then(function () {
+Promise.all([photoLoadAll(), faceLoadAll()]).then(function () {
   hydrateFromSeed(readSeed());
   fillFormats();
   fillSettings();
@@ -7515,6 +7533,225 @@ document.addEventListener('keydown', function (e) {
   if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
   if (e.key === 'Escape') { renderBar(); e.target.blur(); }
 });
+var FONT_STORE = 'fonts';
+var ownFaces = [];
+
+function ownFace(voice) {
+  if (typeof voice !== 'string' || voice.indexOf('face:') !== 0) return null;
+  var id = voice.slice(5);
+  return ownFaces.filter(function (f) { return f.id === id; })[0] || null;
+}
+function ownVoiceIds() { return ownFaces.map(function (f) { return 'face:' + f.id; }); }
+function ownFaceLabel(voice) { var f = ownFace(voice); return f ? f.name.toUpperCase() : 'SANS'; }
+function ownFaceStyle(voice) { var f = ownFace(voice); return f ? ";font-family:'" + f.name.replace(/['\"]/g, '') + "'" : ''; }
+
+function faceNameOf(bytes, fallback) {
+  try {
+    var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (var i = 0, n = dv.getUint16(4); i < n; i++) {
+      var at = 12 + i * 16;
+      if (String.fromCharCode(bytes[at], bytes[at + 1], bytes[at + 2], bytes[at + 3]) !== 'name') continue;
+      var off = dv.getUint32(at + 8), count = dv.getUint16(off + 2), strings = off + dv.getUint16(off + 4);
+      var best = '';
+      for (var r = 0; r < count; r++) {
+        var rec = off + 6 + r * 12;
+        var nameId = dv.getUint16(rec + 6);
+        if (dv.getUint16(rec) !== 3 || (nameId !== 1 && nameId !== 4)) continue;
+        var len = dv.getUint16(rec + 8), so = strings + dv.getUint16(rec + 10), s = '';
+        for (var k = 0; k + 1 < len; k += 2) s += String.fromCharCode(dv.getUint16(so + k));
+        if (nameId === 1 || !best) best = s;
+      }
+      if (best) return best;
+    }
+  } catch (e) {}
+  return String(fallback || 'Face').replace(/\.[a-z0-9]+$/i, '');
+}
+
+function faceId(bytes) {
+  var h = 2166136261;
+  for (var i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 16777619) >>> 0; }
+  return 'fc' + h.toString(36) + bytes.length.toString(36);
+}
+
+function cleanFaceName(s) {
+  return String(s || '').replace(/[^A-Za-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40) || 'Face';
+}
+
+function faceStyleRule(f) {
+  var s = '';
+  for (var i = 0; i < f.bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, f.bytes.subarray(i, i + 0x8000));
+  return '@font-face{font-family:' + f.name + ';font-display:block;src:url(data:font/ttf;base64,' + btoa(s) + ') format("truetype")}';
+}
+
+function renderFaceStyle() {
+  var st = document.getElementById('ownfaces');
+  if (!st) {
+    st = document.createElement('style');
+    st.id = 'ownfaces';
+    document.head.appendChild(st);
+  }
+  var want = ownFaces.map(faceStyleRule).join('\n');
+  if (st.textContent !== want) st.textContent = want;
+}
+
+function renderFaces() {
+  var box = document.getElementById('facelist');
+  if (!box) return;
+  box.innerHTML = ownFaces.length ? ownFaces.map(function (f) {
+    return '<div class="sub-row"><span class="meta"><b style="font-family:&quot;' + esc(f.name) + '&quot;">' + esc(f.name) + '</b>' +
+      '<small>' + Math.round(f.bytes.length / 1024) + ' KB · a voice on every cutting</small></span>' +
+      '<button class="log-del" data-delface="' + esc(f.id) + '" title="Take the face out" aria-label="Remove this face">✕</button></div>';
+  }).join('') : '<p class="hint">No faces of your own yet. Anton and Knewave are always here.</p>';
+}
+
+function facesFromPage() {
+  var st = document.getElementById('ownfaces');
+  if (!st) return [];
+  var out = [];
+  var re = /font-family:([^;]+);[^}]*url\(data:font\/ttf;base64,([^)]+)\)/g;
+  var m;
+  while ((m = re.exec(st.textContent))) {
+    var bin = atob(m[2]);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    out.push({ id: faceId(bytes), name: cleanFaceName(m[1]), bytes: bytes });
+  }
+  return out;
+}
+
+function takeFace(rec) {
+  try {
+    rec.parsed = parseTrueType(rec.bytes);
+    rec.parsed.name = rec.name;
+    if (!ownFaces.some(function (f) { return f.id === rec.id; })) ownFaces.push(rec);
+    return true;
+  } catch (e) { return false; }
+}
+
+function faceLoadAll() {
+  return openPhotoDb().then(function (db) {
+    return new Promise(function (resolve) {
+      var tx = db.transaction(FONT_STORE, 'readonly');
+      var keys = tx.objectStore(FONT_STORE).getAllKeys();
+      var vals = tx.objectStore(FONT_STORE).getAll();
+      tx.oncomplete = function () {
+        (keys.result || []).forEach(function (k, i) {
+          var v = vals.result[i];
+          if (v && v.bytes) takeFace({ id: String(k), name: cleanFaceName(v.name), bytes: new Uint8Array(v.bytes) });
+        });
+        resolve();
+      };
+      tx.onerror = function () { resolve(); };
+    });
+  }).catch(function () {}).then(function () {
+    facesFromPage().forEach(function (f) {
+      if (!ownFaces.some(function (o) { return o.id === f.id; })) takeFace(f);
+    });
+    renderFaceStyle();
+    renderFaces();
+  });
+}
+
+function sfntKind(bytes) {
+  var tag = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]);
+  if (tag === 'OTTO') return 'cff';
+  if (tag === 'wOFF') return String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]) === 'OTTO' ? 'cff' : 'woff';
+  if (tag === 'true' || (bytes[0] === 0 && bytes[1] === 1 && bytes[2] === 0 && bytes[3] === 0)) return 'ttf';
+  return '';
+}
+
+function addFaceFile(file) {
+  return file.arrayBuffer().then(function (buf) {
+    var bytes = new Uint8Array(buf);
+    var kind = sfntKind(bytes);
+    if (kind === 'cff') {
+      toast('That face has PostScript outlines, which the press cannot put in a PDF. A TrueType .ttf, or a .woff of one, works.');
+      return;
+    }
+    if (!kind) { toast('That is not a typeface the press can read. A TrueType .ttf, or a .woff of one, works.'); return; }
+    return (kind === 'woff' ? woffToSfnt(bytes) : Promise.resolve(bytes)).then(function (sfnt) {
+      var rec = { id: faceId(sfnt), name: cleanFaceName(faceNameOf(sfnt, file.name)), bytes: sfnt };
+      if (ownFaces.some(function (f) { return f.id === rec.id; })) { toast(rec.name + ' is here already.'); return; }
+      if (!takeFace(rec)) { toast('Could not read that face: its tables are not where a TrueType keeps them, so it was not taken in.'); return; }
+      return photoTx('readwrite', function (s) { return s.put({ name: rec.name, bytes: rec.bytes.buffer }, rec.id); }, FONT_STORE)
+        .catch(function () { toast('Face kept in memory only — storage unavailable'); })
+        .then(function () {
+          facesReady = null;
+          renderFaceStyle();
+          renderFaces();
+          renderPress();
+          toast(rec.name + ' is a voice now. It rides in every file and every PDF this press writes.');
+        });
+    }).catch(function () { toast('Could not read that face, so it was not taken in.'); });
+  });
+}
+
+function removeFace(id) {
+  ownFaces = ownFaces.filter(function (f) { return f.id !== id; });
+  photoTx('readwrite', function (s) { return s.delete(id); }, FONT_STORE).catch(function () {});
+  facesReady = null;
+  renderFaceStyle();
+  renderFaces();
+  renderPress();
+  toast('Face removed. Cuttings set in it fall back to the sans until it is added again.');
+}
+
+function pdfOwnFaces(doc, panels) {
+  var used = [];
+  panels.forEach(function (p) {
+    elsOf(p).forEach(function (e) {
+      var f = e.kind === 'text' && ownFace(e.voice);
+      if (f && used.indexOf(f) < 0) used.push(f);
+    });
+  });
+  var chain = Promise.resolve('');
+  used.forEach(function (f, i) {
+    chain = chain.then(function (res) {
+      f.parsed.own = true;
+      return pdfEmbedFace(doc, f.parsed).then(function (n) { f.fkey = 'F' + (11 + i); return res + '/' + f.fkey + ' ' + n + ' 0 R'; });
+    });
+  });
+  return chain;
+}
+
+function facesForBackup() {
+  return ownFaces.map(function (f) {
+    var s = '';
+    for (var i = 0; i < f.bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, f.bytes.subarray(i, i + 0x8000));
+    return { id: f.id, name: f.name, data: btoa(s) };
+  });
+}
+
+function takeFacesFromBackup(list) {
+  (Array.isArray(list) ? list : []).forEach(function (f) {
+    if (!f || !f.id || !f.data || ownFaces.some(function (o) { return o.id === f.id; })) return;
+    try {
+      var bin = atob(f.data);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      var rec = { id: String(f.id), name: cleanFaceName(f.name), bytes: bytes };
+      if (takeFace(rec)) photoTx('readwrite', function (s) { return s.put({ name: rec.name, bytes: rec.bytes.buffer }, rec.id); }, FONT_STORE).catch(function () {});
+    } catch (e) {}
+  });
+  facesReady = null;
+  renderFaceStyle();
+  renderFaces();
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target;
+  if (t.closest && t.closest('#fontbtn')) { document.getElementById('fontfile').click(); return; }
+  var del = t.closest && t.closest('[data-delface]');
+  if (del) removeFace(del.getAttribute('data-delface'));
+});
+var fontInput = document.getElementById('fontfile');
+if (fontInput) {
+  fontInput.addEventListener('change', function (e) {
+    var files = Array.prototype.slice.call(e.target.files || []);
+    files.reduce(function (chain, f) { return chain.then(function () { return addFaceFile(f); }); }, Promise.resolve());
+    e.target.value = '';
+  });
+}
 
 })();
 </script>

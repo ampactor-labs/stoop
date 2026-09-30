@@ -58,7 +58,7 @@ function photosForFile(issues, no) {
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
-  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine'];
+  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine', 'facelist'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);

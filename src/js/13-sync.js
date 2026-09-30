@@ -23,7 +23,8 @@ function exportBackup() {
     card: state.card,
     distro: state.distro,
     press: state.press,
-    photos: photos
+    photos: photos,
+    faces: facesForBackup()
   };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   var url = URL.createObjectURL(blob);
@@ -99,6 +100,7 @@ function importBackup(raw, mode) {
   Object.keys(photos).forEach(function (id) {
     if (!photoCache[id]) { photoPut(id, photos[id]); added++; }
   });
+  takeFacesFromBackup(raw && raw.faces);
 
   if (mode === 'replace') {
     forgetUndo();

@@ -17,9 +17,9 @@ var photoMeta = {};
 function openPhotoDb() {
   return new Promise(function (resolve, reject) {
     if (!window.indexedDB) { reject(new Error('no indexeddb')); return; }
-    var req = indexedDB.open(PHOTO_DB, 2);
+    var req = indexedDB.open(PHOTO_DB, 3);
     req.onupgradeneeded = function () {
-      [PHOTO_STORE, META_STORE, MASTER_STORE].forEach(function (name) {
+      [PHOTO_STORE, META_STORE, MASTER_STORE, 'fonts'].forEach(function (name) {
         if (!req.result.objectStoreNames.contains(name)) req.result.createObjectStore(name);
       });
     };
