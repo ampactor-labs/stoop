@@ -118,7 +118,11 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
 // A flipped panel is the same drawing rotated half a turn about its own
 // centre, which is the one place this file has to think in two directions at
 // once. Everything inside the q/Q pair is drawn as though it were upright.
-function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
+// creep, when given, is how far this sheet's pages move toward the spine:
+// inner sheets of a stitched booklet stick out at the fore-edge and are
+// trimmed, so their content is walked inward by a folded sheet's thickness
+// for every sheet outside them, and the margins line up after the blade.
+function pdfSheetContent(sheet, panels, geom, images, url, issue, gen, creep) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
@@ -133,7 +137,8 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     // The panel clips what hangs over its edge, as it does on screen and in
     // the browser's print; without it a cutting printed onto its neighbour.
     ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
-      box.h.toFixed(2) + ' re W n\n' + pdfFill(panel, box);
+      box.h.toFixed(2) + ' re W n\n' + (creep ? 'q 1 0 0 1 ' + (i === 0 ? creep : -creep).toFixed(2) + ' 0 cm\n' : '') +
+      pdfFill(panel, box);
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
@@ -141,7 +146,7 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
       ops += inner;
     }
     // Toner lands on top of whatever the page is printed on.
-    ops += 'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
+    ops += (creep ? 'Q\n' : '') + 'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
   });
   return ops;
 }
@@ -223,10 +228,12 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
   var geom = pdfLayout(formatId);
+  var signatures = plan.sheets.length / 2;
   return pdfPrepare(doc, panels, url, gen).then(function (got) {
-    return pdfFinish(doc, plan.sheets.map(function (sheet) {
+    return pdfFinish(doc, plan.sheets.map(function (sheet, i) {
+      var creep = plan.format.kind === 'saddle' && signatures >= 3 ? Math.floor(i / 2) * 0.57 : 0;
       return {
-        ops: pdfSheetContent(sheet, panels, geom, got.images, url, issue, gen),
+        ops: pdfSheetContent(sheet, panels, geom, got.images, url, issue, gen, creep),
         boxes: '/MediaBox[0 0 ' + geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']'
       };
     }), got.resources);

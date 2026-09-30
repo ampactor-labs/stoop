@@ -60,6 +60,48 @@ module.exports = async function booklet(browser, ok) {
     ok('on its own paper', new RegExp('/MediaBox\\[0 0 ' + paperW.replace('.', '\\.')).test(pdf));
   }
 
+  // ---- creep. From three sheets up, each inner sheet's pages walk toward
+  // the spine by a folded sheet's thickness for every sheet outside them.
+  await page.selectOption('#formatsel', 'saddle16');
+  await page.waitForTimeout(700);
+  await go('#paper');
+  const [cdl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
+  const cpdf = fs.readFileSync(await cdl.path(), 'latin1');
+  await go('#press');
+  const csides = [...cpdf.matchAll(/<<\/Length \d+>>\nstream\n([\s\S]*?)\nendstream/g)].map(m => m[1]).filter(s => /re W n/.test(s));
+  const creepOf = (side) => [...side.matchAll(/re W n\nq 1 0 0 1 (-?[\d.]+) 0 cm\n/g)].map(m => Number(m[1]));
+  ok('INNER SHEETS CREEP TOWARD THE SPINE, 0.57 POINTS A SHEET', csides.length === 8 &&
+     creepOf(csides[2]).join(',') === '0.57,-0.57' && creepOf(csides[3]).join(',') === '0.57,-0.57' &&
+     creepOf(csides[6]).join(',') === '1.71,-1.71', csides.map(s => creepOf(s).join('/')).join(' | '));
+  ok('and the outer sheet stays where it was printed', creepOf(csides[0]).length === 0 && creepOf(csides[1]).length === 0);
+  const ocheck = await (async () => {
+    await page.selectOption('#formatsel', 'saddle8');
+    await page.waitForTimeout(500);
+    await go('#paper');
+    const [odl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
+    const o = fs.readFileSync(await odl.path(), 'latin1');
+    await go('#press');
+    return !/re W n\nq 1 0 0 1 -?[\d.]+ 0 cm\n/.test(o);
+  })();
+  ok('two sheets do not creep', ocheck);
+
+  // ---- a folded card: one sheet folded once, the saddle of a single sheet.
+  ok('A FOLDED CARD IS OFFERED ON EITHER PAPER', offered.includes('card4') && offered.includes('card4a4'));
+  await page.selectOption('#formatsel', 'card4');
+  await page.waitForTimeout(700);
+  ok('the card shows its four pages, in four chips', (await page.locator('#sheetzone .panel[data-page]').count()) === 4 &&
+     (await page.locator('#pagestrip .pchip').count()) === 4);
+  // The numbers put on at thirty-two pages came along with pages 2 and 3.
+  await go('#paper');
+  const [kdl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
+  const kpdf = fs.readFileSync(await kdl.path(), 'latin1');
+  await go('#press');
+  const ksides = [...kpdf.matchAll(/<<\/Length \d+>>\nstream\n([\s\S]*?)\nendstream/g)].map(m => m[1]).filter(s => /re W n/.test(s))
+    .map(s => [...s.matchAll(/BT \/F1 6\.75 Tf 1 0 0 1 ([\d.]+) [\d.]+ Tm \((\d+)\) Tj/g)].map(m => ({ x: Number(m[1]), n: Number(m[2]) }))
+      .sort((a, b) => a.x - b.x).map(f => f.n).join(','));
+  ok('THE CARD IS ONE SHEET: THE COVERS OUTSIDE, TWO AND THREE INSIDE, LEFT TO RIGHT', ksides.length === 2 && ksides[0] === '' && ksides[1] === '2,3' &&
+     /\/MediaBox\[0 0 792\.00 612\.00\]/.test(kpdf), ksides.join(' | '));
+
   ok('no script errors around booklets', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();
 };

@@ -73,6 +73,8 @@ function siteReadme(latest) {
     '  catalog.csv     the shelf as a library catalogues it, one row per issue\n' +
     '  distro/         the zines this scene carries, when it carries any, each at\n' +
     '                  distro/<name>/NN/ with its PDF, as its own scene\'s file\n\n' +
+    'Any one of the issue pages is already an itch.io or Neocities upload on its\n' +
+    'own: one HTML file, nothing to build.\n\n' +
     (where
       ? 'The back covers point at ' + where + '/01/ and so on, so this folder has to be\n' +
         'what ' + where + '/ serves for the codes to land.\n'

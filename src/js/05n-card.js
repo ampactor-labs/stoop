@@ -59,7 +59,7 @@ function physicalOf(formatId) {
     ? Math.round(pw / 72 * 25.4) + ' × ' + Math.round(ph / 72 * 25.4) + ' mm'
     : +(pw / 72).toFixed(2) + ' × ' + +(ph / 72).toFixed(2) + ' in';
   var bound = f.kind === 'onecut' ? 'one sheet folded and cut'
-    : (f.pages / 4) + ' sheet' + (f.pages > 4 ? 's' : '') + ' saddle-stitched';
+    : f.pages === 4 ? 'one sheet folded once' : (f.pages / 4) + ' sheets saddle-stitched';
   return dims + ', ' + f.pages + ' pages, ' + bound;
 }
 

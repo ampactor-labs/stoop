@@ -900,7 +900,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
       <button class="btn" id="testsheetbtn">PRINT TEST SHEET</button>
       <button class="btn quiet" id="swaplayoutbtn">SWAP FOLD (A)</button>
     </div>
-    <p class="hint">Print a numbered test sheet first and fold it. If the numbers come out shuffled, swap the fold and test again.</p>
+    <p class="hint">Print a numbered test sheet first and fold it. If the numbers come out shuffled, swap the fold and test again. A sixteen-page one-sheet fold is not offered yet: it has to be folded on paper before it ships.</p>
     <details class="foldguide">
       <summary>How to fold one sheet into eight pages</summary>
       <ol class="fold-steps">
@@ -923,7 +923,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 343 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 344 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1780,6 +1780,12 @@ var FORMATS = {
 };
 
 var FORMAT_IDS = ['fold8', 'fold8a4'];
+['letter', 'a4'].forEach(function (paper) {
+  var id = paper === 'a4' ? 'card4a4' : 'card4';
+  FORMATS[id] = { label: 'Folded card \u00b7 4 pages \u00b7 one sheet \u00b7 ' + PAPER[paper].label, kind: 'saddle', pages: 4, paper: paper, folds: false };
+  FORMAT_IDS.push(id);
+});
+
 [8, 12, 16, 20, 24, 28, 32].forEach(function (n) {
   ['letter', 'a4'].forEach(function (paper) {
     var id = 'saddle' + n + (paper === 'a4' ? 'a4' : '');
@@ -3761,7 +3767,7 @@ function physicalOf(formatId) {
     ? Math.round(pw / 72 * 25.4) + ' × ' + Math.round(ph / 72 * 25.4) + ' mm'
     : +(pw / 72).toFixed(2) + ' × ' + +(ph / 72).toFixed(2) + ' in';
   var bound = f.kind === 'onecut' ? 'one sheet folded and cut'
-    : (f.pages / 4) + ' sheet' + (f.pages > 4 ? 's' : '') + ' saddle-stitched';
+    : f.pages === 4 ? 'one sheet folded once' : (f.pages / 4) + ' sheets saddle-stitched';
   return dims + ', ' + f.pages + ' pages, ' + bound;
 }
 
@@ -5881,7 +5887,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
   return ops + pdfPasteup(panel, box, images, ghosts, page);
 }
 
-function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
+function pdfSheetContent(sheet, panels, geom, images, url, issue, gen, creep) {
   var ops = '';
   sheet.slots.forEach(function (slot, i) {
     var box = panelBox(geom, sheet, i);
@@ -5894,14 +5900,15 @@ function pdfSheetContent(sheet, panels, geom, images, url, issue, gen) {
     var inner = pdfPanel(panel, slot.page, panels.length, box, images, url,
       spreadGhosts(panels, slot.page, box.h / box.w));
     ops += 'q ' + box.left.toFixed(2) + ' ' + (box.top - box.h).toFixed(2) + ' ' + box.w.toFixed(2) + ' ' +
-      box.h.toFixed(2) + ' re W n\n' + pdfFill(panel, box);
+      box.h.toFixed(2) + ' re W n\n' + (creep ? 'q 1 0 0 1 ' + (i === 0 ? creep : -creep).toFixed(2) + ' 0 cm\n' : '') +
+      pdfFill(panel, box);
     if (slot.flip) {
       ops += 'q -1 0 0 -1 ' + (2 * box.cx).toFixed(2) + ' ' + (2 * box.cy).toFixed(2) + ' cm\n' +
         inner + 'Q\n';
     } else {
       ops += inner;
     }
-    ops += 'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
+    ops += (creep ? 'Q\n' : '') + 'Q\n0 g ' + pdfSpeckle(gen, box, 'p' + slot.page);
   });
   return ops;
 }
@@ -5975,10 +5982,12 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
   var doc = pdfDoc();
   var plan = impose(formatId, hand);
   var geom = pdfLayout(formatId);
+  var signatures = plan.sheets.length / 2;
   return pdfPrepare(doc, panels, url, gen).then(function (got) {
-    return pdfFinish(doc, plan.sheets.map(function (sheet) {
+    return pdfFinish(doc, plan.sheets.map(function (sheet, i) {
+      var creep = plan.format.kind === 'saddle' && signatures >= 3 ? Math.floor(i / 2) * 0.57 : 0;
       return {
-        ops: pdfSheetContent(sheet, panels, geom, got.images, url, issue, gen),
+        ops: pdfSheetContent(sheet, panels, geom, got.images, url, issue, gen, creep),
         boxes: '/MediaBox[0 0 ' + geom.w.toFixed(2) + ' ' + geom.h.toFixed(2) + ']'
       };
     }), got.resources);
@@ -6937,6 +6946,8 @@ function siteReadme(latest) {
     '  catalog.csv     the shelf as a library catalogues it, one row per issue\n' +
     '  distro/         the zines this scene carries, when it carries any, each at\n' +
     '                  distro/<name>/NN/ with its PDF, as its own scene\'s file\n\n' +
+    'Any one of the issue pages is already an itch.io or Neocities upload on its\n' +
+    'own: one HTML file, nothing to build.\n\n' +
     (where
       ? 'The back covers point at ' + where + '/01/ and so on, so this folder has to be\n' +
         'what ' + where + '/ serves for the codes to land.\n'

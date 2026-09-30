@@ -55,11 +55,19 @@ var FORMATS = {
   }
 };
 
+// A folded card: one sheet folded once, four pages, no cut and no staple. It
+// is the saddle of a single sheet, so it imposes the way a saddle does.
+var FORMAT_IDS = ['fold8', 'fold8a4'];
+['letter', 'a4'].forEach(function (paper) {
+  var id = paper === 'a4' ? 'card4a4' : 'card4';
+  FORMATS[id] = { label: 'Folded card \u00b7 4 pages \u00b7 one sheet \u00b7 ' + PAPER[paper].label, kind: 'saddle', pages: 4, paper: paper, folds: false };
+  FORMAT_IDS.push(id);
+});
+
 // Saddle-stitched signatures from eight pages to thirty-two, on either paper:
 // saddle8, saddle8a4, and so on. Past thirty-two a desk stapler no longer
 // reaches through the fold, and the middle pages creep out far enough that a
-// shop has to trim them.
-var FORMAT_IDS = ['fold8', 'fold8a4'];
+// shop has to trim them; the PDF walks the inner pages in to allow for it.
 [8, 12, 16, 20, 24, 28, 32].forEach(function (n) {
   ['letter', 'a4'].forEach(function (paper) {
     var id = 'saddle' + n + (paper === 'a4' ? 'a4' : '');
