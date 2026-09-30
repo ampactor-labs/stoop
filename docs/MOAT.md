@@ -2,6 +2,10 @@
 
 What the field does on 28 September 2026, what stoop does that none of it does, and how to widen that gap. PLAN.md surveyed the field in August and drew the destination: a press, a format and an address convention, never a platform. This document re-runs the survey a month on, with the colour, type and print-shop work landed, and designs the next stretch of the route. The sources are listed at the end.
 
+## Where this stands (30 September 2026)
+
+All eight expansions below are built, each as one commit with its suite green on a full run, in the order given: the card, the feed and the reply (`24-card`), riso plates (`25-riso`), the distro (`26-distro`), the pen (`27-pen`), a scene's own faces (`28-faces`), creep and the folded card (in `21-booklet`), and the two sentences. The gates below were written before the suites were numbered and say `23-card` to `27-faces`; the suites are `24` to `28`. Of the micro formats, the four-page card shipped, being the saddle of a single sheet; the sixteen-page one-sheet fold did not, because its imposition has to be folded on paper first, and the paper drawer says so.
+
 ## 1. The field
 
 Nine lanes. In each, what the tools do, what they charge, and where the work lives.

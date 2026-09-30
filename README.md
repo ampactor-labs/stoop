@@ -186,7 +186,7 @@ node test/run.js
 - a drag in pen mode leaving one cutting with its points inside its box, a second stroke joining it, and the drawing reaching the PDF as lines in its ink;
 - Liberation Sans taken in as a face, measured the same on screen and in the PDF's width table, embedded as TrueType, carried by the file handed on, and a PostScript face refused.
 
-On 28 September 2026, in a cloud container with Chromium, a full run passed all 346 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
+On 30 September 2026, in a cloud container with Chromium, a full run passed all 453 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
 
 CI runs `check.sh` and nothing else, the same check the pre-commit hook runs. [CONTRIBUTING.md](CONTRIBUTING.md) asks for the browser suites before any commit that touches `src/js/` or the press. Nothing tests printing on real paper, folding and cutting, a copy shop's output, a real phone (the suites use a phone-sized window), browsers other than Chromium, or scanning the QR code with a camera.
 
@@ -199,7 +199,7 @@ Everything lives in the browser that made it. There is no server to fall back on
 - **A local copy and the hosted page keep their work apart.** Work done in `index.html` opened from disk does not appear at https://ampactor.dev/stoop/, and the other way round. Export and merge carries it across.
 - **Back issues travel with their covers only.** A handed-on file carries each back issue's cover photograph; its other photographs show as marked places that say which issue file holds them.
 - **A photograph that arrives in a file cannot be lightened or given another look.** Its original stays on the device that took it in.
-- **A text-only issue is mostly press.** Every issue file carries the press, about 283 KB, however little the issue holds.
+- **A text-only issue is mostly press.** Every issue file carries the press, about 344 KB, however little the issue holds, and a face of the scene's own adds its whole file to that.
 - **Photographs make heavy files.** An issue with a colour photograph on every page is about 3 MB, which is the photographs. Screening a photo to grain or dots makes it several times lighter.
 - **Colour runs to the edge only at a print shop.** A page colour floods the whole page, and most home printers stop about a quarter inch short of the paper's edge, which is what the faint line on each page shows. **PDF FOR A PRINT SHOP** carries the bleed a shop needs to trim it clean.
 - **The sixteen-page one-sheet fold is not offered.** Its imposition has to be folded on paper before it ships; the four-page card is offered, being the saddle of a single sheet, which the booklets already prove.
