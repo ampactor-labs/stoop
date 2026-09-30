@@ -80,6 +80,7 @@ function elBody(el, pics, editable, editing, page) {
   if (el.kind === 'box') return '';
   if (el.kind === 'stamp') return stampHtml(el);
   if (el.kind === 'qr') return qrSvg(el);
+  if (el.kind === 'draw') return drawSvg(el);
   if (el.kind === 'photo') {
     var src = el.photo && pics[el.photo];
     // A back issue's photographs ride in that issue's own file, not in every

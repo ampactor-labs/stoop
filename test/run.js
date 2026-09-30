@@ -41,7 +41,8 @@ const suites = [
   ['the table', require('./23-frame.js')],
   ['the card', require('./24-card.js')],
   ['riso plates', require('./25-riso.js')],
-  ['the distro', require('./26-distro.js')]
+  ['the distro', require('./26-distro.js')],
+  ['the pen', require('./27-pen.js')]
 ];
 
 (async () => {

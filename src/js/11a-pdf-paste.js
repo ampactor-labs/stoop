@@ -279,6 +279,8 @@ function pdfEl(el, box, images, page) {
     ops += pdfElStamp(el, g);
   } else if (el.kind === 'qr') {
     ops += pdfElQr(el, g);
+  } else if (el.kind === 'draw') {
+    ops += pdfElDraw(el, g);
   } else {
     ops += pdfElText(el, g, page);
   }

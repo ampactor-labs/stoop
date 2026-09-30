@@ -93,7 +93,7 @@ function pdfInk(el) {
 
 function inkable(el) {
   if (el.kind === 'photo') return twoTonePhoto(photoCache[el.photo]);
-  return el.kind === 'text' || el.kind === 'box' || el.kind === 'rule' || el.kind === 'stamp' || el.kind === 'qr';
+  return el.kind === 'text' || el.kind === 'box' || el.kind === 'rule' || el.kind === 'stamp' || el.kind === 'qr' || el.kind === 'draw';
 }
 
 function inkSwatches(el) {

@@ -63,6 +63,7 @@ function lookHtml(el) {
   if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'SOLID' : 'OUTLINE']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME'], ['elfillpage', 'FILL THE PAGE']);
   if (el.kind === 'photo' && photoMeta[el.photo]) b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER']);
+  if (el.kind === 'draw') b.push(['elthinner', 'THINNER'], ['elthicker', 'THICKER'], ['elpenmore', 'DRAW MORE']);
   return btnRow(b, el.id) + inkSwatches(el);
 }
 

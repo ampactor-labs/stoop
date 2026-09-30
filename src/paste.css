@@ -49,6 +49,15 @@
    box it sits in and not, as cqh falls back to, by the window. */
 .elstamp { width: 100%; height: 100%; position: relative; color: var(--ink); container-type: size; }
 .stampsvg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* A drawing: strokes in the cutting's ink, their width in pixels whatever
+   the box is stretched to. The live stroke sits on the panel until it lands. */
+.el-draw { color: var(--ink); }
+.drawsvg, .penlive svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+.drawsvg polyline, .penlive polyline { vector-effect: non-scaling-stroke; }
+.penlive { position: absolute; inset: 0; pointer-events: none; z-index: 4; color: var(--ink); }
+body[data-pen] #sheetzone .panel, body[data-pen] #sheetzone .el { cursor: crosshair; touch-action: none; }
+body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
+.rail .btn.on { background: var(--fg); color: var(--bg); }
 .stamptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Anton, Impact, sans-serif; text-transform: uppercase; font-size: 1px; white-space: nowrap; }
 .el-stamp .stamptext { font-size: 62cqh; }
 .stamps { display: none; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .2rem 0 .6rem; }
