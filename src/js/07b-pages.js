@@ -44,10 +44,14 @@ function reachHtml(e) {
     [e.t, e.r, e.b, e.l].map(function (on) { return on ? '1px' : '0'; }).join(' ') + '"></div>';
 }
 
-function addrHtml(url) {
-  return url ? '<div class="addr"><img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' +
-    esc(url.replace(/^https?:\/\//, '')) + '</span></div>' : '';
+// The address, its code, and under it the line a reader types to write
+// back: the same page at #reply, where the press opens on the piece form.
+function addrInner(url) {
+  var shown = url.replace(/^https?:\/\//, '');
+  return '<img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' + esc(shown) +
+    '<small class="reply">write back: ' + esc(shown) + '#reply</small></span>';
 }
+function addrHtml(url) { return url ? '<div class="addr">' + addrInner(url) + '</div>' : ''; }
 
 // One page's face, everything on it that prints.
 function panelFaceHtml(panels, page, pics, url, issue, aspect) {

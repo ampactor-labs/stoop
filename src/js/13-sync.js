@@ -20,6 +20,7 @@ function exportBackup() {
     cycle: state.cycle,
     address: state.address,
     zine: state.zine,
+    card: state.card,
     press: state.press,
     photos: photos
   };
@@ -106,6 +107,7 @@ function importBackup(raw, mode) {
     state.cycle = incoming.cycle;
     state.address = incoming.address;
     state.zine = incoming.zine;
+    state.card = incoming.card;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -124,6 +126,7 @@ function importBackup(raw, mode) {
       .filter(function (p) { return !wasPublished(p.id); });
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
+    Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
     mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;

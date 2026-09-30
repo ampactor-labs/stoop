@@ -34,8 +34,8 @@ module.exports = async function magazine(browser, ok) {
   await p2.scrollIntoViewIfNeeded();
   await p2.click({ position: { x: 6, y: 6 } });
   await page.click('#blockbtn');
-  ok('A BLOCK IS PAGE NUMBERS, CONTENTS, CREDITS OR A PULL QUOTE',
-     (await page.locator('#blocks [data-block]').allInnerTexts()).join(' ') === 'PAGE NUMBERS CONTENTS CREDITS PULL QUOTE');
+  ok('A BLOCK IS PAGE NUMBERS, CONTENTS, CREDITS, A PULL QUOTE OR A COLOPHON',
+     (await page.locator('#blocks [data-block]').allInnerTexts()).join(' ') === 'PAGE NUMBERS CONTENTS CREDITS PULL QUOTE COLOPHON');
   await page.click('#blockbtn');
 
   // ---- page numbers.

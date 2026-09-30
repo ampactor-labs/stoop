@@ -128,6 +128,7 @@
 .addr { display: flex; align-items: center; gap: 6px; margin-top: auto; }
 .addr .qr { width: 64px; height: 64px; image-rendering: pixelated; }
 .addr span { font-family: 'Courier New', monospace; font-size: 8.5px; word-break: break-all; }
+.addr .reply { display: block; font-size: 7.5px; opacity: .8; }
 
 /* The pages, as edited: right way up, in reading order, facing pairs. The
    cover sits on the right of its spread and the back cover on the left, the

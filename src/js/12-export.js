@@ -58,7 +58,7 @@ function photosForFile(issues, no) {
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
-  'pagestrip', 'cycleline', 'zoom'];
+  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
@@ -77,6 +77,7 @@ function pageWithSeed(seed) {
   if (lamp) lamp.classList.remove('go');
   var old = doc.querySelector('#' + SEED_ID);
   if (old) old.parentNode.removeChild(old);
+  stampCard(doc, seed);
 
   var body = doc.querySelector('body') || doc;
   var script = document.createElement('script');
@@ -129,7 +130,7 @@ function issueFileHtml(no) {
   });
   return pageWithSeed({
     stoop: 'issue', version: 1, no: no,
-    people: people, address: state.address || '', zine: state.zine || '',
+    people: people, address: state.address || '', zine: state.zine || '', card: cardState(),
     issues: upTo,
     // The cycle handed on follows the issue in the file, not the shelf it left
     // behind. Somebody given №01 is holding the desk for №02, whatever number

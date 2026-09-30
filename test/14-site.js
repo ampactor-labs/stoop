@@ -69,7 +69,7 @@ module.exports = async function site(browser, ok) {
   const { out, errors } = unzip(buf);
   const names = Object.keys(out).sort();
   const root = names[0].split('/')[0] + '/';
-  ok('EVERY ENTRY OPENS AND CHECKS OUT', errors.length === 0 && names.length === 7, errors[0] || names.join(', '));
+  ok('EVERY ENTRY OPENS AND CHECKS OUT', errors.length === 0 && names.length === 9, errors[0] || names.join(', '));
   ok('THE NEWEST IS THE FRONT DOOR, AND AT latest/',
      !!out[root + 'index.html'] && out[root + 'index.html'].equals(out[root + 'latest/index.html']) &&
      /"read":"02"/.test(out[root + 'index.html'].toString('utf8')));
@@ -99,3 +99,5 @@ module.exports = async function site(browser, ok) {
   await reader.context().close();
   await ctx.close();
 };
+
+module.exports.unzip = unzip;

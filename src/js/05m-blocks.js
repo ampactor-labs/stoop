@@ -4,7 +4,8 @@
 // ordinary cutting, to be moved, restyled or cut like any other. A page
 // number knows which page it is on rather than what it said when it was
 // made, so it stays right when the pages move to another format.
-var BLOCKS = [['folios', 'PAGE NUMBERS'], ['contents', 'CONTENTS'], ['credits', 'CREDITS'], ['quote', 'PULL QUOTE']];
+var BLOCKS = [['folios', 'PAGE NUMBERS'], ['contents', 'CONTENTS'], ['credits', 'CREDITS'], ['quote', 'PULL QUOTE'],
+  ['colophon', 'COLOPHON']];
 
 function isFolio(el) { return !!el && el.kind === 'text' && el.folio === true; }
 
@@ -88,7 +89,8 @@ function addBlock(kind) {
     var spec = {
       contents: { voice: 'type', text: contentsText(), x: 0.1, y: 0.12, w: 0.8, h: 0.3 },
       credits: { voice: 'sans', text: creditsText(), x: 0.1, y: 0.7, w: 0.8, h: 0.12 },
-      quote: { voice: 'serif', text: '“A line worth pulling out.”', x: 0.08, y: 0.4, w: 0.84, h: 0.14, size: 20, align: 'center' }
+      quote: { voice: 'serif', text: '“A line worth pulling out.”', x: 0.08, y: 0.4, w: 0.84, h: 0.14, size: 20, align: 'center' },
+      colophon: { voice: 'sans', text: colophonText(), x: 0.08, y: 0.5, w: 0.84, h: 0.34, size: 7.5 }
     }[kind];
     if (!spec) return;
     var el = addEl(pastePage, 'text', { voice: spec.voice, text: spec.text });

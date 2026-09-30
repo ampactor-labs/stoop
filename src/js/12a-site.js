@@ -67,7 +67,10 @@ function siteReadme(latest) {
     '  index.html      №' + latest.no + ', the newest, and the shelf behind it\n' +
     '  latest/         the same, at an address that never changes\n' +
     '  01/, 02/ ...    each issue, the page its back cover\'s code points at\n' +
-    '  01/sheet.pdf    that issue imposed for a printer, at its exact paper size\n\n' +
+    '  01/sheet.pdf    that issue imposed for a printer, at its exact paper size\n' +
+    '  01/cover.jpg    its cover photograph, where there is one, for a shared link to show\n' +
+    '  feed.xml        the bell in a feed reader: one entry per issue, the PDF as its enclosure\n' +
+    '  catalog.csv     the shelf as a library catalogues it, one row per issue\n\n' +
     (where
       ? 'The back covers point at ' + where + '/01/ and so on, so this folder has to be\n' +
         'what ' + where + '/ serves for the codes to land.\n'
@@ -92,20 +95,27 @@ function publishSite() {
   toast('Making the site…');
   copierFlash();
   var chain = Promise.resolve();
+  var sizes = {};
   issues.forEach(function (iss) {
     files.push({ name: root + iss.no + '/index.html', data: enc.encode(issueFileHtml(iss.no)) });
     chain = chain.then(function () {
       return buildSheetPdf(iss.panels, iss.format, iss.hand, issueUrl(iss.no), iss.no, iss.gen);
     }).then(function (blob) { return blob.arrayBuffer(); }).then(function (buf) {
       files.push({ name: root + iss.no + '/sheet.pdf', data: new Uint8Array(buf) });
+      sizes[iss.no] = buf.byteLength;
+      return coverJpeg(iss);
+    }).then(function (jpg) {
+      if (jpg) files.push({ name: root + iss.no + '/cover.jpg', data: jpg });
     });
   });
   return chain.then(function () {
+    files.push({ name: root + 'feed.xml', data: enc.encode(feedXml(issues, sizes)) });
+    files.push({ name: root + 'catalog.csv', data: enc.encode(catalogCsv(issues)) });
     files.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
     return zipFiles(files);
   }).then(function (blob) {
     downloadBlob(sceneSlug() + '-site.zip', blob);
-    toast('The site: ' + issues.length + ' issue(s) and a PDF of each. Unzip it onto any host.');
+    toast('The site: ' + issues.length + ' issue(s), a PDF of each, a feed and a catalogue. Unzip it onto any host.');
   }).catch(function (e) { toast('Could not make the site: ' + e.message); });
 }
 

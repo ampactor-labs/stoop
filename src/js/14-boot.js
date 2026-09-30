@@ -247,5 +247,6 @@ photoLoadAll().then(function () {
   fillSettings();
   renderAll();
   fillSettings();
+  if (location.hash === '#reply') replyFromPaper();
   showView();
 });

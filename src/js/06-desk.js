@@ -163,7 +163,7 @@ function buildIssue() {
   var held = live.length - shipped.length;
 
   var note = document.getElementById('editornote');
-  state.issues.push({
+  var made = {
     no: ps.issue,
     title: (ps.panels[0] && ps.panels[0].h) || state.zine || 'STOOP ZINE',
     format: ps.format,
@@ -174,7 +174,9 @@ function buildIssue() {
     panels: JSON.parse(JSON.stringify(ps.panels)),
     pieces: JSON.parse(JSON.stringify(shipped)),
     ts: Date.now()
-  });
+  };
+  cardAtBell(made);
+  state.issues.push(made);
 
   // Cut pieces stay for next cycle, which is the promise a cut makes.
   state.pieces = state.pieces.filter(function (p) { return shipped.indexOf(p) < 0; });
@@ -242,6 +244,7 @@ function renderDesk() {
     bell.value = new Date(c.bell - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
   }
 
+  renderCard();
   var tray = document.getElementById('desktray');
   if (!tray) return;
   var all = state.pieces.slice().sort(function (x, y) { return x.ts - y.ts; });

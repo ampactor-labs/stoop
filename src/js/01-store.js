@@ -230,6 +230,7 @@ function normalize(raw) {
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
+    card: cleanCard(raw && raw.card),
     press: (raw && raw.press) || null
   };
   return migrate(out);
@@ -254,7 +255,7 @@ var state = (function () {
     stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
-      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE'
+      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', card: seed.card
     });
   }
   return JSON.parse(JSON.stringify(defaultData));

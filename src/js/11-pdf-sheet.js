@@ -105,9 +105,9 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     }
     var tx = box.x + (qr ? 54 : 0);
     var shown = url.replace(/^https?:\/\//, '');
-    wrapMono(shown, 6.375, box.cw - (qr ? 54 : 0)).slice(0, 4).forEach(function (line, i) {
-      ops += pdfLine(line, 'F1', 6.375, tx, qy + 34 - i * 8);
-    });
+    var w = box.cw - (qr ? 54 : 0);
+    wrapMono(shown, 6.375, w).concat(wrapMono('write back: ' + shown + '#reply', 6.375, w)).slice(0, 5)
+      .forEach(function (line, i) { ops += pdfLine(line, 'F1', 6.375, tx, qy + 39 - i * 7.5); });
   }
   return ops + pdfPasteup(panel, box, images, ghosts, page);
 }

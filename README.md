@@ -50,7 +50,11 @@ The shelf keeps every issue as it shipped, with its own pages, format and fold, 
 
 **hand it on** saves the latest issue as one HTML file named for the scene and the issue, such as `stoop-zine-01.html`. Opened on a machine that has never seen the app, it shows the issue page by page, with the text one tap away, and then offers the press it rode in for the next issue. It carries every back issue too, each with only its cover photograph, so the file does not grow with the shelf until nobody can send it. **SEND** in the tray saves a single piece as its own file, which carries the press as well, and **TAKE IN** under **scene** takes in a piece or an issue somebody sent; taking the same file twice does nothing.
 
-**MAKE THE SITE (.ZIP)** on the shelf writes the folder the back covers point at: every issue as the page its QR code leads to, with a PDF beside each and the newest at the root. It works on any host that serves plain files, such as Neocities, Netlify Drop or GitHub Pages, or from a thumb drive.
+**MAKE THE SITE (.ZIP)** on the shelf writes the folder the back covers point at: every issue as the page its QR code leads to, with a PDF beside each and the newest at the root. Beside them go `feed.xml`, an Atom feed with one entry per issue and the PDF as its enclosure, so the bell rings in a feed reader; `catalog.csv`, the shelf as a library catalogues it, one row per issue; and each cover photograph as a JPEG beside its issue, so a shared link shows it. It works on any host that serves plain files, such as Neocities, Netlify Drop or GitHub Pages, or from a thumb drive.
+
+**THE CARD** under **desk** is the catalogue record zine libraries are standardising on, the twelve elements of xZINECOREx. Six are read off the issue: the title, the creators, the publisher, the contributors, the date and the physical description ("2.75 × 4.25 in, 8 pages, one sheet folded and cut"). Six are typed once and stay for the next issue: place, language, subjects, rights, see also, and a union id left blank for a library to fill. The card goes with the issue at the bell, rides in the file's head as JSON-LD so a hosted issue is machine-readable, and **COLOPHON** under **+ BLOCK** lays it out as a cutting.
+
+When the scene has an address, the back cover also says where to write back: the issue's own address with `#reply` after it. Opened there, the file asks who is writing and opens the press on the piece form, so a reply from paper is a piece file, sent back the same way, with no server anywhere in the loop.
 
 **BACKUP** under **scene** saves everything, photographs included, as one JSON file. **MERGE ONE IN** merges another device's backup by id and keeps the newer copy of anything both hold, and a merge never overwrites a published issue. The shelf says when this browser was last backed up, because until then the browser holds the only copy.
 
@@ -109,7 +113,7 @@ index.html         the app, built from src/ (the page GitHub Pages serves)
 press/index.html   the hand print kit, built from src/press.html
 artifact/          both pages as fragments for the claude.ai artifact publisher
 src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
-test/              twenty-three browser suites and their runner, run.js
+test/              twenty-four browser suites and their runner, run.js
 build.sh           assembles src/ into the four built files
 check.sh           the repository's laws, run by CI and the pre-commit hook
 docs/              longer write-ups linked from this README
@@ -165,7 +169,7 @@ npx playwright install chromium
 node test/run.js
 ```
 
-`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-three suites cover the parts that would be easy to fake, among them:
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-four suites cover the parts that would be easy to fake, among them:
 
 - two issues on the shelf, each keeping its own words;
 - the same pieces re-flowing into another format with nothing retyped;
@@ -173,7 +177,8 @@ node test/run.js
 - an exported issue opening on a machine with no storage of its own and making the next issue;
 - the back-cover QR code matching an independent encoder square for square;
 - the PDF surviving a parse of its bytes and embedding the same fonts as the page;
-- a photograph reaching the PDF in colour as the same JPEG, cuttings in ink and pages printed on a colour, on screen, on paper and in the file handed on.
+- a photograph reaching the PDF in colour as the same JPEG, cuttings in ink and pages printed on a colour, on screen, on paper and in the file handed on;
+- the card's JSON-LD parsing out of the file and naming the issue, the site's feed carrying an entry per issue, and a file opened at `#reply` ending at SEND.
 
 On 28 September 2026, in a cloud container with Chromium, a full run passed all 346 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
 
@@ -192,7 +197,7 @@ Everything lives in the browser that made it. There is no server to fall back on
 - **Photographs make heavy files.** An issue with a colour photograph on every page is about 3 MB, which is the photographs. Screening a photo to grain or dots makes it several times lighter.
 - **Colour runs to the edge only at a print shop.** A page colour floods the whole page, and most home printers stop about a quarter inch short of the paper's edge, which is what the faint line on each page shows. **PDF FOR A PRINT SHOP** carries the bleed a shop needs to trim it clean.
 - **Printers and hands differ.** The page asks for a test sheet before a print run and offers the other fold when the page numbers come out shuffled. Nothing checks a real printer.
-- **Some things are left out on purpose.** There is no feed, the first of the refusals in [DESIGN.md](DESIGN.md#refusals). [PLAN.md](PLAN.md#what-never-gets-built) rules out accounts, cloud sync, a hosted service and any surface that counts anything. It also struck the federation DESIGN.md imagined: rooms, vouching, a protocol, a cooperative and a court. If the format spreads, that federation is somebody else's to build.
+- **Some things are left out on purpose.** There is no feed in the sense [DESIGN.md](DESIGN.md#refusals) refuses, nothing that ranks, counts or scrolls; the site's `feed.xml` is a list of issue drops for a feed reader, which is the bell, not a feed. [PLAN.md](PLAN.md#what-never-gets-built) rules out accounts, cloud sync, a hosted service and any surface that counts anything. It also struck the federation DESIGN.md imagined: rooms, vouching, a protocol, a cooperative and a court. If the format spreads, that federation is somebody else's to build.
 
 ## License
 

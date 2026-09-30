@@ -45,6 +45,8 @@
 }
 .paper h2 { font-size: 1.15rem; margin: 0 0 .6rem; }
 .paper .form-row + .form-row { margin-top: .6rem; }
+.cardgrid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .6rem; align-items: center; margin: .4rem 0 .6rem; }
+.cardgrid .sub { white-space: nowrap; }
 .sub {
   font-family: 'Courier New', monospace;
   font-size: .78rem;

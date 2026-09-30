@@ -203,8 +203,7 @@ function paintAddress(zone, lastPage, url) {
   }
   if (tag.getAttribute('data-url') === url) return;
   tag.setAttribute('data-url', url);
-  tag.innerHTML = '<img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt="">' +
-    '<span>' + esc(url.replace(/^https?:\/\//, '')) + '</span>';
+  tag.innerHTML = addrInner(url);
 }
 
 function renderPress() {

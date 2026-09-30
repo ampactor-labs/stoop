@@ -44,6 +44,7 @@ A conforming reader finds that element, parses it, and renders the issue. A conf
 - `cycle` describes the issue the recipient would make next. `no` is `no + 1`, zero-padded to at least two digits; `editor` follows the parity rule in §4. It is computed from the issue in the file, never inherited from the sender's own shelf.
 - `photos` maps photo ids to data URIs. Every id referenced by the issue named in `no` — its panels and its pieces — MUST appear here. Earlier issues SHOULD carry only their covers' photographs: each has its own file with the rest, and a file that carried every photograph on the shelf would grow with every issue until nobody could send it. A reader MUST show a photograph it does not have as an empty place, never fail over it. Writers SHOULD store a photograph as JPEG, in colour; as PNG where it has transparency, so a cut-out stays cut out; and as a 1-bit greyscale PNG where it has been screened to two tones, since that is all it holds. Writers SHOULD NOT store more pixels than print needs (2400 on the long edge is about 280 to the inch on the tallest page this format has) and MUST NOT carry a camera's metadata, which can say where a photograph was taken; redrawing the image before storing it drops all of it. Readers MUST accept any image data URI a browser can display.
 - `open` and `read` are hints about what to show first. Readers MAY ignore both.
+- `card`, when present, is the scene's typed catalogue elements (see An issue, below), carried so the press handed on remembers them for the next issue. Readers MAY ignore it.
 
 - `people` is the scene's roster, in order. Authorship is stored as an `id`, never as a spelling, so renaming somebody does not orphan their past work. A scene is however many people it is; two is not a limit.
 - `zine` is what goes on the cover and the flyer.
@@ -69,6 +70,8 @@ Earlier files carry `"names": { "a": …, "b": … }` instead. Readers SHOULD ac
   "pieces": [ … ]
 }
 ```
+
+`card` is optional: the elements of the issue's catalogue record that cannot be read off the issue, each a string: `place`, `language`, `subjects` (comma separated), `rights` (freedoms and restrictions, in words), `seeAlso` and `unionId` (left for a library to fill). The rest of the record a reader derives from the issue itself: the title from the zine's name, the number and the cover heading; the creators from the editor and the bylines with words; the contributors from the bylines with photographs; the publisher from the zine's name; the date from `ts`; the physical description from the format. These are the twelve elements of xZINECOREx, the schema zine libraries catalogue in. A writer SHOULD put the whole record in the file's head as JSON-LD, a `schema.org` `PublicationIssue` inside a `Periodical`, in `<script type="application/ld+json" id="stoop-card">`, so a hosted issue is machine-readable; a reader MAY ignore the card and the record both.
 
 `gen` is optional and is 0 to 3: how many times the issue has been through the copier. A reader MAY render wear for it (frayed edges, toner speckle, dust in the photographs) and MUST derive that wear from fixed seeds rather than randomness, so every print of the issue wears the same marks. Absent means 0.
 
@@ -180,16 +183,21 @@ One letter sheet folded to eight panels holds roughly twelve hundred words. An i
 <host>/stoop/<scene>/          the scene's public door, and its shelf
 <host>/stoop/<scene>/03/       issue three, reading view
 <host>/stoop/<scene>/03/sheet.pdf  the same issue, imposed for a printer
+<host>/stoop/<scene>/03/cover.jpg  its cover photograph, where there is one
 <host>/stoop/<scene>/latest/   an alias for the newest issue
+<host>/stoop/<scene>/feed.xml  an Atom feed, one entry per issue
+<host>/stoop/<scene>/catalog.csv  the shelf as a library catalogues it
 ```
 
-The reference press writes this folder itself, as a zip: the newest issue's file at the root and at `latest/`, each issue's file at its number, a PDF of each beside it, and a note on where to put it.
+The reference press writes this folder itself, as a zip: the newest issue's file at the root and at `latest/`, each issue's file at its number, a PDF of each beside it, and a note on where to put it. Beside those it writes `feed.xml`, an Atom feed with one entry per issue whose link is the issue's page and whose enclosure is its PDF, newest first and nothing else (no ranking, no counts: a list of drops, which is the bell in a feed reader); `catalog.csv`, one row per issue in the twelve xZINECOREx columns; and each issue's cover photograph as `cover.jpg` beside it, so the page's `og:image` can be absolute when the scene has an address. A reader of the folder MAY ignore all three.
 
 Numbers, not slugs: titles get argued about and change, the number is the spine, and zero-padding makes the shelf sort itself.
 
 **Links inside a scene are relative, always.** That single rule is what makes a scene portable: a directory that never names its own host can be copied to another host, a thumb drive, or a tarball in a shoebox, and every link still works. Built output that contains an absolute URL is not conforming.
 
 An issue that has an address SHOULD print it on the back cover, as text and as a QR code (byte mode, error correction L is sufficient). An issue with no address simply carries none. The paper points at the archive and the archive points at the paper, or the loop is open.
+
+Under the address the back cover MAY carry a line to write back: the issue's own address with `#reply` after it. An issue page opened at `#reply` SHOULD open the press it carries at the piece form and ask who is writing, so that what comes back from paper is a piece file and nothing else. The reference press prints the line whenever there is an address.
 
 ## 4. The cycle
 
