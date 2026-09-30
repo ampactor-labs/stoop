@@ -26,7 +26,9 @@
     .tablehead .btn{flex:none;white-space:nowrap;font-size:.75rem;padding:.3rem .5rem}
     .fitmeter{white-space:nowrap;font-size:.72rem;padding:.25rem .5rem}
     .zoom,.addhint{display:none}
-    .inspector.on{position:fixed;left:0;right:0;bottom:6.6rem;top:auto;z-index:24;width:auto;max-height:45vh;overflow-y:auto;border:0;border-top:2px solid var(--fg);padding:.5rem .7rem .7rem}
+    .inspector.on{position:fixed;left:0;right:0;bottom:6.6rem;top:auto;z-index:24;width:auto;max-height:45vh;overflow-y:auto;border:0;border-top:2px solid var(--fg);padding:.2rem .7rem .7rem}
+    .inspector.on::before{content:'';display:block;width:2.4rem;height:4px;background:var(--grey);margin:.25rem auto .45rem;border-radius:2px}
+    .group summary{padding:.35rem 0}
     section[data-view]:not([data-view="press"]):not([data-view="issue"]).on{width:100vw;border-left:none;bottom:3.4rem;z-index:35}
     .scrim{z-index:33}
     .pages{gap:.7rem}

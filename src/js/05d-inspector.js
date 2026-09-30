@@ -10,29 +10,81 @@ function pasteTargetLabel() {
   return 'page ' + pastePage + ' of ' + ps.panels.length;
 }
 
-function inspectorButtons(el) {
+// The sheet is three groups in a fixed order, so hands learn where things
+// are: what a cutting is, how it looks, where it sits, and REMOVE alone at
+// the foot. Each group folds; the fold is remembered until the page reloads,
+// and a phone starts with the last one folded.
+var groupOpen = null;
+function groupsDefault() {
+  var phone = window.matchMedia && matchMedia('(max-width: 640px)').matches;
+  return { what: true, look: true, where: !phone, page: !phone };
+}
+
+function btnRow(pairs, key) {
+  return pairs.map(function (pair) {
+    return '<button class="btn quiet" data-' + pair[0] + '="' + esc(String(key)) + '">' + esc(pair[1]) + '</button>';
+  }).join('');
+}
+
+function groupHtml(name, title, inner) {
+  if (!inner) return '';
+  if (!groupOpen) groupOpen = groupsDefault();
+  return '<details class="group" data-group="' + name + '"' + (groupOpen[name] ? ' open' : '') + '><summary>' + title +
+    '</summary><div class="groupbody">' + inner + '</div></details>';
+}
+
+function whatHtml(el) {
+  var out = '';
+  if (el.kind === 'text') out += voiceSelect(el);
+  if (el.kind === 'photo' && photoMeta[el.photo]) out += lookSelect('ellook', el.id, photoMeta[el.photo].style);
+  if (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')) {
+    out += '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
+      (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
+      '">' + esc(el.text || '') + '</textarea>';
+  }
+  if (el.kind === 'qr') {
+    out += '<input class="text-input" id="qrtext" maxlength="270" placeholder="A link, a phone number, anything to scan" value="' +
+      esc(el.text || '') + '">';
+  }
+  if (el.kind === 'photo') {
+    out += '<input class="text-input" id="alttext" maxlength="200" placeholder="What is in it, for anyone who cannot see it" value="' +
+      esc(el.alt || '') + '">';
+  }
+  return out;
+}
+
+function lookHtml(el) {
   var b = [];
   if (el.kind === 'text') {
-    b.push(['elsmaller', 'A−']);
-    b.push(['elbigger', 'A+']);
-    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'ON THE PAGE']);
+    b.push(['elsmaller', 'A\u2212'], ['elbigger', 'A+']);
     b = b.concat(typeButtons(el));
+    b.push(['elink', el.ink === 'white' ? 'KNOCKED OUT' : 'ON THE PAGE']);
   }
-  if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'OUTLINE' : 'SOLID']);
+  if (el.kind === 'box') b.push(['elink', el.ink === 'white' ? 'SOLID' : 'OUTLINE']);
   if (el.kind === 'photo') b.push(['elcrop', el.crop ? 'FILLING THE BOX' : 'WHOLE FRAME'], ['elfillpage', 'FILL THE PAGE']);
   if (el.kind === 'photo' && photoMeta[el.photo]) b.push(['elphlight', 'LIGHTER'], ['elphdark', 'DARKER']);
+  return btnRow(b, el.id) + inkSwatches(el);
+}
+
+function whereHtml(el) {
+  var b = [];
   var at = findEl(el.id);
   var pages = pressState().panels.length;
   if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
   if (at && at.page < pages) b.push(['elnextpage', 'PAGE ' + (at.page + 1) + ' \u25b6']);
-  b.push(['eldup', 'DUPLICATE']);
-  b.push(['elfront', 'FRONT']);
-  b.push(['elback', 'BACK']);
-  b.push(['elstraight', 'STRAIGHTEN']);
-  b.push(['eldrop', 'REMOVE']);
-  return b.map(function (pair) {
-    return '<button class="btn quiet" data-' + pair[0] + '="' + esc(el.id) + '">' + esc(pair[1]) + '</button>';
-  }).join('');
+  b.push(['eldup', 'DUPLICATE'], ['elfront', 'FRONT'], ['elback', 'BACK'], ['elstraight', 'STRAIGHTEN']);
+  return btnRow(b, el.id);
+}
+
+function pageSheetHtml(page) {
+  var panel = panelOfPage(page);
+  var m = panel.photo && photoMeta[panel.photo];
+  var fillName = FILLS.filter(function (f) { return f[1] === fillOf(panel); })[0];
+  var summary = '<b>PAGE ' + page + '</b><span class="sub">' + (fillName ? fillName[0].toLowerCase() : 'white') +
+    ' \u00b7 ' + (whiteLetters(panel) ? 'white' : 'black') + ' letters' + (panel.photo ? ' \u00b7 a photo' : '') + '</span>';
+  var inner = (m ? lookSelect('pglook', page, m.style) + btnRow([['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER']], page) : '') +
+    pageButtons(page) + fillSwatches(page);
+  return groupHtml('page', summary, inner);
 }
 
 function renderInspector() {
@@ -46,16 +98,10 @@ function renderInspector() {
   var el = selectedEl();
   var page = panelOfPage(pastePage);
   if (!el && page) {
-    // The page itself: its colour, and its own photograph, the one a piece
-    // brought or the cover's.
-    var m = page.photo && photoMeta[page.photo];
-    box.className = 'inspector on';
-    box.innerHTML = '<div class="insp-head"><b>PAGE ' + pastePage + '</b><span class="sub">' +
-      (page.photo ? 'and its photo' : 'click a cutting to change it') + '</span></div>' +
-      '<div class="press-actions">' + (m ? lookSelect('pglook', pastePage, m.style) + [['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER']]
-        .map(function (pair) {
-          return '<button class="btn quiet" data-' + pair[0] + '="' + pastePage + '">' + pair[1] + '</button>';
-        }).join('') : '') + pageButtons(pastePage) + '</div>' + fillSwatches(pastePage);
+    // The page itself: its colour, its letters, and its own photograph, the
+    // one a piece brought or the cover's.
+    box.className = 'inspector on page';
+    box.innerHTML = pageSheetHtml(pastePage);
     return;
   }
   if (!el) {
@@ -66,26 +112,27 @@ function renderInspector() {
   box.className = 'inspector on';
   var rot = Math.round(el.rot || 0);
   box.innerHTML = '<div class="insp-head"><b>' + esc(el.kind.toUpperCase()) + '</b>' +
-    '<span class="sub">' + rot + '° · ' + Math.round(el.w * 100) + '×' +
-    Math.round(el.h * 100) + ' of the panel</span></div>' +
-    '<div class="press-actions">' + (el.kind === 'text' ? voiceSelect(el) : '') +
-    (el.kind === 'photo' && photoMeta[el.photo] ? lookSelect('ellook', el.id, photoMeta[el.photo].style) : '') +
-    inspectorButtons(el) + '</div>' +
-    inkSwatches(el) +
-    (el.kind === 'text' && (voiceOf(el) === 'ransom' || voiceOf(el) === 'marker')
-      ? '<textarea class="text-input" id="ransomtext" rows="2" placeholder="' +
-        (voiceOf(el) === 'ransom' ? 'Cut the letters from a magazine' : 'Write it with the fat pen') +
-        '">' + esc(el.text || '') + '</textarea>'
-      : '') +
-    (el.kind === 'qr'
-      ? '<input class="text-input" id="qrtext" maxlength="270" placeholder="A link, a phone number, anything to scan" value="' +
-        esc(el.text || '') + '">'
-      : '') +
-    (el.kind === 'photo'
-      ? '<input class="text-input" id="alttext" maxlength="200" placeholder="What is in it, for anyone who cannot see it" value="' +
-        esc(el.alt || '') + '">'
-      : '');
+    '<span class="sub">' + rot + '\u00b0 \u00b7 ' + Math.round(el.w * 100) + '\u00d7' +
+    Math.round(el.h * 100) + ' of the panel</span>' +
+    '<button class="btn quiet tiny sheetdone" data-closesheet="1" title="Done with this cutting">DONE</button></div>' +
+    groupHtml('what', 'WHAT IT IS', whatHtml(el)) +
+    groupHtml('look', 'HOW IT LOOKS', lookHtml(el)) +
+    groupHtml('where', 'WHERE IT SITS', whereHtml(el)) +
+    '<div class="sheetfoot"><button class="btn quiet danger" data-eldrop="' + esc(el.id) + '">REMOVE</button></div>';
 }
+
+document.addEventListener('toggle', function (ev) {
+  var g = ev.target.closest && ev.target.closest('#inspector .group');
+  if (!g) return;
+  if (!groupOpen) groupOpen = groupsDefault();
+  groupOpen[g.getAttribute('data-group')] = g.open;
+}, true);
+
+document.addEventListener('click', function (ev) {
+  if (!(ev.target.closest && ev.target.closest('[data-closesheet]'))) return;
+  pasteSel = null;
+  renderPress();
+});
 
 function addToPasteup(kind) {
   if (kind === 'photo') {
