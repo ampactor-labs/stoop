@@ -219,7 +219,7 @@ function bellIcs() {
 }
 document.addEventListener('click', function (ev) {
   if (!ev.target.closest || !ev.target.closest('#icsbtn')) return;
-  downloadBlob(sceneSlug() + '-' + cycleState().no + '-bell.ics', new Blob([bellIcs()], { type: 'text/calendar' }));
+  handOver(sceneSlug() + '-' + cycleState().no + '-bell.ics', new Blob([bellIcs()], { type: 'text/calendar' }));
   toast('The bell, as a calendar event, with a reminder the day before');
 });
 

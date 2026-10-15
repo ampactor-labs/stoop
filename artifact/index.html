@@ -828,6 +828,11 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
       <button class="btn" id="savenamesbtn2">SAVE</button>
     </div>
     <p class="hint">The address goes on the back cover as text and as a code. Leave it blank and the paper carries no address.</p>
+    <div class="form-row">
+      <input type="text" id="contactinput" class="text-input" maxlength="120" placeholder="where pieces go: an email or a handle">
+      <button class="btn" id="savenamesbtn3">SAVE</button>
+    </div>
+    <p class="hint">Somebody who writes back from the paper needs to know where to send it. This goes in the colophon, on the file's last page and on every piece sent.</p>
   </div>
 
   <div class="paper">
@@ -915,7 +920,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 344 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 346 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1028,14 +1033,14 @@ function fmtStamp(ts) {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric' }) + ' · ' +
     d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-function toast(msg, undo) {
+function toast(msg, undo, label) {
   var t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
   if (undo) {
     var b = document.createElement('button');
     b.className = 'toast-undo';
-    b.textContent = 'UNDO';
+    b.textContent = label || 'UNDO';
     b.onclick = function () { t.style.display = 'none'; undo(); };
     t.appendChild(b);
   }
@@ -1113,6 +1118,7 @@ function normalize(raw) {
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
+    contact: String((raw && raw.contact) || '').slice(0, 120),
     card: cleanCard(raw && raw.card),
     distro: records(raw && raw.distro).filter(function (e) { return e.issue && typeof e.issue === 'object' && e.issue.no; }),
     press: (raw && raw.press) || null
@@ -1135,7 +1141,7 @@ var state = (function () {
     stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
-      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', card: seed.card
+      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', contact: seed.contact, card: seed.card
     });
   }
   return normalize(JSON.parse(JSON.stringify(defaultData)));
@@ -3839,6 +3845,7 @@ function colophonText(issue) {
   if (c.rights) lines.push(c.rights);
   if (c.seeAlso) lines.push('See also: ' + c.seeAlso);
   if (c.url) lines.push(c.url.replace(/^https?:\/\//, ''));
+  if (state.contact) lines.push('Write to ' + state.contact);
   lines.push('Union ID: ' + (c.unionId || '________'));
   return lines.join('\n');
 }
@@ -3940,8 +3947,9 @@ function replyFromPaper() {
   setTimeout(function () {
     var t = document.getElementById('piecetitle');
     if (t) t.focus();
-    toast('Writing back' + (held ? ' to №' + held.no : '') +
-      '. SEND in the tray when it is done, and it goes to whoever holds the desk.');
+    var to = String((landingSeed && landingSeed.contact) || state.contact || '').trim();
+    toast('Writing back' + (held ? ' to №' + held.no : '') + '. SEND in the tray when it is done' +
+      (to ? ', and send it to ' + to + '.' : ', and it goes to whoever holds the desk.'));
   }, 60);
 }
 window.addEventListener('hashchange', function () { if (location.hash === '#reply') replyFromPaper(); });
@@ -4430,7 +4438,7 @@ function bellIcs() {
 }
 document.addEventListener('click', function (ev) {
   if (!ev.target.closest || !ev.target.closest('#icsbtn')) return;
-  downloadBlob(sceneSlug() + '-' + cycleState().no + '-bell.ics', new Blob([bellIcs()], { type: 'text/calendar' }));
+  handOver(sceneSlug() + '-' + cycleState().no + '-bell.ics', new Blob([bellIcs()], { type: 'text/calendar' }));
   toast('The bell, as a calendar event, with a reminder the day before');
 });
 
@@ -4798,6 +4806,11 @@ function landingUrl(iss) {
   return (/^https?:\/\//.test(addr) ? addr : 'https://' + addr) + '/' + iss.no + '/';
 }
 
+function landingContact() {
+  var c = String((landingSeed && landingSeed.contact) || (!fileIssue() && state.contact) || '').trim();
+  return c ? ' Write back to ' + esc(c) + '.' : '';
+}
+
 function renderLanding() {
   var box = document.getElementById('landing');
   if (!box) return;
@@ -4807,7 +4820,7 @@ function renderLanding() {
   box.innerHTML = readHtml(iss, landingUrl(iss), iss === fileIssue() ? fileNameOf : null) +
     '<div class="landing-tail">' +
     '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
-    'No server, no account. You are holding the whole thing.</p>' +
+    'No server, no account. You are holding the whole thing.' + landingContact() + '</p>' +
     '<div class="landing-verbs">' +
     '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
     '<button class="btn big" id="landown">START YOUR OWN</button>' +
@@ -4986,7 +4999,7 @@ function carriedById(id) {
 
 function distroSeed(entry) {
   return { stoop: 'issue', version: 1, no: entry.issue.no,
-    people: entry.people || [], address: entry.address || '', zine: entry.zine || '',
+    people: entry.people || [], address: entry.address || '', zine: entry.zine || '', contact: entry.contact || '',
     issues: [entry.issue], cycle: entry.cycle || nextCycleAfter(entry.issue.no),
     photos: photosFor([entry.issue]), open: '#shelf', read: entry.issue.no };
 }
@@ -5006,6 +5019,7 @@ function carrySeed(seed) {
     id: uid('dz'), ts: Date.now(), issue: iss,
     zine: String(seed.zine || 'STOOP ZINE').slice(0, 40),
     address: String(seed.address || '').slice(0, 200),
+    contact: String(seed.contact || '').slice(0, 120),
     people: (seed.people || []).filter(function (p) { return p && p.id && p.name; })
       .map(function (p) { return { id: String(p.id), name: String(p.name).slice(0, 24) }; }),
     cycle: seed.cycle && typeof seed.cycle === 'object' ? seed.cycle : null
@@ -5989,14 +6003,7 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
 function savePdf(panels, formatId, hand, url, issue, name, gen) {
   toast('Writing the PDF…');
   return buildSheetPdf(panels, formatId, hand, url, issue, gen).then(function (blob) {
-    var href = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = href;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+    handOver(name, blob);
     toast('PDF saved — exact size, no print dialog to argue with');
   }).catch(function (e) {
     toast('Could not write the PDF: ' + e.message);
@@ -6350,14 +6357,7 @@ function writeFlyerPdf(title, issue, url, photoId) {
 function saveFlyer(title, issue, url, photoId, name) {
   toast('Writing the flyer…');
   return buildFlyerPdf(title, issue, url, photoId).then(function (blob) {
-    var href = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = href;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+    handOver(name, blob);
     toast('Flyer saved — print it, cut the tabs, staple it somewhere');
   }).catch(function (e) {
     toast('Could not write the flyer: ' + e.message);
@@ -6458,7 +6458,7 @@ function writeShopPdf(panels, formatId, url, issue, gen) {
 function saveShopPdf(panels, formatId, url, issue, name, gen) {
   toast('Writing the pages for a print shop…');
   return loadFaces().then(function () { return writeShopPdf(panels, formatId, url, issue, gen); }).then(function (blob) {
-    downloadBlob(name, blob);
+    handOver(name, blob);
     toast('Saved: one page to a sheet, with bleed and crop marks, in reading order');
   }).catch(function (e) { toast('Could not write the PDF: ' + e.message); });
 }
@@ -6610,7 +6610,7 @@ function saveRisoPlates(panels, formatId, url, issue, gen) {
   toast('Separating the plates…');
   copierFlash();
   return loadFaces().then(function () { return writePlates(panels, formatId, url, issue, gen); }).then(function (blob) {
-    downloadBlob(sceneSlug() + '-' + issue + '-riso.zip', blob);
+    handOver(sceneSlug() + '-' + issue + '-riso.zip', blob);
     var n = platesOf(panels).length;
     toast(n + ' plate' + (n === 1 ? '' : 's') + ', a preview and a note on the stock. Hand the zip to the studio.');
   }).catch(function (e) { toast('Could not write the plates: ' + e.message); });
@@ -6702,19 +6702,8 @@ function pageWithSeed(seed) {
   return '<!doctype html>\n' + doc.outerHTML;
 }
 
-function download(name, html) {
-  downloadBlob(name, new Blob([html], { type: 'text/html' }));
-}
-
-function downloadBlob(name, blob) {
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+function download(name, html, note) {
+  handOver(name, new Blob([html], { type: 'text/html' }), note);
 }
 
 function copierFlash() {
@@ -6738,7 +6727,7 @@ function issueFileHtml(no) {
   });
   return pageWithSeed({
     stoop: 'issue', version: 1, no: no,
-    people: people, address: state.address || '', zine: state.zine || '', card: cardState(),
+    people: people, address: state.address || '', zine: state.zine || '', contact: state.contact || '', card: cardState(),
     issues: upTo,
     cycle: nextCycleAfter(no),
     photos: photosForFile(upTo, no),
@@ -6765,8 +6754,9 @@ function exportPieceBundle(id) {
     pieces: [piece], photos: photosFor([piece]), open: '#desk'
   });
   var slug = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
-  download(['piece', slug(nameOf(piece.byline)), slug(piece.title).slice(0, 24)].filter(Boolean).join('-') + '.html', html);
-  toast('Piece exported — send it to whoever holds the desk');
+  download(['piece', slug(nameOf(piece.byline)), slug(piece.title).slice(0, 24)].filter(Boolean).join('-') + '.html', html,
+    'A piece for ' + (state.zine || 'the zine') + '. ' + contactLine());
+  toast('Piece exported. ' + (contactLine() || 'Send it to whoever holds the desk.'));
 }
 
 function seedFromHtml(text) {
@@ -6792,6 +6782,7 @@ function importSeed(seed) {
   });
   var addedPieces = takePieces(seed).length;
   if (seed.address && !state.address) state.address = seed.address;
+  if (seed.contact && !state.contact && seed.stoop === 'issue') state.contact = String(seed.contact).slice(0, 120);
   if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
   if (seed.stoop === 'issue') mergePeople(seed.people);
   ensurePeople();
@@ -6993,7 +6984,7 @@ function publishSite() {
     files.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
     return zipFiles(files);
   }).then(function (blob) {
-    downloadBlob(sceneSlug() + '-site.zip', blob);
+    handOver(sceneSlug() + '-site.zip', blob);
     toast('The site: ' + issues.length + ' issue(s), a PDF of each, a feed and a catalogue. Unzip it onto any host.');
   }).catch(function (e) { toast('Could not make the site: ' + e.message); });
 }
@@ -7063,6 +7054,42 @@ function coverJpeg(issue) {
     img.src = src;
   });
 }
+
+function saveBlob(name, blob) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+
+function shareable(file) {
+  try {
+    return !!(navigator.share && navigator.canShare && window.matchMedia &&
+      matchMedia('(pointer: coarse)').matches && navigator.canShare({ files: [file] }));
+  } catch (e) { return false; }
+}
+
+function handOver(name, blob, note) {
+  var file = null;
+  try { file = new File([blob], name, { type: blob.type || 'application/octet-stream' }); } catch (e) {}
+  if (!file || !shareable(file)) { saveBlob(name, blob); return; }
+  var data = { files: [file], title: name };
+  if (note) data.text = note;
+  var fallback = function (e) { if (!e || e.name !== 'AbortError') saveBlob(name, blob); };
+  navigator.share(data).catch(function (e) {
+    if (e && e.name === 'AbortError') return;
+    toast(name + ' is ready.', function () { navigator.share(data).catch(fallback); }, 'SHARE');
+  });
+}
+
+function contactLine() {
+  var c = String(state.contact || '').trim();
+  return c ? 'Send it to ' + c + '.' : '';
+}
 var BACKUP_VERSION = 4;
 
 function exportBackup() {
@@ -7080,6 +7107,7 @@ function exportBackup() {
     cycle: state.cycle,
     address: state.address,
     zine: state.zine,
+    contact: state.contact,
     card: state.card,
     distro: state.distro,
     press: state.press,
@@ -7087,14 +7115,7 @@ function exportBackup() {
     faces: facesForBackup()
   };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'stoop-' + new Date().toISOString().slice(0, 10) + '.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  handOver('stoop-' + new Date().toISOString().slice(0, 10) + '.json', blob);
   toast('Backup downloaded — photos included');
   try { localStorage.setItem('stoop_last_backup', String(Date.now())); } catch (e) {}
   keepStorage();
@@ -7166,6 +7187,7 @@ function importBackup(raw, mode) {
     state.cycle = incoming.cycle;
     state.address = incoming.address;
     state.zine = incoming.zine;
+    state.contact = incoming.contact;
     state.card = incoming.card;
     state.distro = incoming.distro;
     state.press = incoming.press;
@@ -7183,6 +7205,7 @@ function importBackup(raw, mode) {
       .filter(function (p) { return !wasPublished(p.id); });
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
+    if (!state.contact) state.contact = incoming.contact;
     Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
     state.distro = mergeList(state.distro, incoming.distro);
     mergePeople(raw && raw.people);
@@ -7260,6 +7283,8 @@ function saveNameFields() {
   savePeople();
   var addr = document.getElementById('addressinput');
   if (addr) state.address = addr.value.trim();
+  var ct = document.getElementById('contactinput');
+  if (ct) state.contact = ct.value.trim().slice(0, 120);
   saveState();
   renderAll();
   toast('Saved');
@@ -7269,7 +7294,7 @@ function startEmpty() {
   if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
   forgetUndo();
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
-    address: state.address, zine: state.zine });
+    address: state.address, zine: state.zine, contact: state.contact });
   saveState();
   sweepPhotos();
   renderAll();
@@ -7393,7 +7418,7 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();
   if (hit(t, '#mergebtn')) { document.getElementById('importfile').dataset.mode = 'merge'; return document.getElementById('importfile').click(); }
   if (hit(t, '#replacebtn')) { document.getElementById('importfile').dataset.mode = 'replace'; return document.getElementById('importfile').click(); }
-  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) return saveNameFields();
+  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savenamesbtn3') || hit(t, '#savezinebtn')) return saveNameFields();
   if (hit(t, '#addpersonbtn')) {
     var np = document.getElementById('newperson');
     if (!np || !np.value.trim()) { toast('Give them a name first'); return; }
@@ -7431,7 +7456,7 @@ document.addEventListener('keydown', function (e) {
   if (e.target.id === 'loginput' && !e.shiftKey) { e.preventDefault(); addLog(); }
   else if (e.target.id === 'scraptitle') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }
-  else if (e.target.id === 'addressinput' || e.target.id === 'zinename' ||
+  else if (e.target.id === 'addressinput' || e.target.id === 'zinename' || e.target.id === 'contactinput' ||
     e.target.hasAttribute('data-personid')) {
     e.preventDefault(); saveNameFields();
   }
@@ -7501,6 +7526,8 @@ function fillSettings() {
   if (addr && document.activeElement !== addr) addr.value = state.address || '';
   var zn = document.getElementById('zinename');
   if (zn && document.activeElement !== zn) zn.value = state.zine || '';
+  var ct = document.getElementById('contactinput');
+  if (ct && document.activeElement !== ct) ct.value = state.contact || '';
 }
 
 Promise.all([photoLoadAll(), faceLoadAll()]).then(function () {

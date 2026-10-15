@@ -41,7 +41,7 @@ function carriedById(id) {
 // the distro is holding that scene's press and can hand it on from there.
 function distroSeed(entry) {
   return { stoop: 'issue', version: 1, no: entry.issue.no,
-    people: entry.people || [], address: entry.address || '', zine: entry.zine || '',
+    people: entry.people || [], address: entry.address || '', zine: entry.zine || '', contact: entry.contact || '',
     issues: [entry.issue], cycle: entry.cycle || nextCycleAfter(entry.issue.no),
     photos: photosFor([entry.issue]), open: '#shelf', read: entry.issue.no };
 }
@@ -61,6 +61,7 @@ function carrySeed(seed) {
     id: uid('dz'), ts: Date.now(), issue: iss,
     zine: String(seed.zine || 'STOOP ZINE').slice(0, 40),
     address: String(seed.address || '').slice(0, 200),
+    contact: String(seed.contact || '').slice(0, 120),
     people: (seed.people || []).filter(function (p) { return p && p.id && p.name; })
       .map(function (p) { return { id: String(p.id), name: String(p.name).slice(0, 24) }; }),
     cycle: seed.cycle && typeof seed.cycle === 'object' ? seed.cycle : null

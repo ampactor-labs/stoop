@@ -48,7 +48,7 @@ Imposition is the arrangement of pages on a printed sheet so that they come out 
 
 The shelf keeps every issue as it shipped, with its own pages, format and fold, so a back issue reprints correctly whatever the current draft is set to. Each issue has **READ**, **REPRINT**, **PDF**, **SHOP PDF**, **RISO** and **EXPORT**.
 
-**hand it on** saves the latest issue as one HTML file named for the scene and the issue, such as `stoop-zine-01.html`. Opened on a machine that has never seen the app, it shows the issue page by page, with the text one tap away, and then offers the press it rode in for the next issue. It carries every back issue too, each with only its cover photograph, so the file does not grow with the shelf until nobody can send it. The file is already an itch.io or Neocities upload: one HTML page with nothing to build, so putting the newest issue online is putting that file somewhere. **SEND** in the tray saves a single piece as its own file, which carries the press as well, and **TAKE IN** under **scene** takes in a piece or an issue somebody sent; taking the same file twice does nothing.
+On a phone that can share files, everything the press writes (an issue, a piece, a PDF, plates, the site, a backup) opens the phone's share sheet, so it can go by AirDrop to the person in front of you or by Messages or Mail; anywhere else it downloads. **hand it on** gives the latest issue as one HTML file named for the scene and the issue, such as `stoop-zine-01.html`. Opened on a machine that has never seen the app, it shows the issue page by page, with the text one tap away, and then offers the press it rode in for the next issue. It carries every back issue too, each with only its cover photograph, so the file does not grow with the shelf until nobody can send it. The file is already an itch.io or Neocities upload: one HTML page with nothing to build, so putting the newest issue online is putting that file somewhere. Where pieces go, an email or a handle set under **scene**, goes in the colophon, on the file's last page, and with every piece sent. **SEND** in the tray gives a single piece as its own file, which carries the press as well, and **TAKE IN** under **scene** takes in a piece or an issue somebody sent; taking the same file twice does nothing.
 
 **MAKE THE SITE (.ZIP)** on the shelf writes the folder the back covers point at: every issue as the page its QR code leads to, with a PDF beside each and the newest at the root. Beside them go `feed.xml`, an Atom feed with one entry per issue and the PDF as its enclosure, so the bell rings in a feed reader; `catalog.csv`, the shelf as a library catalogues it, one row per issue; and each cover photograph as a JPEG beside its issue, so a shared link shows it. It works on any host that serves plain files, such as Neocities, Netlify Drop or GitHub Pages, or from a thumb drive.
 
@@ -115,7 +115,7 @@ index.html         the app, built from src/ (the page GitHub Pages serves)
 press/index.html   the hand print kit, built from src/press.html
 artifact/          both pages as fragments for the claude.ai artifact publisher
 src/               the parts: views/, js/ (one file per concern), stylesheets, fonts/
-test/              twenty-eight browser suites and their runner, run.js
+test/              twenty-nine browser suites and their runner, run.js
 build.sh           assembles src/ into the four built files
 check.sh           the repository's laws, run by CI and the pre-commit hook
 docs/              longer write-ups linked from this README
@@ -171,7 +171,7 @@ npx playwright install chromium
 node test/run.js
 ```
 
-`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-eight suites cover the parts that would be easy to fake, among them:
+`npm install playwright` writes `package.json`, `package-lock.json` and `node_modules/`, all ignored by git. `PLAYWRIGHT_CHROMIUM` points the runner at a Chromium binary you already have. The twenty-nine suites cover the parts that would be easy to fake, among them:
 
 - two issues on the shelf, each keeping its own words;
 - the same pieces re-flowing into another format with nothing retyped;
@@ -184,7 +184,8 @@ node test/run.js
 - a blue headline, a black body and a pink page separating into exactly two riso plates, the blue one holding the headline and nothing else;
 - a friend's issue going on the shelf as theirs, printing in its own format and going out with the site under `distro/`, without touching the scene's own issues or roster;
 - a drag in pen mode leaving one cutting with its points inside its box, a second stroke joining it, and the drawing reaching the PDF as lines in its ink;
-- Liberation Sans taken in as a face, measured the same on screen and in the PDF's width table, embedded as TrueType, carried by the file handed on, and a PostScript face refused.
+- Liberation Sans taken in as a face, measured the same on screen and in the PDF's width table, embedded as TrueType, carried by the file handed on, and a PostScript face refused;
+- on a phone, a piece, a PDF and a backup leaving through the share sheet with the scene's contact, and a laptop still downloading.
 
 On 30 September 2026, in a cloud container with Chromium, a full run passed all 453 checks. One check, "PRINT SHOWS THE IMPOSED SHEET ALONE" in `01-features`, has failed once on a slow machine: it inspects the print zone while the app's 800 ms clean-up timer is running, so the timer can empty the zone before the check reads it.
 

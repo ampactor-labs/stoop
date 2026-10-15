@@ -107,14 +107,7 @@ function writeFlyerPdf(title, issue, url, photoId) {
 function saveFlyer(title, issue, url, photoId, name) {
   toast('Writing the flyer…');
   return buildFlyerPdf(title, issue, url, photoId).then(function (blob) {
-    var href = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = href;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+    handOver(name, blob);
     toast('Flyer saved — print it, cut the tabs, staple it somewhere');
   }).catch(function (e) {
     toast('Could not write the flyer: ' + e.message);

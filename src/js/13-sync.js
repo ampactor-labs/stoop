@@ -20,6 +20,7 @@ function exportBackup() {
     cycle: state.cycle,
     address: state.address,
     zine: state.zine,
+    contact: state.contact,
     card: state.card,
     distro: state.distro,
     press: state.press,
@@ -27,14 +28,7 @@ function exportBackup() {
     faces: facesForBackup()
   };
   var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'stoop-' + new Date().toISOString().slice(0, 10) + '.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  handOver('stoop-' + new Date().toISOString().slice(0, 10) + '.json', blob);
   toast('Backup downloaded — photos included');
   try { localStorage.setItem('stoop_last_backup', String(Date.now())); } catch (e) {}
   keepStorage();
@@ -110,6 +104,7 @@ function importBackup(raw, mode) {
     state.cycle = incoming.cycle;
     state.address = incoming.address;
     state.zine = incoming.zine;
+    state.contact = incoming.contact;
     state.card = incoming.card;
     state.distro = incoming.distro;
     state.press = incoming.press;
@@ -130,6 +125,7 @@ function importBackup(raw, mode) {
       .filter(function (p) { return !wasPublished(p.id); });
     if (!state.address) state.address = incoming.address;
     if (!state.zine || state.zine === 'STOOP ZINE') state.zine = incoming.zine;
+    if (!state.contact) state.contact = incoming.contact;
     Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
     state.distro = mergeList(state.distro, incoming.distro);
     mergePeople(raw && raw.people);
@@ -209,6 +205,8 @@ function saveNameFields() {
   savePeople();
   var addr = document.getElementById('addressinput');
   if (addr) state.address = addr.value.trim();
+  var ct = document.getElementById('contactinput');
+  if (ct) state.contact = ct.value.trim().slice(0, 120);
   saveState();
   renderAll();
   toast('Saved');
@@ -219,7 +217,7 @@ function startEmpty() {
   if (!confirm('Clear everything on this device \u2014 scraps, pieces and every published issue \u2014 and start blank?')) return;
   forgetUndo();
   state = normalize({ cycle: { no: '01', bell: Date.now() + 6048e5, editor: people[0].id },
-    address: state.address, zine: state.zine });
+    address: state.address, zine: state.zine, contact: state.contact });
   saveState();
   sweepPhotos();
   renderAll();

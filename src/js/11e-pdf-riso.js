@@ -153,7 +153,7 @@ function saveRisoPlates(panels, formatId, url, issue, gen) {
   toast('Separating the plates…');
   copierFlash();
   return loadFaces().then(function () { return writePlates(panels, formatId, url, issue, gen); }).then(function (blob) {
-    downloadBlob(sceneSlug() + '-' + issue + '-riso.zip', blob);
+    handOver(sceneSlug() + '-' + issue + '-riso.zip', blob);
     var n = platesOf(panels).length;
     toast(n + ' plate' + (n === 1 ? '' : 's') + ', a preview and a note on the stock. Hand the zip to the studio.');
   }).catch(function (e) { toast('Could not write the plates: ' + e.message); });

@@ -64,7 +64,7 @@ function writeShopPdf(panels, formatId, url, issue, gen) {
 function saveShopPdf(panels, formatId, url, issue, name, gen) {
   toast('Writing the pages for a print shop…');
   return loadFaces().then(function () { return writeShopPdf(panels, formatId, url, issue, gen); }).then(function (blob) {
-    downloadBlob(name, blob);
+    handOver(name, blob);
     toast('Saved: one page to a sheet, with bleed and crop marks, in reading order');
   }).catch(function (e) { toast('Could not write the PDF: ' + e.message); });
 }

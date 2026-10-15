@@ -146,6 +146,7 @@ function colophonText(issue) {
   if (c.rights) lines.push(c.rights);
   if (c.seeAlso) lines.push('See also: ' + c.seeAlso);
   if (c.url) lines.push(c.url.replace(/^https?:\/\//, ''));
+  if (state.contact) lines.push('Write to ' + state.contact);
   lines.push('Union ID: ' + (c.unionId || '________'));
   return lines.join('\n');
 }
@@ -256,8 +257,9 @@ function replyFromPaper() {
   setTimeout(function () {
     var t = document.getElementById('piecetitle');
     if (t) t.focus();
-    toast('Writing back' + (held ? ' to №' + held.no : '') +
-      '. SEND in the tray when it is done, and it goes to whoever holds the desk.');
+    var to = String((landingSeed && landingSeed.contact) || state.contact || '').trim();
+    toast('Writing back' + (held ? ' to №' + held.no : '') + '. SEND in the tray when it is done' +
+      (to ? ', and send it to ' + to + '.' : ', and it goes to whoever holds the desk.'));
   }, 60);
 }
 window.addEventListener('hashchange', function () { if (location.hash === '#reply') replyFromPaper(); });

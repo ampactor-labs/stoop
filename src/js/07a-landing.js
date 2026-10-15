@@ -35,6 +35,12 @@ function landingUrl(iss) {
   return (/^https?:\/\//.test(addr) ? addr : 'https://' + addr) + '/' + iss.no + '/';
 }
 
+// Where to write: the file's own scene's contact, whoever is reading it.
+function landingContact() {
+  var c = String((landingSeed && landingSeed.contact) || (!fileIssue() && state.contact) || '').trim();
+  return c ? ' Write back to ' + esc(c) + '.' : '';
+}
+
 function renderLanding() {
   var box = document.getElementById('landing');
   if (!box) return;
@@ -44,7 +50,7 @@ function renderLanding() {
   box.innerHTML = readHtml(iss, landingUrl(iss), iss === fileIssue() ? fileNameOf : null) +
     '<div class="landing-tail">' +
     '<p class="landing-note">This file is the zine, every issue before it, and the press that made it. ' +
-    'No server, no account. You are holding the whole thing.</p>' +
+    'No server, no account. You are holding the whole thing.' + landingContact() + '</p>' +
     '<div class="landing-verbs">' +
     '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
     '<button class="btn big" id="landown">START YOUR OWN</button>' +

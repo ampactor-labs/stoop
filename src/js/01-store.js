@@ -132,15 +132,16 @@ function fmtStamp(ts) {
   return d.toLocaleString('en-US', { month: 'short', day: 'numeric' }) + ' · ' +
     d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
-function toast(msg, undo) {
+function toast(msg, undo, label) {
   var t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
-  // A delete is done at once and can be taken back while the toast is up.
+  // A delete is done at once and can be taken back while the toast is up;
+  // the same button carries any one thing the toast offers to do next.
   if (undo) {
     var b = document.createElement('button');
     b.className = 'toast-undo';
-    b.textContent = 'UNDO';
+    b.textContent = label || 'UNDO';
     b.onclick = function () { t.style.display = 'none'; undo(); };
     t.appendChild(b);
   }
@@ -230,6 +231,7 @@ function normalize(raw) {
     cycle: (raw && raw.cycle) || { no: '01', bell: Date.now() + 6048e5, editor: 'a' },
     address: (raw && raw.address) || '',
     zine: (raw && raw.zine) || 'STOOP ZINE',
+    contact: String((raw && raw.contact) || '').slice(0, 120),
     card: cleanCard(raw && raw.card),
     distro: records(raw && raw.distro).filter(function (e) { return e.issue && typeof e.issue === 'object' && e.issue.no; }),
     press: (raw && raw.press) || null
@@ -256,7 +258,7 @@ var state = (function () {
     stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
-      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', card: seed.card
+      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', contact: seed.contact, card: seed.card
     });
   }
   return normalize(JSON.parse(JSON.stringify(defaultData)));

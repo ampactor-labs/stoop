@@ -127,7 +127,7 @@ document.addEventListener('click', function (e) {
   if (hit(t, '#bundlebtn')) return document.getElementById('bundlefile').click();
   if (hit(t, '#mergebtn')) { document.getElementById('importfile').dataset.mode = 'merge'; return document.getElementById('importfile').click(); }
   if (hit(t, '#replacebtn')) { document.getElementById('importfile').dataset.mode = 'replace'; return document.getElementById('importfile').click(); }
-  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savezinebtn')) return saveNameFields();
+  if (hit(t, '#savenamesbtn') || hit(t, '#savenamesbtn2') || hit(t, '#savenamesbtn3') || hit(t, '#savezinebtn')) return saveNameFields();
   if (hit(t, '#addpersonbtn')) {
     var np = document.getElementById('newperson');
     if (!np || !np.value.trim()) { toast('Give them a name first'); return; }
@@ -165,7 +165,7 @@ document.addEventListener('keydown', function (e) {
   if (e.target.id === 'loginput' && !e.shiftKey) { e.preventDefault(); addLog(); }
   else if (e.target.id === 'scraptitle') { e.preventDefault(); addLog(); }
   else if (e.target.id === 'piecetitle') { e.preventDefault(); submitPiece(); }
-  else if (e.target.id === 'addressinput' || e.target.id === 'zinename' ||
+  else if (e.target.id === 'addressinput' || e.target.id === 'zinename' || e.target.id === 'contactinput' ||
     e.target.hasAttribute('data-personid')) {
     e.preventDefault(); saveNameFields();
   }
@@ -237,6 +237,8 @@ function fillSettings() {
   if (addr && document.activeElement !== addr) addr.value = state.address || '';
   var zn = document.getElementById('zinename');
   if (zn && document.activeElement !== zn) zn.value = state.zine || '';
+  var ct = document.getElementById('contactinput');
+  if (ct && document.activeElement !== ct) ct.value = state.contact || '';
 }
 
 // Photos load before the first paint so renders stay synchronous; the app is

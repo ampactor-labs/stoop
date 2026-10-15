@@ -243,14 +243,7 @@ function writeSheetPdf(panels, formatId, hand, url, issue, gen) {
 function savePdf(panels, formatId, hand, url, issue, name, gen) {
   toast('Writing the PDF…');
   return buildSheetPdf(panels, formatId, hand, url, issue, gen).then(function (blob) {
-    var href = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = href;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+    handOver(name, blob);
     toast('PDF saved — exact size, no print dialog to argue with');
   }).catch(function (e) {
     toast('Could not write the PDF: ' + e.message);

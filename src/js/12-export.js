@@ -89,19 +89,8 @@ function pageWithSeed(seed) {
   return '<!doctype html>\n' + doc.outerHTML;
 }
 
-function download(name, html) {
-  downloadBlob(name, new Blob([html], { type: 'text/html' }));
-}
-
-function downloadBlob(name, blob) {
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+function download(name, html, note) {
+  handOver(name, new Blob([html], { type: 'text/html' }), note);
 }
 
 // The copier's lamp sweeps the pages once. Half a second; it is the one
@@ -130,7 +119,7 @@ function issueFileHtml(no) {
   });
   return pageWithSeed({
     stoop: 'issue', version: 1, no: no,
-    people: people, address: state.address || '', zine: state.zine || '', card: cardState(),
+    people: people, address: state.address || '', zine: state.zine || '', contact: state.contact || '', card: cardState(),
     issues: upTo,
     // The cycle handed on follows the issue in the file, not the shelf it left
     // behind. Somebody given №01 is holding the desk for №02, whatever number
@@ -164,8 +153,9 @@ function exportPieceBundle(id) {
     pieces: [piece], photos: photosFor([piece]), open: '#desk'
   });
   var slug = function (s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); };
-  download(['piece', slug(nameOf(piece.byline)), slug(piece.title).slice(0, 24)].filter(Boolean).join('-') + '.html', html);
-  toast('Piece exported — send it to whoever holds the desk');
+  download(['piece', slug(nameOf(piece.byline)), slug(piece.title).slice(0, 24)].filter(Boolean).join('-') + '.html', html,
+    'A piece for ' + (state.zine || 'the zine') + '. ' + contactLine());
+  toast('Piece exported. ' + (contactLine() || 'Send it to whoever holds the desk.'));
 }
 
 // Reading a bundle back: pull the seed out of the file rather than trusting
@@ -193,6 +183,7 @@ function importSeed(seed) {
   });
   var addedPieces = takePieces(seed).length;
   if (seed.address && !state.address) state.address = seed.address;
+  if (seed.contact && !state.contact && seed.stoop === 'issue') state.contact = String(seed.contact).slice(0, 120);
   if (seed.zine && (!state.zine || state.zine === 'STOOP ZINE')) state.zine = seed.zine;
   if (seed.stoop === 'issue') mergePeople(seed.people);
   ensurePeople();

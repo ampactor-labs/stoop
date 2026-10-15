@@ -130,7 +130,7 @@ function publishSite() {
     files.sort(function (a, b) { return a.name < b.name ? -1 : 1; });
     return zipFiles(files);
   }).then(function (blob) {
-    downloadBlob(sceneSlug() + '-site.zip', blob);
+    handOver(sceneSlug() + '-site.zip', blob);
     toast('The site: ' + issues.length + ' issue(s), a PDF of each, a feed and a catalogue. Unzip it onto any host.');
   }).catch(function (e) { toast('Could not make the site: ' + e.message); });
 }
