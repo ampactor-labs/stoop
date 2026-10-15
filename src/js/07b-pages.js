@@ -46,10 +46,12 @@ function reachHtml(e) {
 
 // The address, its code, and under it the line a reader types to write
 // back: the same page at #reply, where the press opens on the piece form.
+// An address breaks after a slash, never in the middle of a word.
+function addrBreaks(text) { return esc(text).replace(/([\/#])/g, '$1<wbr>'); }
 function addrInner(url) {
   var shown = url.replace(/^https?:\/\//, '');
-  return '<img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' + esc(shown) +
-    '<small class="reply">write back: ' + esc(shown) + '#reply</small></span>';
+  return '<img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' + addrBreaks(shown) +
+    '<small class="reply">write back: ' + addrBreaks(shown + '#reply') + '</small></span>';
 }
 function addrHtml(url) { return url ? '<div class="addr">' + addrInner(url) + '</div>' : ''; }
 

@@ -74,6 +74,7 @@ function whereHtml(el) {
   if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
   if (at && at.page < pages) b.push(['elnextpage', 'PAGE ' + (at.page + 1) + ' \u25b6']);
   b.push(['eldup', 'DUPLICATE'], ['elfront', 'FRONT'], ['elback', 'BACK'], ['elstraight', 'STRAIGHTEN']);
+  if (!isFolio(el)) b.push(['elkeep', 'KEEP AS A STAMP']);
   return btnRow(b, el.id);
 }
 

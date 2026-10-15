@@ -12,6 +12,25 @@ function pdfLayout(formatId) {
   return { w: paper.wpt, h: paper.hpt };
 }
 
+// An address on paper breaks where it does on screen: after a slash or a
+// space, and only mid-word when one piece is wider than the line.
+function wrapAddr(text, size, width) {
+  var cols = Math.max(4, Math.floor(width / (size * COURIER_W)));
+  var lines = [], line = '';
+  (String(text).match(/[^\/#\s]*[\/#]?\s*/g) || []).forEach(function (bit) {
+    if (!bit) return;
+    while (bit.replace(/\s+$/, '').length > cols) {
+      if (line) { lines.push(line.replace(/\s+$/, '')); line = ''; }
+      lines.push(bit.slice(0, cols));
+      bit = bit.slice(cols);
+    }
+    if ((line + bit).replace(/\s+$/, '').length > cols) { lines.push(line.replace(/\s+$/, '')); line = ''; }
+    line += bit;
+  });
+  if (line.replace(/\s+$/, '')) lines.push(line.replace(/\s+$/, ''));
+  return lines;
+}
+
 // A panel's content box, in PDF coordinates.
 function panelBox(geom, sheet, index) {
   var pw = geom.w / sheet.cols;
@@ -109,7 +128,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var tx = box.x + (qr ? 54 : 0);
     var shown = url.replace(/^https?:\/\//, '');
     var w = box.cw - (qr ? 54 : 0);
-    wrapMono(shown, 6.375, w).concat(wrapMono('write back: ' + shown + '#reply', 6.375, w)).slice(0, 5)
+    wrapAddr(shown, 6.375, w).concat(['write back:'], wrapAddr(shown + '#reply', 6.375, w)).slice(0, 5)
       .forEach(function (line, i) { ops += pdfLine(line, 'F1', 6.375, tx, qy + 39 - i * 7.5); });
   }
   return ops + pdfPasteup(panel, box, images, ghosts, page);

@@ -59,6 +59,11 @@
 body[data-pen] #sheetzone .panel, body[data-pen] #sheetzone .el { cursor: crosshair; touch-action: none; }
 body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 .rail .btn.on { background: var(--fg); color: var(--bg); }
+/* The scene's own stamps sit after the starters, each with a way to forget it. */
+.kitstamp { position: relative; display: inline-flex; align-items: flex-start; }
+.kitstamp .stampbtn { overflow: hidden; }
+.kitstamp .stampbtn .el { cursor: inherit; pointer-events: none; }
+.kitstamp .log-del { position: absolute; top: -6px; right: -6px; font-size: .7rem; padding: 0 .25rem; background: var(--bg); }
 .stamptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Anton, Impact, sans-serif; text-transform: uppercase; font-size: 1px; white-space: nowrap; }
 .el-stamp .stamptext { font-size: 62cqh; }
 .stamps { display: none; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .2rem 0 .6rem; }

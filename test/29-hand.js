@@ -214,6 +214,13 @@ module.exports = async function hand(browser, ok) {
   const [fdl] = await Promise.all([D2.page.waitForEvent('download'), D2.page.click('#handonbtn').then(() => D2.page.click('#handfile'))]);
   const held = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'stoop-held-')), 'nightbus-01.html');
   await fdl.saveAs(held);
+  await D2.go('#shelf');
+  const [bdl] = await Promise.all([D2.page.waitForEvent('download'), D2.page.click('[data-pdfissue="01"]')]);
+  const bpdf = fs.readFileSync(await bdl.path(), 'latin1');
+  ok('THE BACK COVER\'S ADDRESS BREAKS AFTER A SLASH, NEVER MID-WORD', /\(ampactor\.dev\/stoop\/\) Tj/.test(bpdf) &&
+     /\(nightbus\/01\/\) Tj/.test(bpdf) && /\(write back:\) Tj/.test(bpdf) && /\(nightbus\/01\/#reply\) Tj/.test(bpdf));
+  await D2.go('#press');
+  ok('and on screen it may break only there', /stoop\/<wbr>nightbus\/<wbr>\d\d\/<wbr>/.test(await D2.page.locator('#sheetzone .backcover .addr span').first().innerHTML()));
   await D2.ctx.close();
   const L = await open(browser, true);
   await L.page.goto('file://' + held);

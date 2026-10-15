@@ -338,7 +338,7 @@
 .backcover .body { font-size: 10.5px; }
 .addr { display: flex; align-items: center; gap: 6px; margin-top: auto; }
 .addr .qr { width: 64px; height: 64px; image-rendering: pixelated; }
-.addr span { font-family: 'Courier New', monospace; font-size: 8.5px; word-break: break-all; }
+.addr span { font-family: 'Courier New', monospace; font-size: 8.5px; overflow-wrap: anywhere; }
 .addr .reply { display: block; font-size: 7.5px; opacity: .8; }
 
 
@@ -491,6 +491,11 @@ body.landing main { padding-top: 2.4rem; }
 body[data-pen] #sheetzone .panel, body[data-pen] #sheetzone .el { cursor: crosshair; touch-action: none; }
 body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 .rail .btn.on { background: var(--fg); color: var(--bg); }
+
+.kitstamp { position: relative; display: inline-flex; align-items: flex-start; }
+.kitstamp .stampbtn { overflow: hidden; }
+.kitstamp .stampbtn .el { cursor: inherit; pointer-events: none; }
+.kitstamp .log-del { position: absolute; top: -6px; right: -6px; font-size: .7rem; padding: 0 .25rem; background: var(--bg); }
 .stamptext { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: Anton, Impact, sans-serif; text-transform: uppercase; font-size: 1px; white-space: nowrap; }
 .el-stamp .stamptext { font-size: 62cqh; }
 .stamps { display: none; gap: .5rem; flex-wrap: wrap; align-items: center; margin: .2rem 0 .6rem; }
@@ -943,7 +948,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 352 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 359 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1143,6 +1148,7 @@ function normalize(raw) {
     zine: (raw && raw.zine) || 'STOOP ZINE',
     contact: String((raw && raw.contact) || '').slice(0, 120),
     card: cleanCard(raw && raw.card),
+    kit: cleanKit(raw && raw.kit),
     distro: records(raw && raw.distro).filter(function (e) { return e.issue && typeof e.issue === 'object' && e.issue.no; }),
     press: (raw && raw.press) || null
   };
@@ -1164,7 +1170,7 @@ var state = (function () {
     stateFromSeed = true;
     return normalize({
       issues: seed.issues || [], pieces: seed.pieces || [],
-      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', contact: seed.contact, card: seed.card
+      cycle: seed.cycle, address: seed.address || '', zine: seed.zine || 'STOOP ZINE', contact: seed.contact, card: seed.card, kit: seed.kit
     });
   }
   return normalize(JSON.parse(JSON.stringify(defaultData)));
@@ -1257,6 +1263,7 @@ function collectPhotoRefs() {
   (pasteUndo || []).concat(pasteRedo || []).forEach(function (snap) {
     String(snap).replace(/"photo":"([^"]+)"/g, function (m, id) { live[id] = 1; return m; });
   });
+  (state.kit || []).forEach(function (k) { keep({ els: [k.el] }); });
   (state.distro || []).forEach(function (e) { (e.issue.panels || []).forEach(keep); (e.issue.pieces || []).forEach(keep); });
   state.issues.forEach(function (iss) {
     (iss.panels || []).forEach(keep);
@@ -2850,6 +2857,7 @@ function whereHtml(el) {
   if (at && at.page > 1) b.push(['elprevpage', '\u25c0 PAGE ' + (at.page - 1)]);
   if (at && at.page < pages) b.push(['elnextpage', 'PAGE ' + (at.page + 1) + ' \u25b6']);
   b.push(['eldup', 'DUPLICATE'], ['elfront', 'FRONT'], ['elback', 'BACK'], ['elstraight', 'STRAIGHTEN']);
+  if (!isFolio(el)) b.push(['elkeep', 'KEEP AS A STAMP']);
   return btnRow(b, el.id);
 }
 
@@ -3218,9 +3226,39 @@ var STAMPS = {
   star:    { w: 0.16, h: 0.2,  ops: [{ p: [[0.5, 0], [0.62, 0.36], [1, 0.38], [0.7, 0.62], [0.8, 1], [0.5, 0.78], [0.2, 1], [0.3, 0.62], [0, 0.38], [0.38, 0.36]] }] },
   tape:    { w: 0.4,  h: 0.07, ops: [{ o: [0, 0, 1, 1, 0.04] }, { l: [0.05, 1, 0.2, 0, 0.03] }, { l: [0.25, 1, 0.4, 0, 0.03] }, { l: [0.45, 1, 0.6, 0, 0.03] }, { l: [0.65, 1, 0.8, 0, 0.03] }, { l: [0.85, 1, 1, 0, 0.03] }] },
   staple:  { w: 0.07, h: 0.03, ops: [{ r: [0, 0, 1, 0.34] }, { r: [0, 0.34, 0.14, 0.66] }, { r: [0.86, 0.34, 0.14, 0.66] }] },
-  barcode: { w: 0.3,  h: 0.1,  ops: [] }
+  barcode: { w: 0.3,  h: 0.1,  ops: [] },
+  bat:     { w: 0.34, h: 0.11, ops: [] },
+  moon:    { w: 0.18, h: 0.12, ops: [] }
 };
-var STAMP_ORDER = ['free', 'takeone', 'copy', 'no', 'arrow', 'star', 'tape', 'staple', 'barcode'];
+var STAMP_ORDER = ['free', 'takeone', 'copy', 'no', 'arrow', 'star', 'tape', 'staple', 'barcode', 'bat', 'moon'];
+
+(function () {
+  function quad(a, c, b, n) {
+    var out = [];
+    for (var i = 1; i <= n; i++) {
+      var t = i / n, u = 1 - t;
+      out.push([u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]);
+    }
+    return out;
+  }
+  var half = [[0.5, 0.16], [0.533, 0.12], [0.552, 0], [0.574, 0.16], [0.6, 0.25]]
+    .concat(quad([0.6, 0.25], [0.73, 0], [0.86, 0.07], 5), quad([0.86, 0.07], [0.96, 0.12], [1, 0.34], 3));
+  var tips = [[1, 0.34], [0.9, 0.68], [0.77, 0.76], [0.65, 0.68]];
+  for (var i = 0; i + 1 < tips.length; i++) {
+    var a = tips[i], b = tips[i + 1];
+    half = half.concat(quad(a, [(a[0] + b[0]) / 2 - 0.02, (a[1] + b[1]) / 2 - 0.16], b, 4));
+  }
+  half = half.concat(quad([0.65, 0.68], [0.57, 0.74], [0.5, 0.97], 3));
+  var mirror = half.slice(1, -1).reverse().map(function (q) { return [1 - q[0], q[1]]; });
+  STAMPS.bat.ops.push({ p: half.concat(mirror).map(function (q) { return [Math.round(q[0] * 1000) / 1000, Math.round(q[1] * 1000) / 1000]; }) });
+})();
+
+(function () {
+  var pts = [], a;
+  for (a = 70; a <= 290; a += 10) pts.push([0.5 + 0.5 * Math.cos(a * Math.PI / 180), 0.5 + 0.5 * Math.sin(a * Math.PI / 180)]);
+  for (a = 250; a >= 110; a -= 10) pts.push([0.8 + 0.42 * Math.cos(a * Math.PI / 180), 0.5 + 0.47 * Math.sin(a * Math.PI / 180)]);
+  STAMPS.moon.ops.push({ p: pts.map(function (q) { return [Math.round(q[0] * 1000) / 1000, Math.round(q[1] * 1000) / 1000]; }) });
+})();
 
 (function () {
   var x = 0, i = 0;
@@ -3269,9 +3307,9 @@ function renderStampPalette(open) {
   if (!open) { box.innerHTML = ''; return; }
   box.innerHTML = STAMP_ORDER.map(function (id) {
     var st = STAMPS[id];
-    return '<button class="stampbtn" data-stamp="' + id + '" title="' + id + '" style="aspect-ratio:' +
+    return '<button class="stampbtn" data-stamp="' + id + '" title="' + id + '" aria-label="' + id + ' stamp" style="aspect-ratio:' +
       (st.w / st.h).toFixed(2) + '">' + stampSvg(id) + '</button>';
-  }).join('');
+  }).join('') + kitPaletteHtml();
 }
 
 document.addEventListener('click', function (ev) {
@@ -4275,6 +4313,92 @@ document.addEventListener('click', function (ev) {
   if (zone) { fitPages(zone); checkFit(); }
   renderStrip();
 });
+
+function kitOf() {
+  if (!Array.isArray(state.kit)) state.kit = [];
+  return state.kit;
+}
+
+function kitTemplate(el) {
+  var t = JSON.parse(JSON.stringify(el));
+  ['id', 'x', 'y', 'z', 'ghost', 'folio', 'lines'].forEach(function (k) { delete t[k]; });
+  t.rot = 0;
+  return t;
+}
+
+function cleanKit(raw) {
+  return (Array.isArray(raw) ? raw : []).filter(function (k) {
+    return k && typeof k.id === 'string' && k.el && typeof k.el === 'object' &&
+      ['draw', 'photo', 'text', 'stamp', 'box', 'rule', 'qr'].indexOf(k.el.kind) >= 0;
+  }).map(function (k) {
+    return { id: k.id.slice(0, 40), name: String(k.name || 'stamp').slice(0, 40), el: k.el, ts: k.ts || 0 };
+  });
+}
+
+function kitName(el) {
+  if (el.kind === 'draw') return 'drawing';
+  if (el.kind === 'photo') return el.alt ? String(el.alt).slice(0, 30) : 'cut-out';
+  if (el.kind === 'text') return String(el.text || 'words').split(/\s+/).slice(0, 3).join(' ');
+  return el.kind;
+}
+
+function keepAsStamp(id) {
+  var hit = findEl(id);
+  if (!hit || isFolio(hit.el)) return;
+  kitOf().push({ id: uid('kt'), name: kitName(hit.el), el: kitTemplate(hit.el), ts: Date.now() });
+  saveState();
+  renderPress();
+  toast('Kept as a stamp. It is under STAMP, and it rides in every file this scene hands on.');
+}
+
+function placeKit(id) {
+  var k = kitOf().filter(function (x) { return x.id === id; })[0];
+  var panel = panelOfPage(pastePage);
+  if (!k || !panel) return;
+  pasteMark();
+  var el = JSON.parse(JSON.stringify(k.el));
+  el.id = uid('el');
+  el.w = Math.min(el.w || 0.3, 1.2);
+  el.h = Math.min(el.h || 0.2, 1.2);
+  el.x = Math.max(-0.1, 0.5 - el.w / 2);
+  el.y = Math.max(-0.1, 0.4 - el.h / 2);
+  el.z = topZ(panel) + 1;
+  if (!el.colour && inkForPage(panel) && el.kind !== 'photo' && el.kind !== 'qr') el.colour = inkForPage(panel);
+  elsOf(panel).push(el);
+  pasteSel = el.id;
+  savePress();
+}
+
+function forgetKit(id) {
+  state.kit = kitOf().filter(function (x) { return x.id !== id; });
+  saveState();
+  renderStampPalette(true);
+  setTimeout(sweepPhotos, 500);
+}
+
+function kitPaletteHtml() {
+  return kitOf().map(function (k) {
+    var ar = Math.max(0.3, Math.min(4, (k.el.w || 0.3) / (k.el.h || 0.2) / 1.5));
+    return '<span class="kitstamp"><button class="stampbtn" data-kit="' + esc(k.id) + '" title="' + esc(k.name) +
+      '" aria-label="' + esc(k.name) + ', a stamp of this scene’s" style="aspect-ratio:' + ar.toFixed(2) + '">' +
+      '<span class="el el-' + esc(k.el.kind) + '" style="position:relative;display:block;width:100%;height:100%;' +
+      (inkOf(k.el) ? '--ink:' + inkOf(k.el) : '') + '">' + elBody(k.el, photoCache, false, false) + '</span></button>' +
+      '<button class="log-del" data-unkit="' + esc(k.id) + '" title="Forget this stamp" aria-label="Forget this stamp">✕</button></span>';
+  }).join('');
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target, el;
+  if (!t.closest) return;
+  if ((el = t.closest('[data-elkeep]'))) { keepAsStamp(el.getAttribute('data-elkeep')); return; }
+  if ((el = t.closest('[data-unkit]'))) { forgetKit(el.getAttribute('data-unkit')); return; }
+  if ((el = t.closest('[data-kit]'))) {
+    placeKit(el.getAttribute('data-kit'));
+    renderStampPalette(false);
+    renderPress();
+    toast('Stamped. Drag it, turn it.');
+  }
+});
 var PIECE_KINDS = ['essay', 'photos', 'log', 'mix', 'recipe', 'letters'];
 
 function cycleState() {
@@ -4940,10 +5064,11 @@ function reachHtml(e) {
     [e.t, e.r, e.b, e.l].map(function (on) { return on ? '1px' : '0'; }).join(' ') + '"></div>';
 }
 
+function addrBreaks(text) { return esc(text).replace(/([\/#])/g, '$1<wbr>'); }
 function addrInner(url) {
   var shown = url.replace(/^https?:\/\//, '');
-  return '<img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' + esc(shown) +
-    '<small class="reply">write back: ' + esc(shown) + '#reply</small></span>';
+  return '<img class="qr" src="' + esc(qrDataUrl(url, 3)) + '" alt=""><span>' + addrBreaks(shown) +
+    '<small class="reply">write back: ' + addrBreaks(shown + '#reply') + '</small></span>';
 }
 function addrHtml(url) { return url ? '<div class="addr">' + addrInner(url) + '</div>' : ''; }
 
@@ -5838,6 +5963,23 @@ function pdfLayout(formatId) {
   return { w: paper.wpt, h: paper.hpt };
 }
 
+function wrapAddr(text, size, width) {
+  var cols = Math.max(4, Math.floor(width / (size * COURIER_W)));
+  var lines = [], line = '';
+  (String(text).match(/[^\/#\s]*[\/#]?\s*/g) || []).forEach(function (bit) {
+    if (!bit) return;
+    while (bit.replace(/\s+$/, '').length > cols) {
+      if (line) { lines.push(line.replace(/\s+$/, '')); line = ''; }
+      lines.push(bit.slice(0, cols));
+      bit = bit.slice(cols);
+    }
+    if ((line + bit).replace(/\s+$/, '').length > cols) { lines.push(line.replace(/\s+$/, '')); line = ''; }
+    line += bit;
+  });
+  if (line.replace(/\s+$/, '')) lines.push(line.replace(/\s+$/, ''));
+  return lines;
+}
+
 function panelBox(geom, sheet, index) {
   var pw = geom.w / sheet.cols;
   var ph = geom.h / sheet.rows;
@@ -5925,7 +6067,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var tx = box.x + (qr ? 54 : 0);
     var shown = url.replace(/^https?:\/\//, '');
     var w = box.cw - (qr ? 54 : 0);
-    wrapMono(shown, 6.375, w).concat(wrapMono('write back: ' + shown + '#reply', 6.375, w)).slice(0, 5)
+    wrapAddr(shown, 6.375, w).concat(['write back:'], wrapAddr(shown + '#reply', 6.375, w)).slice(0, 5)
       .forEach(function (line, i) { ops += pdfLine(line, 'F1', 6.375, tx, qy + 39 - i * 7.5); });
   }
   return ops + pdfPasteup(panel, box, images, ghosts, page);
@@ -6760,6 +6902,12 @@ function exportIssueFile(no) {
   toast('\u2116' + no + ' is a file now. It is also the press.');
 }
 
+function withKitPhotos(out) {
+  var got = photosFor([{ panels: [{ els: kitOf().map(function (k) { return k.el; }) }] }]);
+  Object.keys(got).forEach(function (id) { out[id] = got[id]; });
+  return out;
+}
+
 function issueFileHtml(no) {
   var upTo = state.issues.filter(function (i) {
     return (parseInt(i.no, 10) || 0) <= (parseInt(no, 10) || 0);
@@ -6769,7 +6917,8 @@ function issueFileHtml(no) {
     people: people, address: state.address || '', zine: state.zine || '', contact: state.contact || '', card: cardState(),
     issues: upTo,
     cycle: nextCycleAfter(no),
-    photos: photosForFile(upTo, no),
+    kit: kitOf(),
+    photos: withKitPhotos(photosForFile(upTo, no)),
     open: '#shelf', read: no
   });
 }
@@ -7239,6 +7388,7 @@ function exportBackup() {
     zine: state.zine,
     contact: state.contact,
     card: state.card,
+    kit: state.kit,
     distro: state.distro,
     press: state.press,
     photos: photos,
@@ -7320,6 +7470,7 @@ function importBackup(raw, mode) {
     state.contact = incoming.contact;
     state.card = incoming.card;
     state.distro = incoming.distro;
+    state.kit = incoming.kit;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -7338,6 +7489,7 @@ function importBackup(raw, mode) {
     if (!state.contact) state.contact = incoming.contact;
     Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
     state.distro = mergeList(state.distro, incoming.distro);
+    state.kit = mergeList(kitOf(), incoming.kit);
     mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;

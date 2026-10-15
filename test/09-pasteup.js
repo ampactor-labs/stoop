@@ -121,7 +121,7 @@ module.exports = async function pasteup(browser, ok) {
   // ---- stamps: one geometry on screen and on paper
   await page.click('[data-page="3"]');
   await page.click('#stampbtn'); await page.waitForTimeout(200);
-  ok('the stamp palette shows every stamp', (await page.locator('#stamps [data-stamp]').count()) === 9);
+  ok('the stamp palette shows every stamp', (await page.locator('#stamps [data-stamp]').count()) === 11);
   await page.click('[data-stamp="copy"]'); await page.waitForTimeout(300);
   ok('A STAMP IS A CUTTING',
      (await page.locator('[data-page="3"] .el-stamp .stampsvg').count()) === 1 &&

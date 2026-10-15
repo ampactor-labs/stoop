@@ -110,6 +110,14 @@ function exportIssueFile(no) {
   toast('\u2116' + no + ' is a file now. It is also the press.');
 }
 
+// The kit's photographs ride with it, so a cut-out kept as a stamp is still
+// a cut-out in the press somebody is handed.
+function withKitPhotos(out) {
+  var got = photosFor([{ panels: [{ els: kitOf().map(function (k) { return k.el; }) }] }]);
+  Object.keys(got).forEach(function (id) { out[id] = got[id]; });
+  return out;
+}
+
 function issueFileHtml(no) {
   // The shelf travels up to and including this issue: a reader who is handed
   // №03 gets №01 and №02 with it, because a zine you cannot read back is a
@@ -125,7 +133,8 @@ function issueFileHtml(no) {
     // behind. Somebody given №01 is holding the desk for №02, whatever number
     // the exporting scene has since reached.
     cycle: nextCycleAfter(no),
-    photos: photosForFile(upTo, no),
+    kit: kitOf(),
+    photos: withKitPhotos(photosForFile(upTo, no)),
     open: '#shelf', read: no
   });
 }

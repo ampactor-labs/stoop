@@ -22,6 +22,7 @@ function exportBackup() {
     zine: state.zine,
     contact: state.contact,
     card: state.card,
+    kit: state.kit,
     distro: state.distro,
     press: state.press,
     photos: photos,
@@ -107,6 +108,7 @@ function importBackup(raw, mode) {
     state.contact = incoming.contact;
     state.card = incoming.card;
     state.distro = incoming.distro;
+    state.kit = incoming.kit;
     state.press = incoming.press;
   } else {
     var count = function () {
@@ -128,6 +130,7 @@ function importBackup(raw, mode) {
     if (!state.contact) state.contact = incoming.contact;
     Object.keys(incoming.card).forEach(function (k) { if (!cardState()[k]) state.card[k] = incoming.card[k]; });
     state.distro = mergeList(state.distro, incoming.distro);
+    state.kit = mergeList(kitOf(), incoming.kit);
     mergePeople(raw && raw.people);
     if (incoming.press && (!state.press || (incoming.press.ts || 0) > (state.press.ts || 0))) {
       state.press = incoming.press;

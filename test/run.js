@@ -44,7 +44,8 @@ const suites = [
   ['the distro', require('./26-distro.js')],
   ['the pen', require('./27-pen.js')],
   ['your own faces', require('./28-faces.js')],
-  ['handing on', require('./29-hand.js')]
+  ['handing on', require('./29-hand.js')],
+  ['the kit', require('./30-kit.js')]
 ];
 
 (async () => {
