@@ -148,7 +148,7 @@ module.exports = async function colour(browser, ok) {
   await page.waitForTimeout(500);
   await page.click('#buildissuebtn');
   await page.waitForTimeout(600);
-  const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn').then(() => page.click('#handfile'))]);
   const file = path.join(dir, 'issue.html');
   await hdl.saveAs(file);
   const other = await (await browser.newContext({ viewport: { width: 1280, height: 1000 } })).newPage();

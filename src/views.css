@@ -163,12 +163,26 @@
 .reprintzone { display: none; }
 
 /* Toast */
+/* The issue's sheet: a card over everything but the toast, its code as big
+   as the card allows, on white whatever the page around it is. */
+.handscrim, .handsheet { display: none; }
+body.handing .handscrim { display: block; position: fixed; inset: 0; z-index: 47; background: rgba(20,18,16,.55); }
+body.handing .handsheet { display: block; position: fixed; z-index: 48; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(92vw, 420px); max-height: 92vh; overflow-y: auto; background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: .9rem 1rem 1rem; }
+.hand-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .6rem; }
+.hand-head b { font-family: Anton, Impact, sans-serif; font-size: 1.6rem; letter-spacing: .02em; }
+.hand-head span { flex: 1; font-family: Anton, Impact, sans-serif; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hand-code { background: #fff; padding: 0; }
+.handqr { display: block; width: 100%; height: auto; }
+.hand-addr { font-family: 'Courier New', monospace; font-size: .9rem; word-break: break-all; text-align: center; margin: .5rem 0 .2rem; }
+.hand-verbs { margin-top: .7rem; }
 .toast-undo { font: inherit; background: var(--fg); color: var(--spot); border: 0; margin-left: .7rem; padding: .1rem .5rem; cursor: pointer; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--spot); color: var(--fg); font-family: 'Courier New', monospace; font-size: .85rem; font-weight: bold; padding: .5rem .9rem; border: 2px solid var(--fg); box-shadow: 3px 3px 0 var(--fg); display: none; z-index: 50; }
 
 @media print {
   body { background: #fff; color: #000; }
-  header.chrome, main, .pageweight, .toast { display: none !important; }
+  header.chrome, main, .pageweight, .toast, .handsheet, .handscrim { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
   .reprintzone .sheetwrap { margin: 0; break-after: page; page-break-after: always; }
   .reprintzone .sheetwrap:last-child { break-after: auto; page-break-after: auto; }

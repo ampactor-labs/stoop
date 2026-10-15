@@ -162,7 +162,7 @@ module.exports = async function typeface(browser, ok) {
   await go('#desk');
   await page.click('#buildissuebtn');
   await page.waitForTimeout(600);
-  const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn').then(() => page.click('#handfile'))]);
   const handed = fs.readFileSync(await hdl.path(), 'utf8');
   ok('THE HANDED-ON ISSUE CARRIES BOTH FACES WITH IT',
      /@font-face\{font-family:Anton;[^}]*data:font\/woff;base64,/.test(handed) &&

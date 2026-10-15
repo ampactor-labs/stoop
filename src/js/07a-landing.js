@@ -53,6 +53,7 @@ function renderLanding() {
     'No server, no account. You are holding the whole thing.' + landingContact() + '</p>' +
     '<div class="landing-verbs">' +
     '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
+    '<button class="btn big" id="landpass">PASS IT ON</button>' +
     '<button class="btn big" id="landown">START YOUR OWN</button>' +
     '<button class="btn quiet big" id="landshelf">THE SHELF</button>' +
     '</div></div>';

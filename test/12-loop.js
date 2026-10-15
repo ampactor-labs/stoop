@@ -111,7 +111,7 @@ module.exports = async function loop(browser, ok) {
   await E.go('#desk');
   await E.page.click('#buildissuebtn');
   await E.page.waitForTimeout(600);
-  const [idl] = await Promise.all([E.page.waitForEvent('download'), E.page.click('#handonbtn')]);
+  const [idl] = await Promise.all([E.page.waitForEvent('download'), E.page.click('#handonbtn').then(() => E.page.click('#handfile'))]);
   const issueFile = path.join(dir, 'nightbus-01.html');
   await idl.saveAs(issueFile);
 

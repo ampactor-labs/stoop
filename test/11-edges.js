@@ -324,7 +324,7 @@ module.exports = async function edges(browser, ok) {
   await F.page.waitForTimeout(300);
   await F.page.click('#buildissuebtn');
   await F.page.waitForTimeout(500);
-  const [fdl] = await Promise.all([F.page.waitForEvent('download'), F.page.click('#handonbtn')]);
+  const [fdl] = await Promise.all([F.page.waitForEvent('download'), F.page.click('#handonbtn').then(() => F.page.click('#handfile'))]);
   const file = path.join(dir, 'friend-01.html');
   await fdl.saveAs(file);
   await F.ctx.close();

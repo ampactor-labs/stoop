@@ -370,12 +370,25 @@
 .reprintzone { display: none; }
 
 
+
+.handscrim, .handsheet { display: none; }
+body.handing .handscrim { display: block; position: fixed; inset: 0; z-index: 47; background: rgba(20,18,16,.55); }
+body.handing .handsheet { display: block; position: fixed; z-index: 48; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(92vw, 420px); max-height: 92vh; overflow-y: auto; background: var(--paper); color: var(--ink);
+  border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); padding: .9rem 1rem 1rem; }
+.hand-head { display: flex; align-items: baseline; gap: .6rem; margin-bottom: .6rem; }
+.hand-head b { font-family: Anton, Impact, sans-serif; font-size: 1.6rem; letter-spacing: .02em; }
+.hand-head span { flex: 1; font-family: Anton, Impact, sans-serif; font-size: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hand-code { background: #fff; padding: 0; }
+.handqr { display: block; width: 100%; height: auto; }
+.hand-addr { font-family: 'Courier New', monospace; font-size: .9rem; word-break: break-all; text-align: center; margin: .5rem 0 .2rem; }
+.hand-verbs { margin-top: .7rem; }
 .toast-undo { font: inherit; background: var(--fg); color: var(--spot); border: 0; margin-left: .7rem; padding: .1rem .5rem; cursor: pointer; }
 .toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--spot); color: var(--fg); font-family: 'Courier New', monospace; font-size: .85rem; font-weight: bold; padding: .5rem .9rem; border: 2px solid var(--fg); box-shadow: 3px 3px 0 var(--fg); display: none; z-index: 50; }
 
 @media print {
   body { background: #fff; color: #000; }
-  header.chrome, main, .pageweight, .toast { display: none !important; }
+  header.chrome, main, .pageweight, .toast, .handsheet, .handscrim { display: none !important; }
   body.reprinting .reprintzone { display: block !important; }
   .reprintzone .sheetwrap { margin: 0; break-after: page; page-break-after: always; }
   .reprintzone .sheetwrap:last-child { break-after: auto; page-break-after: auto; }
@@ -634,6 +647,8 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 <style id="pagerule">@page { size: letter landscape; margin: 0; }</style>
 <div id="reprintzone" class="reprintzone"></div>
 <div class="scrim" id="scrim"></div>
+<div class="handscrim" id="handscrim"></div>
+<div class="handsheet" id="handsheet" role="dialog" aria-label="Hand it on"></div>
 <div class="flash" id="flash"></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="gen1" x="-2%" y="-2%" width="104%" height="104%">
@@ -928,7 +943,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 346 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 352 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -4700,6 +4715,7 @@ function renderShelf() {
         '<small>' + esc(fmtDay(iss.ts)) + ' · edited by ' + esc(nameOf(iss.editor)) +
         ' · ' + esc(formatOf(iss.format).label) + ' · ' + (iss.pieces || []).length + ' pieces</small></span>' +
         '<button class="btn quiet" data-readissue="' + esc(iss.no) + '">READ</button>' +
+        '<button class="btn" data-handissue="' + esc(iss.no) + '">HAND ON</button>' +
         '<button class="btn quiet" data-reprintissue="' + esc(iss.no) + '">REPRINT</button>' +
         '<button class="btn quiet" data-pdfissue="' + esc(iss.no) + '">PDF</button>' +
         '<button class="btn quiet" data-shopissue="' + esc(iss.no) + '">SHOP PDF</button>' +
@@ -4831,6 +4847,7 @@ function renderLanding() {
     'No server, no account. You are holding the whole thing.' + landingContact() + '</p>' +
     '<div class="landing-verbs">' +
     '<button class="btn done big" id="landmake">MAKE №' + esc(next) + '</button>' +
+    '<button class="btn big" id="landpass">PASS IT ON</button>' +
     '<button class="btn big" id="landown">START YOUR OWN</button>' +
     '<button class="btn quiet big" id="landshelf">THE SHELF</button>' +
     '</div></div>';
@@ -5075,6 +5092,7 @@ function renderDistro() {
       esc(who(e.issue.editor)) + (e.address ? ' · ' + esc(e.address) : '') + ' · ' +
       esc(formatOf(e.issue.format).label) + '</small></span>' +
       '<button class="btn quiet" data-readcarried="' + esc(e.id) + '">READ</button>' +
+      '<button class="btn" data-handcarried="' + esc(e.id) + '">HAND ON</button>' +
       '<button class="btn quiet" data-pdfcarried="' + esc(e.id) + '">PDF</button>' +
       '<button class="btn quiet" data-shopcarried="' + esc(e.id) + '">SHOP PDF</button>' +
       '<button class="log-del" data-dropcarried="' + esc(e.id) + '" title="Drop it from the distro" aria-label="Drop this zine">✕</button>' +
@@ -6685,7 +6703,7 @@ function photosForFile(issues, no) {
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
-  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine', 'facelist'];
+  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine', 'facelist', 'handsheet'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
@@ -6750,7 +6768,7 @@ function handOn() {
     location.hash = '#desk';
     return;
   }
-  exportIssueFile(last.no);
+  openHand({ kind: 'issue', no: last.no });
 }
 
 function exportPieceBundle(id) {
@@ -7098,6 +7116,97 @@ function contactLine() {
   var c = String(state.contact || '').trim();
   return c ? 'Send it to ' + c + '.' : '';
 }
+
+var handSubject = null;
+
+function handOf(subject) {
+  var s = subject || {};
+  if (s.kind === 'held') {
+    var held = fileIssue();
+    if (!held) return null;
+    var slug = distroSlug({ address: landingSeed.address, zine: landingSeed.zine, issue: held });
+    return { issue: held, url: landingUrl(held), zine: landingSeed.zine || 'STOOP ZINE', own: false,
+      name: slug + '-' + held.no + '.html', html: function () { return pageWithSeed(landingSeed); } };
+  }
+  if (s.kind === 'carried') {
+    var e = carriedById(s.id);
+    if (!e) return null;
+    return { issue: e.issue, url: distroUrl(e), zine: e.zine, own: false,
+      name: distroSlug(e) + '-' + e.issue.no + '.html', html: function () { return pageWithSeed(distroSeed(e)); } };
+  }
+  var iss = issueByNo(s.no);
+  if (!iss) return null;
+  return { issue: iss, url: issueUrl(iss.no), zine: state.zine || 'STOOP ZINE', own: true,
+    name: sceneSlug() + '-' + iss.no + '.html', html: function () { return issueFileHtml(iss.no); } };
+}
+
+function handCode(url) {
+  var m = url && qrOf(url);
+  if (!m) return '';
+  var n = m.length + 8;
+  return '<svg class="handqr" viewBox="0 0 ' + n + ' ' + n + '" shape-rendering="crispEdges" role="img" aria-label="' +
+    esc('A code for ' + url) + '"><rect width="' + n + '" height="' + n + '" fill="#fff"/><path fill="#000" d="' +
+    qrRuns(m).map(function (r) { return 'M' + (r[0] + 4) + ' ' + (r[1] + 4) + 'h' + r[2] + 'v1h-' + r[2] + 'z'; }).join('') +
+    '"/></svg>';
+}
+
+function renderHand() {
+  var box = document.getElementById('handsheet');
+  if (!box) return;
+  var h = handSubject && handOf(handSubject);
+  document.body.classList.toggle('handing', !!h);
+  if (!h) { box.innerHTML = ''; return; }
+  var code = handCode(h.url);
+  box.innerHTML = '<div class="hand-head"><b>№' + esc(h.issue.no) + '</b><span>' + esc(h.zine) + '</span>' +
+    '<button class="btn quiet" data-closehand>CLOSE</button></div>' +
+    (code
+      ? '<div class="hand-code">' + code + '</div><p class="hand-addr">' + esc(h.url.replace(/^https?:\/\//, '')) + '</p>' +
+        '<p class="hint">Scan it to open this issue. The page it opens is also the press.</p>'
+      : '<p class="hint">This scene has no address yet, so there is nothing to scan. The file is the whole zine and the press: hand that on.</p>') +
+    '<div class="press-actions hand-verbs">' +
+    '<button class="btn done" id="handfile">SHARE THE FILE</button>' +
+    '<button class="btn quiet" data-handout="pdf">PDF</button>' +
+    '<button class="btn quiet" data-handout="shop">SHOP PDF</button>' +
+    (h.own ? '<button class="btn quiet" data-handout="riso">RISO</button>' : '') +
+    '</div>';
+}
+
+function openHand(subject) {
+  handSubject = subject;
+  if (!handOf(subject)) { handSubject = null; toast('That issue is not here'); return; }
+  renderHand();
+}
+function closeHand() { handSubject = null; renderHand(); }
+
+function handOut(what) {
+  var h = handOf(handSubject);
+  closeHand();
+  if (!h) return;
+  var i = h.issue, base = h.name.replace(/\.html$/, '');
+  if (what === 'file') {
+    copierFlash();
+    handOver(h.name, new Blob([h.html()], { type: 'text/html' }), h.own ? contactLine() : '');
+    toast('№' + i.no + ' is a file now. It is also the press.');
+  } else if (what === 'pdf') {
+    savePdf(i.panels || [], i.format, i.hand, h.url, i.no, base + '.pdf', i.gen);
+  } else if (what === 'shop') {
+    saveShopPdf(i.panels || [], i.format, h.url, i.no, base + '-shop.pdf', i.gen);
+  } else if (what === 'riso') {
+    saveRisoPlates(i.panels || [], i.format, h.url, i.no, i.gen);
+  }
+}
+
+document.addEventListener('click', function (ev) {
+  var t = ev.target, el;
+  if (!t.closest) return;
+  if (t.closest('[data-closehand]') || t.closest('#handscrim')) { closeHand(); return; }
+  if (t.closest('#handfile')) { handOut('file'); return; }
+  if ((el = t.closest('[data-handout]'))) { handOut(el.getAttribute('data-handout')); return; }
+  if ((el = t.closest('[data-handissue]'))) { openHand({ kind: 'issue', no: el.getAttribute('data-handissue') }); return; }
+  if ((el = t.closest('[data-handcarried]'))) { openHand({ kind: 'carried', id: el.getAttribute('data-handcarried') }); return; }
+  if (t.closest('#landpass')) openHand(fileIssue() && landingIssue() === fileIssue() ? { kind: 'held' } : { kind: 'issue', no: landingIssue().no });
+});
+document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && handSubject) { closeHand(); ev.stopPropagation(); } }, true);
 var BACKUP_VERSION = 4;
 
 function exportBackup() {

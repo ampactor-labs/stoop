@@ -110,7 +110,7 @@ module.exports = async function craft(browser, ok) {
   await go('#desk');
   await page.click('#buildissuebtn');
   await page.waitForTimeout(600);
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn').then(() => page.click('#handfile'))]);
   const html = fs.readFileSync(await dl.path(), 'utf8');
   const seed = JSON.parse(/<script type="application\/json" id="stoop-seed">([\s\S]*?)<\/script>/.exec(html)[1].replace(/<\\\//g, '</'));
   const refs = new Set();

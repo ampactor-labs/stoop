@@ -10,6 +10,27 @@ const os = require('os');
 
 const APP = 'file://' + path.resolve(__dirname, '..', 'index.html');
 const CONTACT = 'bats@cuddlecast.example';
+const FIXTURES = require('./qr-fixtures.json');
+const NIGHTBUS = 'https://ampactor.dev/stoop/nightbus/01/';
+
+function fromRuns(runs, n) {
+  const rows = Array.from({ length: n }, () => Array(n).fill('0'));
+  runs.forEach(([x, y, len]) => { for (let i = 0; i < len; i++) if (rows[y] && x + i < n) rows[y][x + i] = '1'; });
+  return rows.map(r => r.join(''));
+}
+
+// The sheet's code, read back square by square.
+function sheetCode(page) {
+  return page.evaluate(() => {
+    const svg = document.querySelector('#handsheet .handqr');
+    if (!svg) return null;
+    const n = Number(svg.getAttribute('viewBox').split(' ')[2]) - 8;
+    const runs = [...svg.querySelector('path').getAttribute('d').matchAll(/M(\d+) (\d+)h(\d+)/g)]
+      .map(m => [Number(m[1]) - 4, Number(m[2]) - 4, Number(m[3])]);
+    return { n, runs, width: svg.getBoundingClientRect().width, label: svg.getAttribute('aria-label') };
+  });
+}
+const seedOf = (html) => JSON.parse((html.match(/<script[^>]*id="stoop-seed"[^>]*>([\s\S]*?)<\/script>/) || ['', 'null'])[1].replace(/<\\\//g, '</'));
 
 function stubShare() {
   window.__shared = [];
@@ -113,7 +134,7 @@ module.exports = async function hand(browser, ok) {
   await D.page.waitForTimeout(400);
   await D.page.click('#buildissuebtn');
   await D.page.waitForTimeout(600);
-  const [dl] = await Promise.all([D.page.waitForEvent('download'), D.page.click('#handonbtn')]);
+  const [dl] = await Promise.all([D.page.waitForEvent('download'), D.page.click('#handonbtn').then(() => D.page.click('#handfile'))]);
   const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'stoop-hand-')), 'issue.html');
   await dl.saveAs(file);
   ok('A LAPTOP STILL DOWNLOADS', (await D.shared()).length === 0 && /"contact":"bats@cuddlecast\.example"/.test(fs.readFileSync(file, 'utf8')));
@@ -130,4 +151,102 @@ module.exports = async function hand(browser, ok) {
   ok('AND THE REPLY FROM PAPER SAYS WHERE TO SEND IT', said.indexOf('send it to ' + CONTACT) >= 0, said);
   ok('no script errors writing back', R.errs.length === 0, R.errs.slice(0, 3).join(' | '));
   await R.ctx.close();
+
+  // ---- the issue's sheet, on a phone held out across a table.
+  const want = FIXTURES[NIGHTBUS].matrix;
+  const H = await open(browser, true);
+  const hp = H.page;
+  await hp.goto(APP);
+  await hp.waitForTimeout(800);
+  await hp.click('#handonbtn');
+  await hp.waitForTimeout(300);
+  ok('with nothing published, hand it on still says so and opens no sheet',
+     !(await hp.evaluate(() => document.body.classList.contains('handing'))) && (await hp.evaluate(() => location.hash)) === '#desk');
+  await H.go('#backup');
+  await hp.fill('#addressinput', FIXTURES[NIGHTBUS].address);
+  await hp.click('#savenamesbtn2');
+  await H.go('#desk');
+  await hp.click('#compileissuebtn');
+  await hp.waitForTimeout(400);
+  await hp.click('#buildissuebtn');
+  await hp.waitForTimeout(700);
+  await hp.click('#handonbtn');
+  await hp.waitForTimeout(300);
+  let code = await sheetCode(hp);
+  let rows = code ? fromRuns(code.runs, code.n) : [];
+  ok('HAND IT ON OPENS THE ISSUE\'S SHEET, ITS CODE MOST OF THE PHONE\'S WIDTH', !!code && code.width >= 390 * 0.6 &&
+     (await hp.locator('#handsheet .hand-addr').innerText()) === 'ampactor.dev/stoop/nightbus/01/', code && Math.round(code.width) + 'px');
+  ok('AND THE CODE IS THE INDEPENDENT ENCODER\'S, SQUARE FOR SQUARE', !!code && code.n === want.length && rows.every((r, i) => r === want[i]),
+     code ? 'rows differing ' + rows.filter((r, i) => r !== want[i]).length : 'no code');
+  ok('a screen reader hears what it opens', !!code && code.label === 'A code for ' + NIGHTBUS);
+  await hp.click('#handfile');
+  await hp.waitForTimeout(500);
+  let s2 = await H.shared();
+  ok('SHARE THE FILE HANDS THE ISSUE ON, AND PUTS THE SHEET AWAY', s2.length === 1 && s2[0].name === 'nightbus-01.html' &&
+     s2[0].type === 'text/html' && !(await hp.evaluate(() => document.body.classList.contains('handing'))), JSON.stringify(s2));
+
+  await H.go('#shelf');
+  await hp.click('[data-handissue="01"]');
+  await hp.waitForTimeout(300);
+  ok('every issue on the shelf has the same sheet', !!(await sheetCode(hp)));
+  await hp.keyboard.press('Escape');
+  await hp.waitForTimeout(200);
+  ok('and Escape puts it away', !(await hp.evaluate(() => document.body.classList.contains('handing'))));
+  await hp.click('[data-handissue="01"]');
+  await hp.waitForTimeout(200);
+  await hp.click('#handscrim', { position: { x: 5, y: 5 } });
+  await hp.waitForTimeout(200);
+  ok('so does a tap outside it', !(await hp.evaluate(() => document.body.classList.contains('handing'))));
+
+  // The file in hand, passed on from its own landing: the same zine, the same seed.
+  const D2 = await open(browser, false);
+  await D2.page.goto(APP);
+  await D2.page.waitForTimeout(700);
+  await D2.go('#backup');
+  await D2.page.fill('#addressinput', FIXTURES[NIGHTBUS].address);
+  await D2.page.fill('#zinename', 'NIGHT BUS');
+  await D2.page.click('#savenamesbtn2');
+  await D2.go('#desk');
+  await D2.page.click('#compileissuebtn');
+  await D2.page.waitForTimeout(400);
+  await D2.page.click('#buildissuebtn');
+  await D2.page.waitForTimeout(600);
+  const [fdl] = await Promise.all([D2.page.waitForEvent('download'), D2.page.click('#handonbtn').then(() => D2.page.click('#handfile'))]);
+  const held = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'stoop-held-')), 'nightbus-01.html');
+  await fdl.saveAs(held);
+  await D2.ctx.close();
+  const L = await open(browser, true);
+  await L.page.goto('file://' + held);
+  await L.page.waitForTimeout(1000);
+  await L.page.click('#landpass');
+  await L.page.waitForTimeout(300);
+  code = await sheetCode(L.page);
+  rows = code ? fromRuns(code.runs, code.n) : [];
+  ok('ON THE LANDING, PASS IT ON SHOWS THE CODE OF THE ISSUE IN HAND', !!code && rows.every((r, i) => r === want[i]));
+  await L.page.click('#handfile');
+  await L.page.waitForTimeout(600);
+  const passed = await L.page.evaluate(() => window.__shared);
+  ok('AND HANDS ON THE SAME FILE: THE SAME ZINE, THE SAME ISSUE', passed.length === 1 && passed[0].name === 'nightbus-01.html' &&
+     passed[0].size > 300000, JSON.stringify(passed));
+  const again = await L.page.evaluate(() => new Promise(res => {
+    const orig = navigator.share;
+    navigator.share = (d) => d.files[0].text().then(t => { res(t); });
+    document.getElementById('landpass').click();
+    setTimeout(() => document.getElementById('handfile').click(), 50);
+  }));
+  const a = seedOf(fs.readFileSync(held, 'utf8')), b2 = seedOf(again);
+  ok('seed for seed', !!a && !!b2 && JSON.stringify(a) === JSON.stringify(b2), (b2 && b2.zine) + ' ' + (b2 && b2.read));
+
+  // No address, nothing to scan.
+  await H.go('#backup');
+  await hp.fill('#addressinput', '');
+  await hp.click('#savenamesbtn2');
+  await H.go('#shelf');
+  await hp.click('[data-handissue="01"]');
+  await hp.waitForTimeout(300);
+  ok('WITHOUT AN ADDRESS THE SHEET SAYS SO AND OFFERS THE FILE', !(await sheetCode(hp)) &&
+     /no address yet/.test(await hp.locator('#handsheet').innerText()) && (await hp.locator('#handfile').count()) === 1);
+  ok('no script errors handing on', H.errs.length === 0 && L.errs.length === 0, H.errs.concat(L.errs).slice(0, 3).join(' | '));
+  await L.ctx.close();
+  await H.ctx.close();
 };

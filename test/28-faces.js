@@ -91,7 +91,7 @@ module.exports = async function faces(browser, ok) {
   await go('#desk');
   await page.click('#buildissuebtn');
   await page.waitForTimeout(600);
-  const [idl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  const [idl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn').then(() => page.click('#handfile'))]);
   const file = path.join(dir, 'issue.html');
   await idl.saveAs(file);
   const html = fs.readFileSync(file, 'utf8');

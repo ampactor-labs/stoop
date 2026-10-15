@@ -117,7 +117,7 @@ module.exports = async function card(browser, ok) {
      /^NIGHT BUS №02 · edited by Dee/.test(await page.locator('#cardderived').innerText()), await page.locator('#cardderived').innerText());
 
   // ---- the file: the card in its head.
-  const [idl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  const [idl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn').then(() => page.click('#handfile'))]);
   const issueFile = path.join(dir, 'nightbus-01.html');
   await idl.saveAs(issueFile);
   const html = fs.readFileSync(issueFile, 'utf8');

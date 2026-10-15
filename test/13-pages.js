@@ -90,7 +90,7 @@ module.exports = async function pages(browser, ok) {
   await page.waitForTimeout(600);
   s = await store();
   const cover2 = s.issues.find(i => i.no === '02').panels[0].photo;
-  const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn')]);
+  const [hdl] = await Promise.all([page.waitForEvent('download'), page.click('#handonbtn').then(() => page.click('#handfile'))]);
   const file = path.join(dir, 'issue-02.html');
   await hdl.saveAs(file);
   const html = fs.readFileSync(file, 'utf8');

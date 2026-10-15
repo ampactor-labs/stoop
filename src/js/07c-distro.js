@@ -111,6 +111,7 @@ function renderDistro() {
       esc(who(e.issue.editor)) + (e.address ? ' · ' + esc(e.address) : '') + ' · ' +
       esc(formatOf(e.issue.format).label) + '</small></span>' +
       '<button class="btn quiet" data-readcarried="' + esc(e.id) + '">READ</button>' +
+      '<button class="btn" data-handcarried="' + esc(e.id) + '">HAND ON</button>' +
       '<button class="btn quiet" data-pdfcarried="' + esc(e.id) + '">PDF</button>' +
       '<button class="btn quiet" data-shopcarried="' + esc(e.id) + '">SHOP PDF</button>' +
       '<button class="log-del" data-dropcarried="' + esc(e.id) + '" title="Drop it from the distro" aria-label="Drop this zine">✕</button>' +

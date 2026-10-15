@@ -58,7 +58,7 @@ function photosForFile(issues, no) {
 var DYNAMIC = ['loglist', 'desktray', 'shelflist', 'shelfreader', 'sheetzone', 'phototray',
   'reprintzone', 'toast', 'importstatus', 'landing', 'inspector', 'stamps', 'blocks', 'roster',
   'logfilters', 'pressstatus', 'fitmeter', 'deskhead', 'shelfcount', 'addhint', 'backupstatus', 'shelfnudge',
-  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine', 'facelist'];
+  'pagestrip', 'cycleline', 'zoom', 'cardderived', 'cardfields', 'distrolist', 'distroreader', 'barzine', 'facelist', 'handsheet'];
 
 function pageWithSeed(seed) {
   var doc = document.documentElement.cloneNode(true);
@@ -139,7 +139,7 @@ function handOn() {
     location.hash = '#desk';
     return;
   }
-  exportIssueFile(last.no);
+  openHand({ kind: 'issue', no: last.no });
 }
 
 // A contributor opens the issue file, writes a piece, and sends back a few

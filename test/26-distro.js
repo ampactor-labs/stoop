@@ -50,7 +50,7 @@ module.exports = async function distro(browser, ok) {
   await D.page.waitForTimeout(500);
   await D.page.click('#buildissuebtn');
   await D.page.waitForTimeout(600);
-  const [ddl] = await Promise.all([D.page.waitForEvent('download'), D.page.click('#handonbtn')]);
+  const [ddl] = await Promise.all([D.page.waitForEvent('download'), D.page.click('#handonbtn').then(() => D.page.click('#handfile'))]);
   const file = path.join(dir, 'nightbus-01.html');
   await ddl.saveAs(file);
   await D.ctx.close();
