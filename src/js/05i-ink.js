@@ -47,15 +47,25 @@ function inkFilter(hex) {
 }
 
 // A page can be printed on a colour: a flood under everything on it, the
-// way a colour printer lays a ground. Light colours only, so the page's own
-// type stays black on it and legible.
+// way a colour printer lays a ground. On the light ones the page's own type
+// stays black; on NIGHT the letters turn white by themselves, and so does
+// anything new glued onto it, because black on black is not a choice
+// anybody makes.
 var FILLS = [['WHITE', ''], ['PINK', '#f9c6d3'], ['YELLOW', '#fbee8a'], ['BLUE', '#bcdcf2'],
-  ['GREEN', '#c7e8c0'], ['ORANGE', '#fbc08e'], ['LAVENDER', '#d9cdef'], ['KRAFT', '#d8b98f']];
+  ['GREEN', '#c7e8c0'], ['ORANGE', '#fbc08e'], ['LAVENDER', '#d9cdef'], ['KRAFT', '#d8b98f'], ['NIGHT', '#1d1a16']];
 
 function fillOf(panel) {
   var c = panel && panel.fill;
   return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : '';
 }
+
+function luminance(hex) {
+  var c = inkRgb(hex);
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function darkFill(panel) { var hex = fillOf(panel); return !!hex && luminance(hex) < 0.4; }
+// What a new cutting on this page is printed in, when black would vanish.
+function inkForPage(panel) { return darkFill(panel) ? '#ffffff' : ''; }
 
 function fillAttr(panel) {
   return fillOf(panel) ? ' style="background:' + fillOf(panel) + '"' : '';

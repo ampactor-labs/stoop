@@ -2263,6 +2263,7 @@ function addEl(page, kind, extra) {
     el.w = st.w; el.h = st.h;
     el.rot = crooked(els.length * 53 + page * 7) * 2;
   }
+  if (inkForPage(panel) && kind !== 'photo' && kind !== 'qr') el.colour = inkForPage(panel);
   if (extra && extra.at) {
     el.x = Math.max(-0.2, Math.min(1, extra.at.x - el.w / 2));
     el.y = Math.max(-0.2, Math.min(1, extra.at.y - el.h / 2));
@@ -3357,12 +3358,19 @@ function inkFilter(hex) {
 }
 
 var FILLS = [['WHITE', ''], ['PINK', '#f9c6d3'], ['YELLOW', '#fbee8a'], ['BLUE', '#bcdcf2'],
-  ['GREEN', '#c7e8c0'], ['ORANGE', '#fbc08e'], ['LAVENDER', '#d9cdef'], ['KRAFT', '#d8b98f']];
+  ['GREEN', '#c7e8c0'], ['ORANGE', '#fbc08e'], ['LAVENDER', '#d9cdef'], ['KRAFT', '#d8b98f'], ['NIGHT', '#1d1a16']];
 
 function fillOf(panel) {
   var c = panel && panel.fill;
   return typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c) ? c.toLowerCase() : '';
 }
+
+function luminance(hex) {
+  var c = inkRgb(hex);
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+function darkFill(panel) { var hex = fillOf(panel); return !!hex && luminance(hex) < 0.4; }
+function inkForPage(panel) { return darkFill(panel) ? '#ffffff' : ''; }
 
 function fillAttr(panel) {
   return fillOf(panel) ? ' style="background:' + fillOf(panel) + '"' : '';
@@ -3505,7 +3513,9 @@ function strokeFor(el) { return outlined(el) ? (ptSize(el) * 0.045).toFixed(2) +
 
 function knockLetters(el) { return inkOf(el) === '#ffffff' && !plateInk ? '0 g 0 G\n' : '1 g 1 G\n'; }
 function photoFills(panel) { return !!panel && panel.photoFill === true && !!panel.photo; }
-function whiteLetters(panel) { return !!panel && panel.letters === 'white'; }
+function whiteLetters(panel) {
+  return !!panel && (panel.letters === 'white' || (darkFill(panel) && panel.letters !== 'black'));
+}
 
 function pageClass(panel) {
   return (photoFills(panel) ? ' photofill' : '') + (whiteLetters(panel) ? ' letterswhite' : '');
@@ -3546,10 +3556,10 @@ document.addEventListener('click', function (ev) {
   pasteMark();
   if (fill) {
     if (photoFills(panel)) delete panel.photoFill; else panel.photoFill = true;
-  } else if (whiteLetters(panel)) {
-    delete panel.letters;
   } else {
-    panel.letters = 'white';
+    var want = !whiteLetters(panel);
+    delete panel.letters;
+    if (whiteLetters(panel) !== want) panel.letters = want ? 'white' : 'black';
   }
   savePress();
   renderPress();
@@ -4041,6 +4051,7 @@ function commitStroke(page, stroke) {
   var el = hit && hit.page === page ? hit.el : null;
   if (!el) {
     el = { id: uid('el'), kind: 'draw', x: 0, y: 0, w: 1, h: 1, rot: 0, z: topZ(panel) + 1, pen: PEN_WIDTH, strokes: [] };
+    if (inkForPage(panel)) el.colour = inkForPage(panel);
     elsOf(panel).push(el);
   }
   refitDraw(el, strokesOnPage(el).concat([stroke]));
@@ -4083,6 +4094,7 @@ function paintLiveStroke(panelEl) {
     live.className = 'penlive';
     panelEl.appendChild(live);
   }
+  live.style.color = inkForPage(panelOfPage(pastePage)) || '';
   live.innerHTML = drawSvg({ x: 0, y: 0, w: 1, h: 1, strokes: [penStroke], pen: PEN_WIDTH });
 }
 
@@ -6501,6 +6513,7 @@ function inkName(hex) {
 }
 
 function stockName(hex) {
+  if (luminance(hex) < 0.4) return 'black';
   var known = FILLS.filter(function (f) { return f[1] === hex; })[0];
   return known ? known[0].toLowerCase() : hex;
 }

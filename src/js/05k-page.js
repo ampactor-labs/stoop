@@ -5,7 +5,11 @@
 // photo zine's cover is a photograph with its title on it. Over a dark
 // photograph the page's letters can be white.
 function photoFills(panel) { return !!panel && panel.photoFill === true && !!panel.photo; }
-function whiteLetters(panel) { return !!panel && panel.letters === 'white'; }
+// White when told, or when the page is printed on a dark colour and not
+// told black.
+function whiteLetters(panel) {
+  return !!panel && (panel.letters === 'white' || (darkFill(panel) && panel.letters !== 'black'));
+}
 
 function pageClass(panel) {
   return (photoFills(panel) ? ' photofill' : '') + (whiteLetters(panel) ? ' letterswhite' : '');
@@ -46,10 +50,10 @@ document.addEventListener('click', function (ev) {
   pasteMark();
   if (fill) {
     if (photoFills(panel)) delete panel.photoFill; else panel.photoFill = true;
-  } else if (whiteLetters(panel)) {
-    delete panel.letters;
   } else {
-    panel.letters = 'white';
+    var want = !whiteLetters(panel);
+    delete panel.letters;
+    if (whiteLetters(panel) !== want) panel.letters = want ? 'white' : 'black';
   }
   savePress();
   renderPress();

@@ -177,6 +177,7 @@ function addEl(page, kind, extra) {
     el.w = st.w; el.h = st.h;
     el.rot = crooked(els.length * 53 + page * 7) * 2;
   }
+  if (inkForPage(panel) && kind !== 'photo' && kind !== 'qr') el.colour = inkForPage(panel);
   if (extra && extra.at) {
     el.x = Math.max(-0.2, Math.min(1, extra.at.x - el.w / 2));
     el.y = Math.max(-0.2, Math.min(1, extra.at.y - el.h / 2));

@@ -73,6 +73,7 @@ function commitStroke(page, stroke) {
   var el = hit && hit.page === page ? hit.el : null;
   if (!el) {
     el = { id: uid('el'), kind: 'draw', x: 0, y: 0, w: 1, h: 1, rot: 0, z: topZ(panel) + 1, pen: PEN_WIDTH, strokes: [] };
+    if (inkForPage(panel)) el.colour = inkForPage(panel);
     elsOf(panel).push(el);
   }
   refitDraw(el, strokesOnPage(el).concat([stroke]));
@@ -119,6 +120,7 @@ function paintLiveStroke(panelEl) {
     live.className = 'penlive';
     panelEl.appendChild(live);
   }
+  live.style.color = inkForPage(panelOfPage(pastePage)) || '';
   live.innerHTML = drawSvg({ x: 0, y: 0, w: 1, h: 1, strokes: [penStroke], pen: PEN_WIDTH });
 }
 

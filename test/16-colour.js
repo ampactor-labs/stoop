@@ -163,6 +163,41 @@ module.exports = async function colour(browser, ok) {
   })) === 'rgb(251, 238, 138)');
   await other.context().close();
 
+  // ---- a page printed at night: the letters turn white by themselves, and so
+  // does anything new glued on it.
+  await go('#press');
+  const p5 = page.locator('#sheetzone [data-page="5"]');
+  await p5.scrollIntoViewIfNeeded();
+  await p5.click({ position: { x: 6, y: 300 } });
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.waitForTimeout(150);
+  await page.click('[data-pgfill="5"][title="NIGHT"]');
+  await page.waitForTimeout(200);
+  ok('A NIGHT PAGE READS IN WHITE BY ITSELF', (await style('#sheetzone [data-page="5"]', 'backgroundColor')) === 'rgb(29, 26, 22)' &&
+     (await style('#sheetzone [data-page="5"] h3', 'color')) === 'rgb(255, 255, 255)' &&
+     /WHITE LETTERS/.test(await page.locator('#inspector').innerText()), await style('#sheetzone [data-page="5"] h3', 'color'));
+  await page.click('[data-addel="text"]');
+  await page.waitForTimeout(250);
+  const night = () => page.evaluate(() => JSON.parse(localStorage.getItem('stoop_data_v4')).press.panels[4]);
+  ok('and anything new glued on it is printed white', ((await night()).els || []).slice(-1)[0].colour === '#ffffff');
+  await go('#paper');
+  const [ndl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
+  const npdf = fs.readFileSync(await ndl.path(), 'latin1');
+  ok('ON PAPER: A NIGHT GROUND, AND THE PAGE\'S OWN LETTERS IN WHITE',
+     /0\.114 0\.102 0\.086 rg [\d. ]+ re f 0 g\n(?:q -1 0 0 -1 [^\n]+\n)?1 g 1 G\n/.test(npdf));
+  await go('#press');
+  await p5.click({ position: { x: 6, y: 300 } });
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.waitForTimeout(150);
+  await page.click('[data-pgletters="5"]');
+  await page.waitForTimeout(200);
+  ok('BLACK LETTERS ON A NIGHT PAGE IF SOMEBODY ASKS', (await night()).letters === 'black' &&
+     (await style('#sheetzone [data-page="5"] h3', 'color')) !== 'rgb(255, 255, 255)');
+  await page.click('[data-pgletters="5"]');
+  await page.waitForTimeout(200);
+  ok('and asking again leaves the night to choose', !('letters' in (await night())) &&
+     (await style('#sheetzone [data-page="5"] h3', 'color')) === 'rgb(255, 255, 255)');
+
   ok('no script errors around colour', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();
 };

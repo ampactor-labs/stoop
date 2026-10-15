@@ -17,6 +17,7 @@ function inkName(hex) {
 }
 
 function stockName(hex) {
+  if (luminance(hex) < 0.4) return 'black';
   var known = FILLS.filter(function (f) { return f[1] === hex; })[0];
   return known ? known[0].toLowerCase() : hex;
 }
