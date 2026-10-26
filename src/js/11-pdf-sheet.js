@@ -74,9 +74,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
   // A coloured riso drum carries none of the page's own black type; only
   // letters set in white, which knock out of every drum, still draw.
   if (plateInk && !whiteLetters(panel)) return pdfPasteup(panel, box, images, ghosts, page);
-  var ops = pdfPhotoFill(panel, box, images);
-  var letters = whiteLetters(panel) ? '1' : '0';
-  ops += letters + ' g ' + letters + ' G\n';
+  var ops = pdfPhotoFill(panel, box, images) + pdfLetters(panel);
   var y = box.y;
   var isCover = page === 1;
   var isBack = page === pages;
@@ -92,7 +90,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var no = pdfHeading('\u2116' + (panel.issue || ''), box.x, y - 1.5, box.cw, 51, 0.9, true);
     ops += no.op;
     y -= no.drop + 3;
-    ops += 'q 2.25 w ' + letters + ' G ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
+    ops += 'q 2.25 w ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
       (box.x + box.cw).toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' l S Q\n';
     y -= 11.25;
   }

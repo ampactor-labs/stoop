@@ -3,16 +3,35 @@
 // every other cutting; a page's own photograph, the one a piece brought or
 // the cover's, can fill it behind the page's heading and words, the way a
 // photo zine's cover is a photograph with its title on it. Over a dark
-// photograph the page's letters can be white.
+// photograph the page's letters can be white, or any colour.
 function photoFills(panel) { return !!panel && panel.photoFill === true && !!panel.photo; }
-// White when told, or when the page is printed on a dark colour and not
-// told black.
-function whiteLetters(panel) {
-  return !!panel && (panel.letters === 'white' || (darkFill(panel) && panel.letters !== 'black'));
+// The page's own letters: a colour when told one, white when told white or
+// when the page is printed on a dark colour and not told black, else black.
+function lettersOf(panel) {
+  if (!panel) return '';
+  var l = panel.letters;
+  if (typeof l === 'string' && /^#[0-9a-f]{6}$/i.test(l)) return l.toLowerCase();
+  return l === 'white' || (darkFill(panel) && l !== 'black') ? '#ffffff' : '';
 }
+function whiteLetters(panel) { return lettersOf(panel) === '#ffffff'; }
+function inkLetters(panel) { var l = lettersOf(panel); return l && l !== '#ffffff' ? l : ''; }
 
 function pageClass(panel) {
-  return (photoFills(panel) ? ' photofill' : '') + (whiteLetters(panel) ? ' letterswhite' : '');
+  return (photoFills(panel) ? ' photofill' : '') + (whiteLetters(panel) ? ' letterswhite' : '') +
+    (inkLetters(panel) ? ' lettersink' : '');
+}
+
+// Asked for in a colour, the letters keep it; asked for in black or white,
+// they keep nothing the page would give them anyway.
+function setLetters(page, hex) {
+  var panel = panelOfPage(page);
+  if (!panel) return;
+  pasteMark();
+  delete panel.letters;
+  if (lettersOf(panel) !== hex) panel.letters = hex === '' ? 'black' : hex === '#ffffff' ? 'white' : hex;
+  savePress();
+  renderPress();
+  toast(colourName(hex || '') + ' letters');
 }
 
 function fillPageWith(id) {
@@ -34,7 +53,6 @@ function pageButtons(page) {
   if (!panel) return '';
   var b = [];
   if (panel.photo) b.push(['pgphfill', photoFills(panel) ? 'PHOTO FILLS THE PAGE' : 'PHOTO ABOVE THE WORDS']);
-  b.push(['pgletters', whiteLetters(panel) ? 'WHITE LETTERS' : 'BLACK LETTERS']);
   return b.map(function (pair) {
     return '<button class="btn quiet" data-' + pair[0] + '="' + page + '">' + pair[1] + '</button>';
   }).join('');
@@ -44,17 +62,11 @@ document.addEventListener('click', function (ev) {
   var t = ev.target.closest && ev.target.closest('[data-elfillpage],[data-pgphfill],[data-pgletters]');
   if (!t) return;
   if (t.hasAttribute('data-elfillpage')) { fillPageWith(t.getAttribute('data-elfillpage')); return; }
-  var fill = t.hasAttribute('data-pgphfill');
-  var panel = panelOfPage(Number(t.getAttribute(fill ? 'data-pgphfill' : 'data-pgletters')));
+  if (t.hasAttribute('data-pgletters')) { setLetters(Number(t.getAttribute('data-pgletters')), t.getAttribute('data-c') || ''); return; }
+  var panel = panelOfPage(Number(t.getAttribute('data-pgphfill')));
   if (!panel) return;
   pasteMark();
-  if (fill) {
-    if (photoFills(panel)) delete panel.photoFill; else panel.photoFill = true;
-  } else {
-    var want = !whiteLetters(panel);
-    delete panel.letters;
-    if (whiteLetters(panel) !== want) panel.letters = want ? 'white' : 'black';
-  }
+  if (photoFills(panel)) delete panel.photoFill; else panel.photoFill = true;
   savePress();
   renderPress();
 });

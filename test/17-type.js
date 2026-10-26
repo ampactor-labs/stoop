@@ -141,6 +141,42 @@ module.exports = async function type(browser, ok) {
      await page.evaluate(() => getComputedStyle(document.activeElement).color));
   await page.keyboard.press('Escape');
 
+  // ---- spaced letters, the way a label or a date is set.
+  const p3 = page.locator('[data-page="3"]');
+  await p3.scrollIntoViewIfNeeded();
+  await p3.click({ position: { x: 6, y: 6 } });
+  await page.click('[data-addel="text"]');
+  await page.waitForTimeout(200);
+  await page.locator('[data-page="3"] .el.sel').dblclick();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('DUSK');
+  await page.keyboard.press('Escape');
+  await page.locator('[data-page="3"] .el-text').click();
+  await page.waitForTimeout(200);
+  ok('LETTERS START CLOSE', /SET CLOSE/.test(await page.locator('[data-eltrack]').innerText()));
+  await page.click('[data-eltrack]');
+  await page.click('[data-eltrack]');
+  await page.click('[data-elalign]');
+  await page.waitForTimeout(250);
+  const label = page.locator('[data-page="3"] .eltext');
+  const fs3 = parseFloat(await label.evaluate(n => getComputedStyle(n).fontSize));
+  const p3els = () => page.evaluate(() => JSON.parse(localStorage.getItem('stoop_data_v4')).press.panels[2].els);
+  ok('AND CAN BE SPACED WIDE, A THIRD OF AN EM AFTER EVERY LETTER',
+     (await p3els())[0].track === 0.3 && Math.abs(parseFloat(await label.evaluate(n => getComputedStyle(n).letterSpacing)) - fs3 * 0.3) < 0.05 &&
+     /WIDE SPACED/.test(await page.locator('[data-eltrack]').innerText()));
+  const spaced = /BT ([\d.]+) Tc \/F1 ([\d.]+) Tf 1 0 0 1 ([\d.]+) [\d.]+ Tm \((DUSK)\) Tj/.exec(await pdf());
+  await page.locator('[data-page="3"] .el-text').click();
+  await page.click('[data-eltrack]');
+  await page.waitForTimeout(250);
+  const close = /BT \/F1 ([\d.]+) Tf 1 0 0 1 ([\d.]+) [\d.]+ Tm \(DUSK\) Tj/.exec(await pdf());
+  const tc = spaced && Number(spaced[1]);
+  ok('ON PAPER THE SAME SPACE IS CHARACTER SPACING, AND A CENTRED LINE STAYS CENTRED',
+     !!spaced && !!close && Math.abs(tc - Number(spaced[2]) * 0.3) < 0.02 &&
+     Math.abs((Number(close[2]) - Number(spaced[3])) - spaced[4].length * tc / 2) < 0.6,
+     spaced && close ? [spaced[1], spaced[3], close[2], spaced[4]].join(' ') : 'not found');
+  ok('and asked once more, they are set close again', !('track' in (await p3els())[0]) &&
+     (await label.evaluate(n => getComputedStyle(n).letterSpacing)) === 'normal');
+
   // ---- what a file says is checked before it becomes a class.
   await page.evaluate(() => {
     const d = JSON.parse(localStorage.getItem('stoop_data_v4'));
@@ -148,13 +184,15 @@ module.exports = async function type(browser, ok) {
     el.align = 'x" onmouseover="alert(1)';
     el.outline = 'yes';
     el.caps = 'yes';
+    el.track = '1em;color:red';
     localStorage.setItem('stoop_data_v4', JSON.stringify(d));
   });
   await page.reload();
   await page.waitForTimeout(900);
   await go('#press');
   const cls = await page.locator('[data-page="2"] .eltext').first().getAttribute('class');
-  ok('AN ALIGNMENT OR OUTLINE THAT IS NOT ONE IS IGNORED', !/onmouseover|al-|outline/.test(cls) &&
+  ok('AN ALIGNMENT, OUTLINE OR SPACING THAT IS NOT ONE IS IGNORED', !/onmouseover|al-|outline/.test(cls) &&
+     !/letter-spacing|color/.test(await page.locator('[data-page="2"] .eltext').first().getAttribute('style')) &&
      (await page.locator('[data-page="2"] [onmouseover]').count()) === 0, cls);
 
   ok('no script errors around type', errs.length === 0, errs.slice(0, 3).join(' | '));

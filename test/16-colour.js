@@ -54,8 +54,9 @@ module.exports = async function colour(browser, ok) {
   await p2.click({ position: { x: 6, y: 6 } });
   await page.click('[data-addel="text"]');
   await page.waitForTimeout(150);
-  ok('A CUTTING OFFERS ITS INKS', (await page.locator('#inspector .swatch').count()) === 9,
-     (await page.locator('#inspector .swatch').count()) + ' swatches');
+  ok('A CUTTING OFFERS ITS INKS, AND ANY OTHER COLOUR', (await page.locator('#inspector button.swatch').count()) === 9 &&
+     (await page.locator('#inspector .swatch.pick input[type="color"]').count()) === 1,
+     (await page.locator('#inspector button.swatch').count()) + ' swatches');
   await page.selectOption('[data-elvoicesel]', 'head');
   await ink('PINK');
   ok('A HEADLINE IN PINK IS PINK', (await style('[data-page="2"] .el-text .eltext', 'color')) === 'rgb(255, 72, 176)',
@@ -95,7 +96,7 @@ module.exports = async function colour(browser, ok) {
      (await page.locator('#inspector .swatch').count()) === 0);
   await page.selectOption('[data-ellook]', 'grain');
   await page.waitForTimeout(1200);
-  ok('screened to grain, it does', (await page.locator('#inspector .swatch').count()) === 8);
+  ok('screened to grain, it does', (await page.locator('#inspector button.swatch').count()) === 8);
   await ink('BLUE');
   await page.waitForTimeout(300);
   const shot = page.locator('[data-page="3"] .el-photo');
@@ -175,7 +176,7 @@ module.exports = async function colour(browser, ok) {
   await page.waitForTimeout(200);
   ok('A NIGHT PAGE READS IN WHITE BY ITSELF', (await style('#sheetzone [data-page="5"]', 'backgroundColor')) === 'rgb(29, 26, 22)' &&
      (await style('#sheetzone [data-page="5"] h3', 'color')) === 'rgb(255, 255, 255)' &&
-     /WHITE LETTERS/.test(await page.locator('#inspector').innerText()), await style('#sheetzone [data-page="5"] h3', 'color'));
+     (await page.locator('[data-pgletters="5"][data-c="#ffffff"].on').count()) === 1, await style('#sheetzone [data-page="5"] h3', 'color'));
   await page.click('[data-addel="text"]');
   await page.waitForTimeout(250);
   const night = () => page.evaluate(() => JSON.parse(localStorage.getItem('stoop_data_v4')).press.panels[4]);
@@ -189,14 +190,45 @@ module.exports = async function colour(browser, ok) {
   await p5.click({ position: { x: 6, y: 300 } });
   await page.evaluate(() => document.activeElement && document.activeElement.blur());
   await page.waitForTimeout(150);
-  await page.click('[data-pgletters="5"]');
+  await page.click('[data-pgletters="5"][title="BLACK"]');
   await page.waitForTimeout(200);
   ok('BLACK LETTERS ON A NIGHT PAGE IF SOMEBODY ASKS', (await night()).letters === 'black' &&
      (await style('#sheetzone [data-page="5"] h3', 'color')) !== 'rgb(255, 255, 255)');
-  await page.click('[data-pgletters="5"]');
+  await page.click('[data-pgletters="5"][title="WHITE"]');
   await page.waitForTimeout(200);
-  ok('and asking again leaves the night to choose', !('letters' in (await night())) &&
+  ok('and asking for white leaves the night to choose', !('letters' in (await night())) &&
      (await style('#sheetzone [data-page="5"] h3', 'color')) === 'rgb(255, 255, 255)');
+
+  // ---- a zine's own colours: letters in a colour picked once, and the
+  // colour offered in every row after.
+  await page.locator('[data-pick="pgletters"][data-for="5"]').fill('#e2d6c8');
+  await page.waitForTimeout(250);
+  ok('THE PAGE\'S LETTERS CAN BE ANY COLOUR', (await night()).letters === '#e2d6c8' &&
+     (await style('#sheetzone [data-page="5"] h3', 'color')) === 'rgb(226, 214, 200)' &&
+     (await style('#sheetzone [data-page="5"] .body', 'color')) === 'rgb(226, 214, 200)');
+  await page.click('[data-addel="text"]');
+  await page.waitForTimeout(250);
+  ok('and anything new glued on it takes that colour', ((await night()).els || []).slice(-1)[0].colour === '#e2d6c8');
+  ok('A COLOUR PICKED ONCE IS OFFERED IN EVERY ROW', (await page.locator('#inspector button.swatch[data-elcolour][data-c="#e2d6c8"]').count()) === 1);
+  await page.locator('#inspector [data-pick="elcolour"]').fill('#773fa8');
+  await page.waitForTimeout(250);
+  ok('and a cutting can be any colour too', ((await night()).els || []).slice(-1)[0].colour === '#773fa8' &&
+     (await page.locator('#inspector button.swatch.on[data-c="#773fa8"]').count()) === 1);
+  await page.keyboard.press('Escape');
+  await p5.click({ position: { x: 6, y: 300 } });
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.waitForTimeout(150);
+  await page.locator('[data-pick="pgfill"][data-for="5"]').fill('#0a0a0a');
+  await page.waitForTimeout(250);
+  ok('A PAGE CAN BE PRINTED ON ANY COLOUR, ITS LETTERS KEEPING THEIRS', (await night()).fill === '#0a0a0a' &&
+     (await style('#sheetzone [data-page="5"]', 'backgroundColor')) === 'rgb(10, 10, 10)' &&
+     (await style('#sheetzone [data-page="5"] h3', 'color')) === 'rgb(226, 214, 200)' &&
+     /page 5\s*#0a0a0a \u00b7 #e2d6c8 letters/i.test(await page.locator('#inspector').innerText()));
+  await go('#paper');
+  const [cdl] = await Promise.all([page.waitForEvent('download'), page.click('#pdfzinebtn')]);
+  const cpdf = fs.readFileSync(await cdl.path(), 'latin1');
+  ok('ON PAPER: THE GROUND AND THE LETTERS IN THEIR COLOURS',
+     /0\.039 0\.039 0\.039 rg [\d. ]+ re f 0 g\n(?:q -1 0 0 -1 [^\n]+\n)?0\.886 0\.839 0\.784 rg 0\.886 0\.839 0\.784 RG\n/.test(cpdf));
 
   ok('no script errors around colour', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();

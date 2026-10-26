@@ -314,6 +314,8 @@
 .panel.photofill > h3, .panel.photofill > .no, .panel.photofill > .rule, .panel.photofill > .body, .panel.photofill > .addr { position: relative; z-index: 1; }
 .panel.letterswhite > h3, .panel.letterswhite > .body, .panel.letterswhite > .no, .panel.letterswhite .addr span { color: #fff; }
 .panel.letterswhite > .rule { border-top-color: #fff; }
+.panel.lettersink > h3, .panel.lettersink > .body, .panel.lettersink > .no, .panel.lettersink .addr span { color: var(--letters); }
+.panel.lettersink > .rule { border-top-color: var(--letters); }
 
 .panel, .panel * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .panel.over { outline: 2px solid var(--red); outline-offset: -2px; }
@@ -537,6 +539,8 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 .swatches .sub { margin-right: .2rem; }
 .swatch { width: 30px; height: 30px; border: 2px solid var(--paper); outline: 1px solid var(--fg); padding: 0; cursor: pointer; }
 .swatch.on { outline: 3px solid var(--fg); }
+.swatch.pick { position: relative; display: inline-flex; align-items: center; justify-content: center; font: bold 18px/1 'Courier New', monospace; background: var(--paper); color: var(--fg); box-sizing: border-box; }
+.swatch.pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
 @media (pointer: coarse) { .swatch { width: 34px; height: 34px; } }
 
 
@@ -940,7 +944,7 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 </section>
 </main>
 <div class="toast" id="toast"></div>
-<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 359 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
+<p class="pageweight">STOOP · a press for a periodical · one file · zero requests · no trackers · no accounts · 362 KB before compression · everything stays on your device · every issue it prints carries a copy of it</p>
 <script>
 (function(){
 var STORAGE_KEY = 'stoop_data_v4';
@@ -1999,6 +2003,8 @@ function paintFace(el, panel, page, active) {
   el.style.backgroundColor = fillOf(panel);
   el.classList.toggle('photofill', photoFills(panel));
   el.classList.toggle('letterswhite', whiteLetters(panel));
+  el.classList.toggle('lettersink', !!inkLetters(panel));
+  el.style.setProperty('--letters', inkLetters(panel));
   if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
   if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
 
@@ -2410,7 +2416,7 @@ function elBody(el, pics, editable, editing, page) {
   }
   var voice = voiceOf(el);
   var cls = 'eltext v-' + (ownFace(voice) ? 'own' : voice) + (el.ink === 'white' ? ' knock' : '') + typeClass(el);
-  var style = 'font-size:' + (el.size || 12) + 'px' + ownFaceStyle(voice);
+  var style = 'font-size:' + (el.size || 12) + 'px' + ownFaceStyle(voice) + trackStyle(el);
   var text = shownText(el, page);
   if (voice === 'ransom') {
     return '<div class="' + cls + '" style="' + style + '">' + ransomHtml(text) + '</div>';
@@ -2856,9 +2862,8 @@ function whereHtml(el) {
 function pageSheetHtml(page) {
   var panel = panelOfPage(page);
   var m = panel.photo && photoMeta[panel.photo];
-  var fillName = FILLS.filter(function (f) { return f[1] === fillOf(panel); })[0];
-  var summary = '<b>PAGE ' + page + '</b><span class="sub">' + (fillName ? fillName[0].toLowerCase() : 'white') +
-    ' \u00b7 ' + (whiteLetters(panel) ? 'white' : 'black') + ' letters' + (panel.photo ? ' \u00b7 a photo' : '') + '</span>';
+  var summary = '<b>PAGE ' + page + '</b><span class="sub">' + colourName(fillOf(panel) || '#ffffff').toLowerCase() +
+    ' \u00b7 ' + colourName(lettersOf(panel) || '').toLowerCase() + ' letters' + (panel.photo ? ' \u00b7 a photo' : '') + '</span>';
   var inner = (m ? lookSelect('pglook', page, m.style) + btnRow([['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER']], page) : '') +
     pageButtons(page) + fillSwatches(page);
   return groupHtml('page', summary, inner);
@@ -3408,18 +3413,47 @@ function luminance(hex) {
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 }
 function darkFill(panel) { var hex = fillOf(panel); return !!hex && luminance(hex) < 0.4; }
-function inkForPage(panel) { return darkFill(panel) ? '#ffffff' : ''; }
+function inkForPage(panel) { return inkLetters(panel) || (darkFill(panel) ? '#ffffff' : ''); }
+
+function zineColours() {
+  var stock = INKS.concat(FILLS).map(function (c) { return c[1]; });
+  var out = [];
+  var add = function (hex) { if (hex && stock.indexOf(hex) < 0 && out.indexOf(hex) < 0 && out.length < 12) out.push(hex); };
+  var last = state.issues.length ? state.issues[state.issues.length - 1].panels || [] : [];
+  pressState().panels.concat(last).forEach(function (p) {
+    add(fillOf(p));
+    add(inkLetters(p));
+    elsOf(p).forEach(function (e) { add(inkOf(e)); });
+  });
+  (state.kit || []).forEach(function (k) { add(inkOf(k.el)); });
+  return out;
+}
+
+function colourName(hex) {
+  var known = INKS.concat(FILLS).filter(function (c) { return c[1] === hex; })[0];
+  if (!hex) return 'BLACK';
+  return known ? known[0] : hex.toUpperCase();
+}
+
+function swatchRow(label, stock, attr, at, now) {
+  var own = zineColours().map(function (hex) { return [hex.toUpperCase(), hex]; });
+  return '<div class="swatches"><span class="sub">' + label + '</span>' + stock.concat(own).map(function (c) {
+    return '<button class="swatch' + (c[1] === now ? ' on' : '') + '" data-' + attr + '="' + esc(at) + '" data-c="' + c[1] +
+      '" title="' + c[0] + '" aria-label="' + c[0] + ' ' + label.toLowerCase() + '" style="background:' +
+      (c[1] || (attr === 'pgfill' ? '#fff' : '#000')) + '"></button>';
+  }).join('') + '<label class="swatch pick" title="ANOTHER COLOUR">+<input type="color" data-pick="' + attr + '" data-for="' +
+    esc(at) + '" value="' + (now || '#000000') + '" aria-label="Another colour"></label></div>';
+}
 
 function fillAttr(panel) {
-  return fillOf(panel) ? ' style="background:' + fillOf(panel) + '"' : '';
+  var css = (fillOf(panel) ? 'background:' + fillOf(panel) + ';' : '') + (inkLetters(panel) ? '--letters:' + inkLetters(panel) : '');
+  return css ? ' style="' + css + '"' : '';
 }
 
 function fillSwatches(page) {
-  var now = fillOf(panelOfPage(page));
-  return '<div class="swatches"><span class="sub">PAGE COLOUR</span>' + FILLS.map(function (f) {
-    return '<button class="swatch' + (f[1] === now ? ' on' : '') + '" data-pgfill="' + page + '" data-c="' + f[1] +
-      '" title="' + f[0] + '" aria-label="' + f[0] + ' page" style="background:' + (f[1] || '#fff') + '"></button>';
-  }).join('') + '</div>';
+  var panel = panelOfPage(page);
+  return swatchRow('PAGE COLOUR', FILLS, 'pgfill', page, fillOf(panel)) +
+    swatchRow('LETTERS', [['BLACK', ''], ['WHITE', '#ffffff']], 'pgletters', page, lettersOf(panel));
 }
 
 function pdfFill(panel, box) {
@@ -3435,9 +3469,16 @@ var plateTint = false;
 function pdfInk(el) {
   var hex = inkOf(el);
   if (plateInk !== null && hex !== '#ffffff') hex = plateTint ? plateInk : '';
+  return pdfColour(hex);
+}
+function pdfColour(hex) {
   if (!hex) return '0 g 0 G\n';
   var c = inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ');
   return c + ' rg ' + c + ' RG\n';
+}
+function pdfLetters(panel) {
+  var hex = lettersOf(panel);
+  return hex === '#ffffff' ? '1 g 1 G\n' : pdfColour(plateInk !== null ? '' : hex);
 }
 
 function inkable(el) {
@@ -3449,32 +3490,41 @@ function inkSwatches(el) {
   if (!inkable(el)) return '';
   var now = inkOf(el);
   var inks = el.kind === 'photo' || el.kind === 'qr' ? INKS.filter(function (ink) { return ink[1] !== '#ffffff'; }) : INKS;
-  return '<div class="swatches"><span class="sub">INK</span>' + inks.map(function (ink) {
-    return '<button class="swatch' + (ink[1] === now ? ' on' : '') + '" data-elcolour="' + esc(el.id) +
-      '" data-c="' + ink[1] + '" title="' + ink[0] + '" aria-label="' + ink[0] + ' ink" style="background:' +
-      (ink[1] || '#000') + '"></button>';
-  }).join('') + '</div>';
+  return swatchRow('INK', inks, 'elcolour', el.id, now);
+}
+
+function setFill(page, hex) {
+  var panel = panelOfPage(page);
+  if (!panel) return;
+  pasteMark();
+  if (hex) panel.fill = hex; else delete panel.fill;
+  savePress();
+  renderPress();
+  toast(colourName(hex) + ' page');
+}
+
+function setInk(id, hex) {
+  updateEl(id, { colour: hex || undefined }, true);
+  renderPress();
+  toast(colourName(hex) + ' ink');
 }
 
 document.addEventListener('click', function (ev) {
-  var f = ev.target.closest && ev.target.closest('[data-pgfill]');
-  if (f) {
-    var panel = panelOfPage(Number(f.getAttribute('data-pgfill')));
-    if (!panel) return;
-    pasteMark();
-    if (f.getAttribute('data-c')) panel.fill = f.getAttribute('data-c'); else delete panel.fill;
-    savePress();
-    renderPress();
-    toast(f.getAttribute('title') + ' page');
-    return;
-  }
-  var b = ev.target.closest && ev.target.closest('[data-elcolour]');
+  var b = ev.target.closest && ev.target.closest('button[data-pgfill],button[data-elcolour]');
   if (!b) return;
-  var c = b.getAttribute('data-c');
-  updateEl(b.getAttribute('data-elcolour'), { colour: c || undefined }, true);
-  renderPress();
-  var name = INKS.filter(function (ink) { return ink[1] === c; })[0];
-  toast((name ? name[0] : 'BLACK') + ' ink');
+  if (b.hasAttribute('data-pgfill')) setFill(Number(b.getAttribute('data-pgfill')), b.getAttribute('data-c') || '');
+  else setInk(b.getAttribute('data-elcolour'), b.getAttribute('data-c') || '');
+});
+
+document.addEventListener('change', function (ev) {
+  var p = ev.target.closest && ev.target.closest('[data-pick]');
+  var hex = p && String(p.value).toLowerCase();
+  if (!p || !/^#[0-9a-f]{6}$/.test(hex)) return;
+  var at = p.getAttribute('data-for');
+  var what = p.getAttribute('data-pick');
+  if (what === 'pgfill') setFill(Number(at), hex);
+  else if (what === 'pgletters') setLetters(Number(at), hex);
+  else setInk(at, hex);
 });
 var ALIGNS = ['left', 'center', 'right'];
 var ALIGN_LABEL = { left: 'ALIGN LEFT', center: 'CENTRED', right: 'ALIGN RIGHT' };
@@ -3489,6 +3539,19 @@ function capsOf(el) {
 
 function outlined(el) { return !!el && el.outline === true; }
 
+var TRACKS = [0, 0.06, 0.3];
+var TRACK_LABEL = ['SET CLOSE', 'SPACED', 'WIDE SPACED'];
+function trackOf(el) {
+  var t = Number(el && el.track);
+  var v = voiceOf(el || {});
+  return v !== 'ransom' && v !== 'marker' && t > 0 ? Math.min(0.5, Math.round(t * 100) / 100) : 0;
+}
+function trackStyle(el) { return trackOf(el) ? ';letter-spacing:' + trackOf(el) + 'em' : ''; }
+function trackStep(el) {
+  var at = TRACKS.filter(function (t) { return t <= trackOf(el); }).length - 1;
+  return { label: TRACK_LABEL[at], next: TRACKS[(at + 1) % TRACKS.length] };
+}
+
 function typeClass(el) {
   return (voiceOf(el) !== 'ransom' && alignOf(el) !== 'left' ? ' al-' + alignOf(el) : '') +
     (capsOf(el) ? ' caps' : ' nocaps') + (outlined(el) ? ' outline' : '');
@@ -3499,6 +3562,7 @@ function typeButtons(el) {
   if (voiceOf(el) !== 'ransom') b.push(['elalign', ALIGN_LABEL[alignOf(el)]]);
   b.push(['elcaps', capsOf(el) ? 'CAPITALS' : 'AS TYPED']);
   b.push(['eloutline', outlined(el) ? 'OUTLINE' : 'SOLID LETTERS']);
+  if (voiceOf(el) !== 'ransom' && voiceOf(el) !== 'marker') b.push(['eltrack', trackStep(el).label]);
   return b;
 }
 
@@ -3523,7 +3587,7 @@ document.addEventListener('change', function (ev) {
 });
 
 document.addEventListener('click', function (ev) {
-  var t = ev.target.closest && ev.target.closest('[data-elalign],[data-elcaps],[data-eloutline]');
+  var t = ev.target.closest && ev.target.closest('[data-elalign],[data-elcaps],[data-eloutline],[data-eltrack]');
   if (!t) return;
   var hit;
   if (t.hasAttribute('data-elalign')) {
@@ -3532,6 +3596,9 @@ document.addEventListener('click', function (ev) {
   } else if (t.hasAttribute('data-elcaps')) {
     hit = findEl(t.getAttribute('data-elcaps'));
     if (hit) updateEl(hit.el.id, { caps: !capsOf(hit.el) }, true);
+  } else if (t.hasAttribute('data-eltrack')) {
+    hit = findEl(t.getAttribute('data-eltrack'));
+    if (hit) updateEl(hit.el.id, { track: trackStep(hit.el).next || undefined }, true);
   } else {
     hit = findEl(t.getAttribute('data-eloutline'));
     if (hit) updateEl(hit.el.id, { outline: outlined(hit.el) ? undefined : true }, true);
@@ -3546,17 +3613,39 @@ function alignX(el, g, lw) {
   return g.x + 2;
 }
 
+function trackOps(el, size) { return trackOf(el) ? (trackOf(el) * size).toFixed(2) + ' Tc ' : ''; }
+function trackedWidth(el, face, line, size) {
+  return runWidth(face, line, size) + trackOf(el) * size * pdfSafe(faceText(face, line)).length;
+}
+
 function textMode(el) { return outlined(el) ? '1 Tr ' : ''; }
 function strokeFor(el) { return outlined(el) ? (ptSize(el) * 0.045).toFixed(2) + ' w\n' : ''; }
 
 function knockLetters(el) { return inkOf(el) === '#ffffff' && !plateInk ? '0 g 0 G\n' : '1 g 1 G\n'; }
 function photoFills(panel) { return !!panel && panel.photoFill === true && !!panel.photo; }
-function whiteLetters(panel) {
-  return !!panel && (panel.letters === 'white' || (darkFill(panel) && panel.letters !== 'black'));
+function lettersOf(panel) {
+  if (!panel) return '';
+  var l = panel.letters;
+  if (typeof l === 'string' && /^#[0-9a-f]{6}$/i.test(l)) return l.toLowerCase();
+  return l === 'white' || (darkFill(panel) && l !== 'black') ? '#ffffff' : '';
 }
+function whiteLetters(panel) { return lettersOf(panel) === '#ffffff'; }
+function inkLetters(panel) { var l = lettersOf(panel); return l && l !== '#ffffff' ? l : ''; }
 
 function pageClass(panel) {
-  return (photoFills(panel) ? ' photofill' : '') + (whiteLetters(panel) ? ' letterswhite' : '');
+  return (photoFills(panel) ? ' photofill' : '') + (whiteLetters(panel) ? ' letterswhite' : '') +
+    (inkLetters(panel) ? ' lettersink' : '');
+}
+
+function setLetters(page, hex) {
+  var panel = panelOfPage(page);
+  if (!panel) return;
+  pasteMark();
+  delete panel.letters;
+  if (lettersOf(panel) !== hex) panel.letters = hex === '' ? 'black' : hex === '#ffffff' ? 'white' : hex;
+  savePress();
+  renderPress();
+  toast(colourName(hex || '') + ' letters');
 }
 
 function fillPageWith(id) {
@@ -3578,7 +3667,6 @@ function pageButtons(page) {
   if (!panel) return '';
   var b = [];
   if (panel.photo) b.push(['pgphfill', photoFills(panel) ? 'PHOTO FILLS THE PAGE' : 'PHOTO ABOVE THE WORDS']);
-  b.push(['pgletters', whiteLetters(panel) ? 'WHITE LETTERS' : 'BLACK LETTERS']);
   return b.map(function (pair) {
     return '<button class="btn quiet" data-' + pair[0] + '="' + page + '">' + pair[1] + '</button>';
   }).join('');
@@ -3588,17 +3676,11 @@ document.addEventListener('click', function (ev) {
   var t = ev.target.closest && ev.target.closest('[data-elfillpage],[data-pgphfill],[data-pgletters]');
   if (!t) return;
   if (t.hasAttribute('data-elfillpage')) { fillPageWith(t.getAttribute('data-elfillpage')); return; }
-  var fill = t.hasAttribute('data-pgphfill');
-  var panel = panelOfPage(Number(t.getAttribute(fill ? 'data-pgphfill' : 'data-pgletters')));
+  if (t.hasAttribute('data-pgletters')) { setLetters(Number(t.getAttribute('data-pgletters')), t.getAttribute('data-c') || ''); return; }
+  var panel = panelOfPage(Number(t.getAttribute('data-pgphfill')));
   if (!panel) return;
   pasteMark();
-  if (fill) {
-    if (photoFills(panel)) delete panel.photoFill; else panel.photoFill = true;
-  } else {
-    var want = !whiteLetters(panel);
-    delete panel.letters;
-    if (whiteLetters(panel) !== want) panel.letters = want ? 'white' : 'black';
-  }
+  if (photoFills(panel)) delete panel.photoFill; else panel.photoFill = true;
   savePress();
   renderPress();
 });
@@ -6009,9 +6091,7 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
 
 function pdfPanel(panel, page, pages, box, images, url, ghosts) {
   if (plateInk && !whiteLetters(panel)) return pdfPasteup(panel, box, images, ghosts, page);
-  var ops = pdfPhotoFill(panel, box, images);
-  var letters = whiteLetters(panel) ? '1' : '0';
-  ops += letters + ' g ' + letters + ' G\n';
+  var ops = pdfPhotoFill(panel, box, images) + pdfLetters(panel);
   var y = box.y;
   var isCover = page === 1;
   var isBack = page === pages;
@@ -6024,7 +6104,7 @@ function pdfPanel(panel, page, pages, box, images, url, ghosts) {
     var no = pdfHeading('\u2116' + (panel.issue || ''), box.x, y - 1.5, box.cw, 51, 0.9, true);
     ops += no.op;
     y -= no.drop + 3;
-    ops += 'q 2.25 w ' + letters + ' G ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
+    ops += 'q 2.25 w ' + box.x.toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' m ' +
       (box.x + box.cw).toFixed(2) + ' ' + (y - 5.625).toFixed(2) + ' l S Q\n';
     y -= 11.25;
   }
@@ -6241,14 +6321,14 @@ function runWidth(face, text, size) {
   return total;
 }
 
-function wrapFace(text, face, size, width) {
+function wrapFace(text, face, size, width, tc) {
   var out = [];
   String(text || '').split('\n').forEach(function (para) {
     var line = '';
     para.split(/\s+/).forEach(function (word) {
       if (!word) return;
       var next = line ? line + ' ' + word : word;
-      if (runWidth(face, next, size) <= width || !line) { line = next; return; }
+      if (runWidth(face, next, size) + (tc || 0) * next.length <= width || !line) { line = next; return; }
       out.push(line);
       line = word;
     });
@@ -6264,7 +6344,7 @@ function linesOf(el, face, size, width, upper) {
   var rec = el.lines;
   if (rec && rec.length) return upper ? rec.map(function (l) { return l.toUpperCase(); }) : rec.slice();
   var text = upper ? String(el.text || '').toUpperCase() : el.text;
-  return wrapFace(text, face, size, width);
+  return wrapFace(text, face, size, width, trackOf(el) * size);
 }
 
 function elBoxPdf(box, el) {
@@ -6383,8 +6463,8 @@ function pdfElText(el, g, page) {
   linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      draw += 'BT ' + textMode(el) + '/' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' +
-        alignX(el, g, runWidth(face, line, size)).toFixed(2) + ' ' +
+      draw += 'BT ' + textMode(el) + trackOps(el, size) + '/' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' +
+        alignX(el, g, trackedWidth(el, face, line, size)).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, line)) + ') Tj ET\n';
     }
     y -= lead;

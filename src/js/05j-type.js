@@ -19,6 +19,22 @@ function capsOf(el) {
 
 function outlined(el) { return !!el && el.outline === true; }
 
+// Letters can be set close, spaced a little, the way a headline in capitals
+// often is, or spaced wide, the way a label or a date is: a fraction of an
+// em after every letter. Ransom and marker space their own letters.
+var TRACKS = [0, 0.06, 0.3];
+var TRACK_LABEL = ['SET CLOSE', 'SPACED', 'WIDE SPACED'];
+function trackOf(el) {
+  var t = Number(el && el.track);
+  var v = voiceOf(el || {});
+  return v !== 'ransom' && v !== 'marker' && t > 0 ? Math.min(0.5, Math.round(t * 100) / 100) : 0;
+}
+function trackStyle(el) { return trackOf(el) ? ';letter-spacing:' + trackOf(el) + 'em' : ''; }
+function trackStep(el) {
+  var at = TRACKS.filter(function (t) { return t <= trackOf(el); }).length - 1;
+  return { label: TRACK_LABEL[at], next: TRACKS[(at + 1) % TRACKS.length] };
+}
+
 function typeClass(el) {
   return (voiceOf(el) !== 'ransom' && alignOf(el) !== 'left' ? ' al-' + alignOf(el) : '') +
     (capsOf(el) ? ' caps' : ' nocaps') + (outlined(el) ? ' outline' : '');
@@ -29,6 +45,7 @@ function typeButtons(el) {
   if (voiceOf(el) !== 'ransom') b.push(['elalign', ALIGN_LABEL[alignOf(el)]]);
   b.push(['elcaps', capsOf(el) ? 'CAPITALS' : 'AS TYPED']);
   b.push(['eloutline', outlined(el) ? 'OUTLINE' : 'SOLID LETTERS']);
+  if (voiceOf(el) !== 'ransom' && voiceOf(el) !== 'marker') b.push(['eltrack', trackStep(el).label]);
   return b;
 }
 
@@ -55,7 +72,7 @@ document.addEventListener('change', function (ev) {
 });
 
 document.addEventListener('click', function (ev) {
-  var t = ev.target.closest && ev.target.closest('[data-elalign],[data-elcaps],[data-eloutline]');
+  var t = ev.target.closest && ev.target.closest('[data-elalign],[data-elcaps],[data-eloutline],[data-eltrack]');
   if (!t) return;
   var hit;
   if (t.hasAttribute('data-elalign')) {
@@ -64,6 +81,9 @@ document.addEventListener('click', function (ev) {
   } else if (t.hasAttribute('data-elcaps')) {
     hit = findEl(t.getAttribute('data-elcaps'));
     if (hit) updateEl(hit.el.id, { caps: !capsOf(hit.el) }, true);
+  } else if (t.hasAttribute('data-eltrack')) {
+    hit = findEl(t.getAttribute('data-eltrack'));
+    if (hit) updateEl(hit.el.id, { track: trackStep(hit.el).next || undefined }, true);
   } else {
     hit = findEl(t.getAttribute('data-eloutline'));
     if (hit) updateEl(hit.el.id, { outline: outlined(hit.el) ? undefined : true }, true);
@@ -79,6 +99,13 @@ function alignX(el, g, lw) {
   if (a === 'center') return g.x + (g.w - lw) / 2;
   if (a === 'right') return g.x + g.w - 2 - lw;
   return g.x + 2;
+}
+
+// Spaced letters on paper: PDF's character spacing, in points after every
+// letter, which the screen's letter-spacing also puts after the last.
+function trackOps(el, size) { return trackOf(el) ? (trackOf(el) * size).toFixed(2) + ' Tc ' : ''; }
+function trackedWidth(el, face, line, size) {
+  return runWidth(face, line, size) + trackOf(el) * size * pdfSafe(faceText(face, line)).length;
 }
 
 // Letters drawn as outlines are stroked, not filled: text render mode 1, at

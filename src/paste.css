@@ -115,6 +115,8 @@ body[data-pen] #sheetzone .el .eltext { pointer-events: none; }
 .swatches .sub { margin-right: .2rem; }
 .swatch { width: 30px; height: 30px; border: 2px solid var(--paper); outline: 1px solid var(--fg); padding: 0; cursor: pointer; }
 .swatch.on { outline: 3px solid var(--fg); }
+.swatch.pick { position: relative; display: inline-flex; align-items: center; justify-content: center; font: bold 18px/1 'Courier New', monospace; background: var(--paper); color: var(--fg); box-sizing: border-box; }
+.swatch.pick input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; padding: 0; }
 @media (pointer: coarse) { .swatch { width: 34px; height: 34px; } }
 
 /* Nothing that only exists to be grabbed may reach the paper. */

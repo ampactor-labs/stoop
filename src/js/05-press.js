@@ -157,6 +157,8 @@ function paintFace(el, panel, page, active) {
   el.style.backgroundColor = fillOf(panel);
   el.classList.toggle('photofill', photoFills(panel));
   el.classList.toggle('letterswhite', whiteLetters(panel));
+  el.classList.toggle('lettersink', !!inkLetters(panel));
+  el.style.setProperty('--letters', inkLetters(panel));
   if (head && head !== active && head.innerText !== panel.h) head.innerText = panel.h;
   if (body && body !== active && body.innerText !== panel.body) body.innerText = panel.body;
 

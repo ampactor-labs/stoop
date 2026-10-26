@@ -79,14 +79,14 @@ function runWidth(face, text, size) {
 
 // Word wrap against a real width table, so a proportional headline breaks
 // where it actually runs out of panel rather than where a monospace guess says.
-function wrapFace(text, face, size, width) {
+function wrapFace(text, face, size, width, tc) {
   var out = [];
   String(text || '').split('\n').forEach(function (para) {
     var line = '';
     para.split(/\s+/).forEach(function (word) {
       if (!word) return;
       var next = line ? line + ' ' + word : word;
-      if (runWidth(face, next, size) <= width || !line) { line = next; return; }
+      if (runWidth(face, next, size) + (tc || 0) * next.length <= width || !line) { line = next; return; }
       out.push(line);
       line = word;
     });
@@ -107,7 +107,7 @@ function linesOf(el, face, size, width, upper) {
   var rec = el.lines;
   if (rec && rec.length) return upper ? rec.map(function (l) { return l.toUpperCase(); }) : rec.slice();
   var text = upper ? String(el.text || '').toUpperCase() : el.text;
-  return wrapFace(text, face, size, width);
+  return wrapFace(text, face, size, width, trackOf(el) * size);
 }
 
 // An element's box, in PDF points. The paste-up layer covers the whole panel,
@@ -245,8 +245,8 @@ function pdfElText(el, g, page) {
   linesOf(el, face, size, g.w - 4, capsOf(el)).forEach(function (line) {
     if (y < g.y - g.h * 0.6 - size) return;
     if (line.length) {
-      draw += 'BT ' + textMode(el) + '/' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' +
-        alignX(el, g, runWidth(face, line, size)).toFixed(2) + ' ' +
+      draw += 'BT ' + textMode(el) + trackOps(el, size) + '/' + face.f + ' ' + size.toFixed(2) + ' Tf 1 0 0 1 ' +
+        alignX(el, g, trackedWidth(el, face, line, size)).toFixed(2) + ' ' +
         y.toFixed(2) + ' Tm (' + pdfEsc(faceText(face, line)) + ') Tj ET\n';
     }
     y -= lead;

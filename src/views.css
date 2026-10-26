@@ -110,6 +110,8 @@
 .panel.photofill > h3, .panel.photofill > .no, .panel.photofill > .rule, .panel.photofill > .body, .panel.photofill > .addr { position: relative; z-index: 1; }
 .panel.letterswhite > h3, .panel.letterswhite > .body, .panel.letterswhite > .no, .panel.letterswhite .addr span { color: #fff; }
 .panel.letterswhite > .rule { border-top-color: #fff; }
+.panel.lettersink > h3, .panel.lettersink > .body, .panel.lettersink > .no, .panel.lettersink .addr span { color: var(--letters); }
+.panel.lettersink > .rule { border-top-color: var(--letters); }
 /* A browser prints backgrounds only when asked, and a page colour, a
    knocked-out block and a solid box are all backgrounds. */
 .panel, .panel * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

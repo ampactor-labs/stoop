@@ -109,7 +109,7 @@ module.exports = async function photo(browser, ok) {
   });
   ok('A PAGE PHOTOGRAPH CAN FILL THE PAGE, ITS TITLE ON TOP',
      Math.abs(shot.width - cb.width) < 2 && Math.abs(shot.height - cb.height) < 2 && onTop);
-  await page.click('[data-pgletters="1"]');
+  await page.click('[data-pgletters="1"][title="WHITE"]');
   await page.waitForTimeout(250);
   ok('AND THE PAGE\'S LETTERS CAN BE WHITE OVER IT',
      (await page.evaluate(() => getComputedStyle(document.querySelector('#sheetzone [data-page="1"] h3')).color)) === 'rgb(255, 255, 255)');
@@ -122,7 +122,7 @@ module.exports = async function photo(browser, ok) {
     .map(m => [Number(m[1]), Number(m[2])]);
   ok('ON PAPER THE COVER PHOTOGRAPH COVERS THE WHOLE PAGE', draws.some(([w, h]) => w >= 197.9 && h >= 305.9),
      draws.map(d => d.map(v => Math.round(v)).join('x')).join(' '));
-  ok('and the cover is set in white', /1 g 1 G\n[^Q]*\(STOOP ZINE\) Tj/.test(pdf) && /q 2\.25 w 1 G /.test(pdf));
+  ok('and the cover is set in white', /1 g 1 G\n[^Q]*\(STOOP ZINE\) Tj[^Q]*q 2\.25 w /.test(pdf));
 
   // ---- and in the file handed on.
   await go('#desk');

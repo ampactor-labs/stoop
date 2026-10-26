@@ -81,9 +81,8 @@ function whereHtml(el) {
 function pageSheetHtml(page) {
   var panel = panelOfPage(page);
   var m = panel.photo && photoMeta[panel.photo];
-  var fillName = FILLS.filter(function (f) { return f[1] === fillOf(panel); })[0];
-  var summary = '<b>PAGE ' + page + '</b><span class="sub">' + (fillName ? fillName[0].toLowerCase() : 'white') +
-    ' \u00b7 ' + (whiteLetters(panel) ? 'white' : 'black') + ' letters' + (panel.photo ? ' \u00b7 a photo' : '') + '</span>';
+  var summary = '<b>PAGE ' + page + '</b><span class="sub">' + colourName(fillOf(panel) || '#ffffff').toLowerCase() +
+    ' \u00b7 ' + colourName(lettersOf(panel) || '').toLowerCase() + ' letters' + (panel.photo ? ' \u00b7 a photo' : '') + '</span>';
   var inner = (m ? lookSelect('pglook', page, m.style) + btnRow([['pgphlight', 'LIGHTER'], ['pgphdark', 'DARKER']], page) : '') +
     pageButtons(page) + fillSwatches(page);
   return groupHtml('page', summary, inner);
