@@ -172,23 +172,39 @@ function measureLines(node, voice) {
   if (!node || node.contains(document.activeElement)) return null;
   var marks = voice === 'marker' ? node.querySelectorAll('.rm') : null;
   var restore = null;
+  // The white space before each word, so a line keeps its runs of spaces and
+  // its indent, and an empty line stays a line, as the screen shows them.
+  var gaps = null;
   if (!marks || !marks.length) {
     var text = node.innerText;
     if (!text.trim()) return [];
     restore = node.innerHTML;
+    gaps = [];
+    var gap = '';
     node.innerHTML = text.split(/(\s+)/).map(function (w) {
-      return /^\s*$/.test(w) ? esc(w) : '<span class="lw">' + esc(w) + '</span>';
+      if (/^\s*$/.test(w)) { gap += w; return esc(w); }
+      gaps.push(gap);
+      gap = '';
+      return '<span class="lw">' + esc(w) + '</span>';
     }).join('');
     marks = node.querySelectorAll('.lw');
   }
   var lines = [], top = null;
-  Array.prototype.forEach.call(marks, function (s) {
+  Array.prototype.forEach.call(marks, function (s, i) {
     var t = Math.round(s.offsetTop);
-    if (top === null || Math.abs(t - top) > 2) { lines.push([]); top = t; }
-    lines[lines.length - 1].push(s.textContent);
+    var g = gaps ? gaps[i] : ' ';
+    if (top === null || Math.abs(t - top) > 2) {
+      var breaks = gaps ? g.split('\n').length - 1 : 0;
+      for (var b = 1; b < breaks && lines.length; b++) lines.push('');
+      lines.push(gaps && (breaks || top === null) ? g.slice(g.lastIndexOf('\n') + 1) : '');
+      top = t;
+    } else {
+      lines[lines.length - 1] += g;
+    }
+    lines[lines.length - 1] += s.textContent;
   });
   if (restore !== null) node.innerHTML = restore;
-  return lines.map(function (l) { return l.join(' '); });
+  return lines;
 }
 
 function growTextEls(panelEl, panel) {

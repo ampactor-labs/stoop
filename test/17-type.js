@@ -177,6 +177,33 @@ module.exports = async function type(browser, ok) {
   ok('and asked once more, they are set close again', !('track' in (await p3els())[0]) &&
      (await label.evaluate(n => getComputedStyle(n).letterSpacing)) === 'normal');
 
+  // ---- what is typed reaches the paper as typed: runs of spaces, an
+  // indent, an empty line, and the middle dot a date is set with.
+  const p4 = page.locator('[data-page="4"]');
+  await p4.scrollIntoViewIfNeeded();
+  await p4.click({ position: { x: 6, y: 6 } });
+  await page.click('[data-addel="text"]');
+  await page.waitForTimeout(200);
+  await page.locator('[data-page="4"] .el.sel').dblclick();
+  await page.keyboard.press('Control+A');
+  await page.keyboard.type('01  OPEN');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('    MORE');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('FRI \u00b7 9PM');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  s = await pdf();
+  const at = (t) => { const m = new RegExp('1 0 0 1 [\\d.]+ ([\\d.]+) Tm \\(' + t + '\\) Tj').exec(s); return m ? Number(m[1]) : NaN; };
+  const listed = await page.evaluate(() => JSON.parse(localStorage.getItem('stoop_data_v4')).press.panels[3].els.slice(-1)[0].lines);
+  const typed = await page.evaluate(() => JSON.parse(localStorage.getItem('stoop_data_v4')).press.panels[3].els.slice(-1)[0].text);
+  ok('A TYPED LIST KEEPS ITS SPACES, ITS INDENT AND ITS EMPTY LINE ON PAPER',
+     /\(01  OPEN\) Tj/.test(s) && /\(    MORE\) Tj/.test(s) &&
+     Math.abs((at("    MORE") - at("FRI \u00b7 9PM")) - /MORE(\n+)FRI/.exec(typed)[1].length * (at("01  OPEN") - at("    MORE"))) < 0.1 &&
+     /MORE\n\n+FRI/.test(typed), JSON.stringify([typed, listed]));
+  ok('AND A MIDDLE DOT IS A MIDDLE DOT, NOT A HYPHEN', /\(FRI \u00b7 9PM\) Tj/.test(s) && !/\(FRI - 9PM\) Tj/.test(s));
+
   // ---- what a file says is checked before it becomes a class.
   await page.evaluate(() => {
     const d = JSON.parse(localStorage.getItem('stoop_data_v4'));

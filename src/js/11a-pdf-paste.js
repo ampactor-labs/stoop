@@ -64,6 +64,7 @@ function firstBaseline(voice, size, lead) {
 function glyphWidth(face, ch, size) {
   if (!face.w) return size * COURIER_W;
   var c = ch.charCodeAt(0);
+  if (c === 0xb7 && face.w.length < 152) c = 46;   // a standard face's middle dot is as wide as its full stop
   if (c < 32 || c - 32 >= face.w.length) c = 63;
   return face.w[c - 32] / 1000 * size;
 }

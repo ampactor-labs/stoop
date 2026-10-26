@@ -16,7 +16,7 @@ var PT_PER_IN = 72;
 var PDF_SUBS = {
   '\u2014': '\x97', '\u2013': '\x96', '\u2018': '\x91', '\u2019': '\x92',
   '\u201c': '\x93', '\u201d': '\x94', '\u2022': '\x95', '\u2026': '\x85',
-  '\u2116': 'No.', '\u00b7': '-', '\u2605': '*', '\u2715': 'x',
+  '\u2116': 'No.', '\u2605': '*', '\u2715': 'x',
   '\u00a0': ' ', '\u2713': 'v'
 };
 
@@ -34,9 +34,13 @@ function pdfSafe(s) {
 }
 
 // The page's own face carries № at 128, where WinAnsi keeps a euro the
-// subset does not; a standard face spells it out through PDF_SUBS.
+// subset does not; a standard face spells it out through PDF_SUBS. A middle
+// dot is WinAnsi's own, and every standard face has it; a face of the
+// scene's own that does not gets a hyphen rather than an empty box.
 function faceText(face, text) {
-  return face && face.face && face.face.glyphOf(0x2116) ? String(text).replace(/\u2116/g, '\x80') : String(text);
+  var t = String(text);
+  if (face && face.face && !face.face.glyphOf(0xb7)) t = t.replace(/\u00b7/g, '-');
+  return face && face.face && face.face.glyphOf(0x2116) ? t.replace(/\u2116/g, '\x80') : t;
 }
 
 function pdfEsc(s) {
