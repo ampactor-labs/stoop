@@ -110,6 +110,25 @@ module.exports = async function riso(browser, ok) {
   const [odl] = await Promise.all([page.waitForEvent('download'), page.click('[data-pdfissue="01"]')]);
   const plain = fs.readFileSync(await odl.path(), 'latin1');
   ok('the ordinary PDF still prints the headline in blue and the page in pink', /0\.000 0\.471 0\.749 rg/.test(plain) && /0\.976 0\.776 0\.827 rg/.test(plain) && /DeviceRGB/.test(plain));
+  // Letters set in a colour are that colour's drum, address and all, on
+  // black stock.
+  await page.evaluate(() => {
+    const d = JSON.parse(localStorage.getItem('stoop_data_v4'));
+    Object.assign(d.press.panels[7], { fill: '#0a0a0a', letters: '#e2d6c8', h: 'BONE ON BLACK' });
+    localStorage.setItem('stoop_data_v4', JSON.stringify(d));
+  });
+  await page.reload();
+  await page.waitForTimeout(900);
+  await go('#paper');
+  const [ldl] = await Promise.all([page.waitForEvent('download', { timeout: 60000 }), page.click('#risobtn')]);
+  const lettered = unzip(fs.readFileSync(await ldl.path())).out;
+  const bonePages = streamsOf((lettered['ink-e2d6c8.pdf'] || Buffer.alloc(0)).toString('latin1')).filter(s => /re W n/.test(s));
+  const blackBack = streamsOf((lettered['black.pdf'] || Buffer.alloc(0)).toString('latin1')).filter(s => /re W n/.test(s))[7] || '';
+  ok('LETTERS IN A COLOUR GO ON THAT COLOUR\'S DRUM, ADDRESS AND ALL, AND NOT ON THE BLACK',
+     bonePages.length === 8 && /\(BONE ON BLACK\) Tj/.test(bonePages[7]) && /nightbus\.org/.test(bonePages[7]) &&
+     !/\(BONE ON BLACK\) Tj/.test(blackBack) && !/nightbus\.org/.test(blackBack) && !/\(BONE ON BLACK\) Tj/.test(bonePages[6]) &&
+     /ink-e2d6c8\.pdf the ink-e2d6c8 drum: pages 8\n/.test(lettered['plates.txt'].toString('utf8')) &&
+     /page 8: print on black stock/.test(lettered['plates.txt'].toString('utf8')), Object.keys(lettered).sort().join(' '));
   ok('no script errors separating', errs.length === 0, errs.slice(0, 3).join(' | '));
   await ctx.close();
 };

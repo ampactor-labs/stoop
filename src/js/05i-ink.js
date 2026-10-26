@@ -140,11 +140,12 @@ function pdfColour(hex) {
   var c = inkRgb(hex).map(function (v) { return v.toFixed(3); }).join(' ');
   return c + ' rg ' + c + ' RG\n';
 }
-// The page's own letters: on a riso plate they are the black drum's, unless
-// they are white, which is paper on every drum.
+// The page's own letters: on a riso plate they are drawn the way the
+// plate draws its ink, black, or its colour in the preview; white is paper
+// on every drum.
 function pdfLetters(panel) {
   var hex = lettersOf(panel);
-  return hex === '#ffffff' ? '1 g 1 G\n' : pdfColour(plateInk !== null ? '' : hex);
+  return hex === '#ffffff' ? '1 g 1 G\n' : pdfColour(plateInk !== null ? (plateTint ? plateInk : '') : hex);
 }
 
 function inkable(el) {

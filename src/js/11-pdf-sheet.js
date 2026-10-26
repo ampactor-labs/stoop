@@ -71,9 +71,10 @@ function pdfHeading(text, x, y, width, size, lh, oneLine) {
 }
 
 function pdfPanel(panel, page, pages, box, images, url, ghosts) {
-  // A coloured riso drum carries none of the page's own black type; only
-  // letters set in white, which knock out of every drum, still draw.
-  if (plateInk && !whiteLetters(panel)) return pdfPasteup(panel, box, images, ghosts, page);
+  // On a riso plate the page's own type is on its letters' drum, black or a
+  // colour, and on no other; letters set in white, which knock out of every
+  // drum, still draw on all of them.
+  if (plateInk !== null && !whiteLetters(panel) && plateInk !== inkLetters(panel)) return pdfPasteup(panel, box, images, ghosts, page);
   var ops = pdfPhotoFill(panel, box, images) + pdfLetters(panel);
   var y = box.y;
   var isCover = page === 1;

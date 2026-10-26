@@ -3,8 +3,9 @@
 // greyscale PDF per ink: the pages in reading order, bleed, no marks, black
 // where that ink goes. The inks a cutting can be printed in are already the
 // drums, so a plate is the shop's page drawn with a filter: everything in
-// the plate's ink in black, everything else left out. The page's own type,
-// its address and a colour photograph, as greyscale, go on the black drum.
+// the plate's ink in black, everything else left out. The page's own type
+// and its address go on the drum of the page's letters, black unless they
+// are a colour; a colour photograph, as greyscale, goes on the black drum.
 // A page colour is paper, not ink, so it goes in the note as stock. The
 // preview overprints every plate in its ink, the way the studios' guides
 // tell people to proof in Photoshop.
@@ -35,12 +36,12 @@ function onPlate(el) {
   return p === null || p === plateInk;
 }
 
-// Which drums an issue needs: black always, then every ink a cutting prints in.
+// Which drums an issue needs: black always, then every ink a cutting or a
+// page's own letters print in.
 function platesOf(panels) {
   var inks = [''];
   panels.forEach(function (p) {
-    elsOf(p).forEach(function (e) {
-      var hex = plateOfEl(e);
+    elsOf(p).map(plateOfEl).concat([inkLetters(p)]).forEach(function (hex) {
       if (hex && inks.indexOf(hex) < 0) inks.push(hex);
     });
   });
@@ -50,7 +51,7 @@ function platesOf(panels) {
 function platePages(panels, hex) {
   var out = [];
   panels.forEach(function (p, i) {
-    if (elsOf(p).some(function (e) { return plateOfEl(e) === hex; })) out.push(i + 1);
+    if (inkLetters(p) === hex || elsOf(p).some(function (e) { return plateOfEl(e) === hex; })) out.push(i + 1);
   });
   return out;
 }
@@ -92,8 +93,8 @@ function platesNote(panels, inks, issue) {
     var name = inkName(hex) + '.pdf';
     lines.push('  ' + name + new Array(Math.max(2, 16 - name.length)).join(' ') + (hex
       ? 'the ' + inkName(hex) + ' drum: pages ' + platePages(panels, hex).join(', ')
-      : 'the black drum: the pages\' own type and address, every cutting in black,\n' +
-        '                and colour photographs as greyscale'));
+      : 'the black drum: the pages\' own type and address where they are black,\n' +
+        '                every cutting in black, and colour photographs as greyscale'));
   });
   lines.push('  preview.pdf    every plate overprinted in its ink, on the stock', '');
   var stock = [];
